@@ -44,24 +44,41 @@ const CustomerLayout = () => {
     },
   ];
 
-  // Kiểm tra trạng thái đăng nhập và xác thực
+  // Menu Dropdown cho Dịch vụ
+  const serviceMenuItems = [
+    {
+      key: "1",
+      label: "Gói chụp",
+      onClick: () => navigate("/service-packages"),
+    },
+    {
+      key: "2",
+      label: "Đặt lịch",
+      onClick: () => navigate("/booking"),
+    },
+    {
+      key: "3",
+      label: "Thuê máy ảnh",
+      onClick: () => navigate("/camera-rental"),
+    },
+  ];
+
+  // Kiểm tra trạng thái đăng nhập để hiển thị Header
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (!savedUser) {
-      // Nếu chưa đăng nhập, redirect về /login
-      navigate("/login");
-      return;
-    }
 
-    const userData = JSON.parse(savedUser);
-    // Nếu là admin, redirect sang /admin
-    if (userData.role === "admin") {
-      navigate("/admin");
-      return;
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      // Nếu là admin đi lạc ra ngoài trang khách, có thể cho họ xem hoặc điều hướng về admin
+      if (userData.role === "admin") {
+        // Tùy bạn quyết định, nhưng tạm thời cứ set user bình thường
+      }
+      setUser(userData);
+    } else {
+      // Nếu không có user (Khách vãng lai), set User = null để hiện nút Đăng Nhập
+      setUser(null);
     }
-
-    setUser(userData);
-  }, [navigate]);
+  }, [location.pathname]); // Cập nhật lại mỗi khi chuyển trang
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -174,30 +191,36 @@ const CustomerLayout = () => {
               THƯ VIỆN ẢNH ⌄
             </span>
           </Dropdown>
+          <span
+            onClick={() => navigate("/photographer")}
+            style={menuStyle("/photographer")}
+          >
+            THỢ CHỤP
+          </span>
+          <Dropdown
+            menu={{ items: serviceMenuItems }}
+            placement="bottomCenter"
+            arrow
+          >
+            <span
+              style={{
+                cursor: "default",
+                color:
+                  location.pathname.includes("/service") ||
+                  location.pathname.includes("/booking") ||
+                  location.pathname.includes("/camera")
+                    ? "#000"
+                    : "#555",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "1px",
+              }}
+            >
+              DỊCH VỤ ⌄
+            </span>
+          </Dropdown>
           <span onClick={() => navigate("/about")} style={menuStyle("/about")}>
             GIỚI THIỆU VỀ TÔI
-          </span>
-          <span
-            onClick={() => navigate("/services")}
-            style={menuStyle("/services")}
-          >
-            BẢNG GIÁ DỊCH VỤ
-          </span>
-          {/* <span
-            style={{
-              cursor: "pointer",
-              color: "#555",
-              fontSize: "11px",
-              fontWeight: 600,
-            }}
-          >
-            BLOG CHIA SẺ
-          </span> */}
-          <span
-            onClick={() => navigate("/booking")}
-            style={menuStyle("/booking")}
-          >
-            ĐẶT LỊCH
           </span>
         </div>
 
