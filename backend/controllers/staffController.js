@@ -1,22 +1,18 @@
-const Staff = require("../models/Staff");
+const User = require("../models/User");
 
-// Thêm nhân sự mới
-exports.createStaff = async (req, res) => {
+exports.getPhotographers = async (req, res) => {
   try {
-    const newStaff = new Staff(req.body);
-    const savedStaff = await newStaff.save();
-    res.status(201).json(savedStaff);
+    // Chỉ lấy thợ chụp đang active, ẩn đi password_hash để bảo mật
+    const photographers = await User.find({
+      role: "PHOTOGRAPHER",
+      is_active: true,
+    })
+      .select("-password_hash")
+      .sort({ createdAt: 1 });
+    res.status(200).json(photographers);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi thêm nhân sự" });
-  }
-};
-
-// Lấy danh sách nhân sự
-exports.getAllStaff = async (req, res) => {
-  try {
-    const staff = await Staff.find().sort({ createdAt: -1 });
-    res.status(200).json(staff);
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách" });
+    res
+      .status(500)
+      .json({ message: "Lỗi lấy danh sách thợ chụp", error: error.message });
   }
 };

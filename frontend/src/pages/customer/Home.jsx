@@ -153,7 +153,7 @@ const Home = () => {
             </p>
           </div>
           <Button
-            onClick={() => navigate("/gioi-thieu")}
+            onClick={() => navigate("/contact")}
             type="primary"
             style={{
               background: PRIMARY_COLOR,
@@ -222,7 +222,7 @@ const Home = () => {
               nên những kỷ niệm vượt thời gian trong ngày đặc biệt của bạn.
             </p>
             <Button
-              onClick={() => navigate("/gioi-thieu")}
+              onClick={() => navigate("/about")}
               style={{
                 background: PRIMARY_COLOR,
                 color: "#fff",
@@ -273,7 +273,7 @@ const Home = () => {
               và sức sống.
             </p>
             <Button
-              onClick={() => navigate("/services")}
+              onClick={() => navigate("/galleries")}
               style={{
                 background: PRIMARY_COLOR,
                 color: "#fff",

@@ -12,15 +12,18 @@ const VnpayReturn = () => {
   useEffect(() => {
     const handleReturn = async () => {
       const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
-      const bookingId = searchParams.get("vnp_TxnRef");
       const token = localStorage.getItem("token");
+
+      // LOGIC MỚI: Gom toàn bộ tham số VNPay trên URL thành một Object
+      const vnpayData = Object.fromEntries(searchParams.entries());
 
       if (vnp_ResponseCode === "00") {
         try {
-          // Cập nhật trạng thái đơn hàng trong Database
-          await axios.put(
-            `http://localhost:5000/api/bookings/${bookingId}/status`,
-            { status: "Confirmed" },
+          // LOGIC MỚI: Gửi dữ liệu xuống Backend để kiểm tra chữ ký (Bảo mật 100%)
+          // Backend sẽ tự động cập nhật bảng Payment -> SUCCESS và Booking -> DEPOSITED
+          await axios.post(
+            `http://localhost:5000/api/bookings/vnpay-return`,
+            vnpayData,
             { headers: { Authorization: `Bearer ${token}` } },
           );
           setPaymentStatus("success");
@@ -43,6 +46,7 @@ const VnpayReturn = () => {
       </div>
     );
 
+  // GIAO DIỆN GIỮ NGUYÊN 100%
   return (
     <div style={{ maxWidth: "800px", margin: "80px auto", padding: "0 20px" }}>
       <Result

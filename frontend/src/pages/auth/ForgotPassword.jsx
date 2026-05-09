@@ -41,25 +41,13 @@ const ForgotPassword = () => {
   const onFinishStep2 = async (values) => {
     setLoading(true);
     try {
+      // Verify OTP
       await axios.post("http://localhost:5000/api/auth/verify-otp", {
         email,
         otp: values.otp,
       });
-      setStep(3);
-    } catch (error) {
-      Modal.error({
-        title: "Lỗi",
-        content: error.response?.data?.message || "Mã OTP không chính xác!",
-        centered: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const onFinishStep3 = async (values) => {
-    setLoading(true);
-    try {
+      // Reset password
       await axios.post("http://localhost:5000/api/auth/reset-password", {
         email,
         newPassword: values.newPassword,
@@ -73,7 +61,7 @@ const ForgotPassword = () => {
     } catch (error) {
       Modal.error({
         title: "Lỗi",
-        content: error.response?.data?.message || "Lỗi server",
+        content: error.response?.data?.message || "Có lỗi xảy ra",
         centered: true,
       });
     } finally {
@@ -118,8 +106,7 @@ const ForgotPassword = () => {
             style={{ fontSize: "12px", color: "#888", letterSpacing: "0.5px" }}
           >
             {step === 1 && "Nhập email tài khoản để nhận mã xác thực"}
-            {step === 2 && "Nhập mã xác thực gồm 4 chữ số vừa được gửi"}
-            {step === 3 && "Tạo mật khẩu mới cho tài khoản của bạn"}
+            {step === 2 && "Nhập mã xác thực và tạo mật khẩu mới"}
           </p>
         </div>
 
@@ -203,39 +190,7 @@ const ForgotPassword = () => {
                 }}
               />
             </Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              style={{
-                background: PRIMARY_COLOR,
-                borderRadius: "0",
-                height: "45px",
-                border: "none",
-                fontSize: "11px",
-                letterSpacing: "2px",
-                textTransform: "uppercase",
-                marginBottom: "15px",
-              }}
-            >
-              XÁC NHẬN MÃ <ArrowRightOutlined />
-            </Button>
-            <div style={{ textAlign: "center" }}>
-              <Button
-                type="link"
-                onClick={() => setStep(1)}
-                icon={<ArrowLeftOutlined />}
-                style={{ color: "#888", fontSize: "12px" }}
-              >
-                Quay lại nhập mail
-              </Button>
-            </div>
-          </Form>
-        )}
 
-        {step === 3 && (
-          <Form layout="vertical" onFinish={onFinishStep3} requiredMark={false}>
             <Form.Item
               label={
                 <span
@@ -261,7 +216,7 @@ const ForgotPassword = () => {
                   }}
                 >
                   Yêu cầu: 8-16 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số
-                  và 1 ký tự đặc biệt (!@#$%^&*()&gt;.).
+                  và 1 ký tự đặc biệt (!@#$%^&*()>.).
                 </span>
               }
               rules={[
@@ -335,11 +290,21 @@ const ForgotPassword = () => {
                 fontSize: "11px",
                 letterSpacing: "2px",
                 textTransform: "uppercase",
-                marginTop: "10px",
+                marginTop: "15px",
               }}
             >
               XÁC NHẬN ĐỔI MẬT KHẨU <ArrowRightOutlined />
             </Button>
+            <div style={{ textAlign: "center", marginTop: "15px" }}>
+              <Button
+                type="link"
+                onClick={() => setStep(1)}
+                icon={<ArrowLeftOutlined />}
+                style={{ color: "#888", fontSize: "12px" }}
+              >
+                Quay lại nhập mail
+              </Button>
+            </div>
           </Form>
         )}
 

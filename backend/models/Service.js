@@ -2,13 +2,28 @@ const mongoose = require("mongoose");
 
 const serviceSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    thumbnail: { type: String, required: true }, // Ảnh đại diện gói
-    description: { type: String }, // Mô tả ngắn
-    details: { type: String }, // Nội dung chi tiết (dùng cho trang Detail)
-    features: [{ type: String }], // Danh sách tính năng (check list)
-    category: { type: String, enum: ["Wedding", "Event", "Family"] },
+    name: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
+    base_price: {
+      type: Number,
+      required: true,
+    },
+    duration_hours: {
+      type: Number,
+      required: true, // Tính theo giờ (VD: 4 giờ, 8 giờ, 12 giờ)
+    },
+    thumbnail: {
+      type: String,
+    },
+    is_active: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );

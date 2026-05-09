@@ -5,6 +5,7 @@ import {
   ArrowLeftOutlined,
   ShoppingCartOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 
@@ -52,7 +53,10 @@ const ServiceDetail = () => {
       <Row gutter={[50, 50]}>
         <Col xs={24} md={12}>
           <img
-            src={service.thumbnail}
+            src={
+              service.thumbnail ||
+              "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop"
+            }
             alt={service.name}
             style={{
               width: "100%",
@@ -64,7 +68,9 @@ const ServiceDetail = () => {
         </Col>
 
         <Col xs={24} md={12}>
-          <Tag color={PRIMARY_COLOR}>{service.category?.toUpperCase()}</Tag>
+          <Tag color={PRIMARY_COLOR}>
+            {service.category?.toUpperCase() || "CAO HIỀN STUDIO"}
+          </Tag>
           <h1
             style={{
               fontFamily: FONT_SERIF,
@@ -75,19 +81,37 @@ const ServiceDetail = () => {
           >
             {service.name}
           </h1>
+
+          {/* Đã cập nhật lấy giá từ trường base_price */}
           <div
             style={{
               fontSize: "28px",
               color: PRIMARY_COLOR,
               fontWeight: 600,
-              marginBottom: "30px",
+              marginBottom: "15px",
             }}
           >
-            {service.price.toLocaleString()}đ
+            {service.base_price?.toLocaleString()}đ
+          </div>
+
+          <div
+            style={{
+              fontSize: "14px",
+              color: "#555",
+              marginBottom: "30px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <ClockCircleOutlined style={{ marginRight: "8px" }} /> Thời lượng
+            chụp ước tính:{" "}
+            <strong>&nbsp;{service.duration_hours || 4} giờ</strong>
           </div>
 
           <p style={{ color: "#666", lineHeight: "2", fontSize: "15px" }}>
-            {service.details || service.description}
+            {service.details ||
+              service.description ||
+              "Gói chụp ảnh cao cấp giúp bạn lưu giữ lại những khoảnh khắc tuyệt vời nhất."}
           </p>
 
           <Divider />
@@ -96,7 +120,15 @@ const ServiceDetail = () => {
             GÓI DỊCH VỤ BAO GỒM:
           </h4>
           <Row>
-            {service.features.map((feat, idx) => (
+            {/* Fallback an toàn */}
+            {(
+              service.features || [
+                "Chụp ảnh không giới hạn file",
+                "Hỗ trợ concept chụp",
+                "Chỉnh sửa 30 file retouch",
+                "Giao toàn bộ file gốc",
+              ]
+            ).map((feat, idx) => (
               <Col
                 span={24}
                 key={idx}
@@ -129,7 +161,14 @@ const ServiceDetail = () => {
               letterSpacing: "2px",
             }}
             onClick={() =>
-              navigate("/booking", { state: { serviceName: service.name } })
+              // CỰC KỲ QUAN TRỌNG: Phải truyền thêm service_id sang trang Đặt Lịch để lưu vào Database mới
+              navigate("/booking", {
+                state: {
+                  service_id: service._id,
+                  serviceName: service.name,
+                  base_price: service.base_price,
+                },
+              })
             }
           >
             ĐẶT LỊCH NGAY

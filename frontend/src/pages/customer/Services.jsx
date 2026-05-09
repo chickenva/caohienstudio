@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Row, Col, Card, Button, Spin, message } from "antd";
+import { Row, Col, Card, Button, Spin, message, Tag } from "antd";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightOutlined, CheckOutlined } from "@ant-design/icons";
+import {
+  ArrowRightOutlined,
+  CheckOutlined,
+  ClockCircleOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 
 const PRIMARY_COLOR = "#9a8a78";
@@ -58,7 +62,10 @@ const Services = () => {
               cover={
                 <img
                   alt={item.name}
-                  src={item.thumbnail}
+                  src={
+                    item.thumbnail ||
+                    "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop"
+                  }
                   style={{ height: "280px", objectFit: "cover" }}
                 />
               }
@@ -74,15 +81,29 @@ const Services = () => {
                 >
                   {item.name}
                 </h3>
+
+                {/* Đã cập nhật lấy giá từ trường base_price */}
                 <div
                   style={{
                     fontSize: "20px",
                     color: PRIMARY_COLOR,
-                    marginBottom: "20px",
+                    marginBottom: "10px",
                     fontWeight: 600,
                   }}
                 >
-                  {item.price.toLocaleString()}đ
+                  {item.base_price?.toLocaleString()}đ
+                </div>
+
+                {/* Hiển thị thêm thời lượng chụp */}
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#888",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <ClockCircleOutlined style={{ marginRight: "5px" }} /> Thời
+                  gian: {item.duration_hours || 4} giờ
                 </div>
 
                 <div
@@ -92,21 +113,31 @@ const Services = () => {
                     minHeight: "120px",
                   }}
                 >
-                  {item.features.slice(0, 4).map((feat, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        fontSize: "13px",
-                        color: "#666",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <CheckOutlined
-                        style={{ marginRight: "8px", color: PRIMARY_COLOR }}
-                      />{" "}
-                      {feat}
-                    </div>
-                  ))}
+                  {/* Fallback an toàn nếu features bị undefined */}
+                  {(
+                    item.features || [
+                      "Chụp ảnh không giới hạn file",
+                      "Hỗ trợ concept chụp",
+                      "Chỉnh sửa 30 file retouch",
+                      "Giao toàn bộ file gốc",
+                    ]
+                  )
+                    .slice(0, 4)
+                    .map((feat, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          fontSize: "13px",
+                          color: "#666",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <CheckOutlined
+                          style={{ marginRight: "8px", color: PRIMARY_COLOR }}
+                        />{" "}
+                        {feat}
+                      </div>
+                    ))}
                 </div>
 
                 <Button

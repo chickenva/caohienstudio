@@ -10,21 +10,21 @@ import {
   message,
 } from "antd";
 import { EnvironmentOutlined } from "@ant-design/icons";
+import { useLocation } from "react-router-dom"; // THÊM IMPORT NÀY
 import axios from "axios";
 import dayjs from "dayjs";
 
-// Khai báo Font chữ nếu bạn chưa định nghĩa global
 const FONT_SERIF = "'Playfair Display', serif";
 
 const Booking = () => {
   const [form] = Form.useForm();
+  const location = useLocation(); // SỬ DỤNG HOOK ĐỂ BẮT DATA TỪ TRANG DETAIL
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Theo dõi ngày chọn để cập nhật UI mức cọc ngay lập tức
   const appointmentDate = Form.useWatch("appointmentDate", form);
 
-  // 1. Lấy danh sách gói dịch vụ từ Backend
+  // 1. Lấy danh sách gói dịch vụ và Điền sẵn data (nếu có)
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -35,22 +35,39 @@ const Booking = () => {
       }
     };
     fetchServices();
-  }, []);
 
-  // 2. Logic tính toán mức cọc hiển thị
+    // LOGIC MỚI: Tự động chọn Gói dịch vụ nếu đi từ trang Chi tiết qua
+    if (location.state && location.state.service_id) {
+      form.setFieldsValue({
+        serviceId: location.state.service_id,
+      });
+    }
+  }, [location, form]);
+
+  // 2. Logic tính toán mức cọc
   const getDepositInfo = () => {
     if (!appointmentDate)
-      return { percent: "30%", label: "Đặt sớm", color: "#333" };
+      return { percent: "30%", label: "Đặt sớm", color: "#333", value: 30 };
 
     const diffDays = dayjs(appointmentDate)
       .startOf("day")
       .diff(dayjs().startOf("day"), "day");
 
     if (diffDays < 3)
-      return { percent: "100%", label: "Đặt gấp", color: "#cf1322" };
+      return {
+        percent: "100%",
+        label: "Đặt gấp",
+        color: "#cf1322",
+        value: 100,
+      };
     if (diffDays <= 6)
-      return { percent: "50%", label: "Đặt cận ngày", color: "#d48806" };
-    return { percent: "30%", label: "Đặt sớm", color: "#389e0d" };
+      return {
+        percent: "50%",
+        label: "Đặt cận ngày",
+        color: "#d48806",
+        value: 50,
+      };
+    return { percent: "30%", label: "Đặt sớm", color: "#389e0d", value: 30 };
   };
 
   const depositInfo = getDepositInfo();
@@ -62,18 +79,26 @@ const Booking = () => {
       const token = localStorage.getItem("token");
       if (!token) {
         message.warning("Vui lòng đăng nhập để đặt lịch!");
+        setLoading(false);
         return;
       }
 
-      // Gọi API tạo đơn và lấy Link VNPay
+      // LOGIC MỚI: Đóng gói dữ liệu chuẩn Schema Booking để gửi xuống Backend
+      const submitData = {
+        service_id: values.serviceId,
+        start_time: values.appointmentDate.toISOString(),
+        location: values.location,
+        note: values.note,
+        deposit_percent: depositInfo.value, // Truyền phần trăm cọc (30, 50, 100) để Backend tính tiền
+      };
+
       const res = await axios.post(
         "http://localhost:5000/api/bookings/create-vnpay",
-        values,
+        submitData,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (res.data.paymentUrl) {
-        // Chuyển hướng sang cổng thanh toán VNPay
         window.location.href = res.data.paymentUrl;
       }
     } catch (err) {
@@ -87,7 +112,6 @@ const Booking = () => {
   return (
     <div style={{ maxWidth: "1200px", margin: "60px auto", padding: "0 20px" }}>
       <Row gutter={[60, 40]} align="middle">
-        {/* Bên trái: Hình ảnh & Tiêu đề */}
         <Col xs={24} md={10}>
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontFamily: FONT_SERIF, fontSize: "48px" }}>
@@ -101,7 +125,6 @@ const Booking = () => {
           </div>
         </Col>
 
-        {/* Bên phải: Form đặt lịch */}
         <Col xs={24} md={14}>
           <Form form={form} layout="vertical" onFinish={onFinish}>
             <Form.Item
@@ -112,7 +135,8 @@ const Booking = () => {
               <Select placeholder="Chọn gói dịch vụ bạn muốn...">
                 {services.map((s) => (
                   <Select.Option key={s._id} value={s._id}>
-                    {s.name} - {s.price?.toLocaleString()}đ
+                    {/* LOGIC MỚI: Đổi s.price thành s.base_price */}
+                    {s.name} - {s.base_price?.toLocaleString()}đ
                   </Select.Option>
                 ))}
               </Select>
@@ -153,7 +177,6 @@ const Booking = () => {
               />
             </Form.Item>
 
-            {/* Thông báo mức cọc động */}
             <div
               style={{
                 marginBottom: "20px",

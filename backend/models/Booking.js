@@ -2,24 +2,30 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    userId: {
+    customer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Customer",
       required: true,
     },
-    serviceName: { type: String, required: true },
-    price: { type: Number, required: true },
-    appointmentDate: { type: Date, required: true },
+    service_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+      required: true,
+    },
+    photographer_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Thợ chụp sẽ được Admin gán sau
+    resource_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "Resource" }], // Thiết bị sẽ được Admin gán sau
+
+    start_time: { type: Date, required: true },
+    end_time: { type: Date, required: true }, // Tự động tính dựa vào duration_hours của Service
     location: { type: String, required: true },
+
+    total_amount: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
-      default: "Pending",
+      enum: ["PENDING", "DEPOSITED", "COMPLETED", "CANCELED"],
+      default: "PENDING",
     },
     note: { type: String },
-    depositAmount: { type: Number }, // Lưu số tiền cọc thực tế đã trả
-    paidAt: { type: Date }, // Thời điểm thanh toán thành công
-    bookingType: { type: String }, // 'Early', 'Late', 'Urgent'
   },
   { timestamps: true },
 );

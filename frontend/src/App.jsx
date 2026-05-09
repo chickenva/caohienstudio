@@ -11,13 +11,18 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 // Customer Pages
 import Home from "./pages/customer/Home";
 import About from "./pages/customer/About";
+import Galleries from "./pages/customer/Galleries";
+import GalleryDetail from "./pages/customer/GalleryDetail";
+import Photographers from "./pages/customer/Photographers";
 import Services from "./pages/customer/Services";
+import ServiceDetail from "./pages/customer/ServiceDetail";
 import Booking from "./pages/customer/Booking";
+import BookingDetail from "./pages/customer/BookingDetail";
+import Rentals from "./pages/customer/Rentals";
+import Contact from "./pages/customer/Contact";
+
 import Profile from "./pages/customer/Profile";
 import MyBookings from "./pages/customer/MyBookings";
-import BookingDetail from "./pages/customer/BookingDetail";
-import AlbumDetail from "./pages/customer/AlbumDetail";
-import ServiceDetail from "./pages/customer/ServiceDetail";
 
 // Admin Pages
 import AdminProfile from "./pages/admin/AdminProfile";
@@ -45,12 +50,18 @@ function App() {
 
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/galleries" element={<Galleries />} />
+          <Route path="/galleries/:id" element={<GalleryDetail />} />
+          <Route path="/photographers" element={<Photographers />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/booking" element={<Booking />} />
+          <Route path="/rentals" element={<Rentals />} />
+          <Route path="/contact" element={<Contact />} />
+
           <Route path="/profile" element={<Profile />} />
           <Route path="/my-bookings" element={<MyBookings />} />
           <Route path="/my-bookings/:id" element={<BookingDetail />} />
-          <Route path="/services/:id" element={<ServiceDetail />} />
 
           {/* Các Route thanh toán mới */}
           <Route path="/payment/:id" element={<Payment />} />

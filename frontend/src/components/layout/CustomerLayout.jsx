@@ -25,31 +25,12 @@ const CustomerLayout = () => {
   const location = useLocation();
   const [user, setUser] = useState(null);
 
-  // Dữ liệu cứng cho danh sách các cặp đôi (Album)
-  const albumMenuItems = [
-    {
-      key: "1",
-      label: "Minh & Thảo - Wedding in Da Lat",
-      onClick: () => navigate("/minh-thao"),
-    },
-    {
-      key: "2",
-      label: "Hoàng & Linh - Pre-Wedding in Nha Trang",
-      onClick: () => navigate("/hoang-linh"),
-    },
-    {
-      key: "3",
-      label: "Quốc & Phương - City Romance",
-      onClick: () => navigate("/quoc-phuong"),
-    },
-  ];
-
   // Menu Dropdown cho Dịch vụ
   const serviceMenuItems = [
     {
       key: "1",
       label: "Gói chụp",
-      onClick: () => navigate("/service-packages"),
+      onClick: () => navigate("/services"),
     },
     {
       key: "2",
@@ -59,7 +40,7 @@ const CustomerLayout = () => {
     {
       key: "3",
       label: "Thuê máy ảnh",
-      onClick: () => navigate("/camera-rental"),
+      onClick: () => navigate("/rentals"),
     },
   ];
 
@@ -174,29 +155,25 @@ const CustomerLayout = () => {
           <span onClick={() => navigate("/")} style={menuStyle("/")}>
             TRANG CHỦ
           </span>
-          <Dropdown
-            menu={{ items: albumMenuItems }}
-            placement="bottomCenter"
-            arrow
-          >
-            <span
-              style={{
-                cursor: "default", // Đổi icon chuột thành mặc định để báo hiệu không click được
-                color: location.pathname.includes("/gallery") ? "#000" : "#555",
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "1px",
-              }}
-            >
-              THƯ VIỆN ẢNH ⌄
-            </span>
-          </Dropdown>
+
+          <span onClick={() => navigate("/about")} style={menuStyle("/about")}>
+            GIỚI THIỆU
+          </span>
+
           <span
-            onClick={() => navigate("/photographer")}
-            style={menuStyle("/photographer")}
+            onClick={() => navigate("/galleries")}
+            style={menuStyle("/galleries")}
+          >
+            THƯ VIỆN ẢNH
+          </span>
+
+          <span
+            onClick={() => navigate("/photographers")}
+            style={menuStyle("/photographers")}
           >
             THỢ CHỤP
           </span>
+
           <Dropdown
             menu={{ items: serviceMenuItems }}
             placement="bottomCenter"
@@ -206,9 +183,9 @@ const CustomerLayout = () => {
               style={{
                 cursor: "default",
                 color:
-                  location.pathname.includes("/service") ||
+                  location.pathname.includes("/services") ||
                   location.pathname.includes("/booking") ||
-                  location.pathname.includes("/camera")
+                  location.pathname.includes("/rentals")
                     ? "#000"
                     : "#555",
                 fontSize: "11px",
@@ -216,11 +193,15 @@ const CustomerLayout = () => {
                 letterSpacing: "1px",
               }}
             >
-              DỊCH VỤ ⌄
+              DỊCH VỤ
             </span>
           </Dropdown>
-          <span onClick={() => navigate("/about")} style={menuStyle("/about")}>
-            GIỚI THIỆU VỀ TÔI
+
+          <span
+            onClick={() => navigate("/contact")}
+            style={menuStyle("/contact")}
+          >
+            LIÊN HỆ
           </span>
         </div>
 
