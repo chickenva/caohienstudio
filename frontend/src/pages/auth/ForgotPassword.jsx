@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Modal } from "antd";
+import { Form, Input, Button, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -13,6 +13,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // BƯỚC 1: NHẬP EMAIL & NHẬN OTP
   const onFinishStep1 = async (values) => {
     setLoading(true);
     try {
@@ -21,16 +22,15 @@ const ForgotPassword = () => {
         { email: values.email },
       );
       setEmail(values.email);
-      Modal.success({
-        title: "Thành công",
-        content: res.data.message,
-        onOk: () => setStep(2),
-        centered: true,
-      });
+      // Dùng message cho mượt
+      message.success(res.data.message || "Mã xác thực đã được gửi!");
+      setStep(2);
     } catch (error) {
       Modal.error({
         title: "Lỗi",
-        content: error.response?.data?.message || "Không tìm thấy tài khoản",
+        content:
+          error.response?.data?.message ||
+          "Không tìm thấy tài khoản với email này",
         centered: true,
       });
     } finally {
@@ -38,30 +38,34 @@ const ForgotPassword = () => {
     }
   };
 
+  // BƯỚC 2: XÁC THỰC OTP & TẠO MẬT KHẨU MỚI (Gộp 2 API)
   const onFinishStep2 = async (values) => {
     setLoading(true);
     try {
-      // Verify OTP
+      // 1. Verify OTP
       await axios.post("http://localhost:5000/api/auth/verify-otp", {
         email,
         otp: values.otp,
       });
 
-      // Reset password
+      // 2. Reset password
       await axios.post("http://localhost:5000/api/auth/reset-password", {
         email,
         newPassword: values.newPassword,
       });
+
       Modal.success({
         title: "Thành công!",
-        content: "Mật khẩu đã được đổi. Vui lòng đăng nhập lại.",
+        content: "Mật khẩu đã được khôi phục. Vui lòng đăng nhập lại.",
         onOk: () => navigate("/login"),
         centered: true,
       });
     } catch (error) {
       Modal.error({
         title: "Lỗi",
-        content: error.response?.data?.message || "Có lỗi xảy ra",
+        content:
+          error.response?.data?.message ||
+          "Mã OTP không chính xác hoặc thông tin không hợp lệ!",
         centered: true,
       });
     } finally {
@@ -103,15 +107,31 @@ const ForgotPassword = () => {
             Khôi phục mật khẩu
           </h1>
           <p
-            style={{ fontSize: "12px", color: "#888", letterSpacing: "0.5px" }}
+            style={{
+              fontSize: "11px",
+              color: "#999",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+            }}
           >
-            {step === 1 && "Nhập email tài khoản để nhận mã xác thực"}
-            {step === 2 && "Nhập mã xác thực và tạo mật khẩu mới"}
+            Bước {step} / 2
           </p>
         </div>
 
+        {/* ================= BƯỚC 1 ================= */}
         {step === 1 && (
           <Form layout="vertical" onFinish={onFinishStep1} requiredMark={false}>
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#888",
+                letterSpacing: "0.5px",
+                marginBottom: "20px",
+                textAlign: "center",
+              }}
+            >
+              Nhập email tài khoản để nhận mã xác thực
+            </p>
             <Form.Item
               label={
                 <span
@@ -127,7 +147,11 @@ const ForgotPassword = () => {
               }
               name="email"
               rules={[
-                { required: true, type: "email", message: "Sai định dạng!" },
+                {
+                  required: true,
+                  type: "email",
+                  message: "Sai định dạng email!",
+                },
               ]}
             >
               <Input
@@ -140,6 +164,7 @@ const ForgotPassword = () => {
                 }}
               />
             </Form.Item>
+
             <Button
               type="primary"
               htmlType="submit"
@@ -160,50 +185,38 @@ const ForgotPassword = () => {
           </Form>
         )}
 
+        {/* ================= BƯỚC 2 ================= */}
         {step === 2 && (
           <Form layout="vertical" onFinish={onFinishStep2} requiredMark={false}>
+            <div
+              style={{
+                textAlign: "center",
+                marginBottom: "20px",
+                fontSize: "13px",
+                color: "#666",
+              }}
+            >
+              Mã xác thực đã được gửi đến: <br /> <strong>{email}</strong>
+            </div>
+
             <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Mã OTP
-                </span>
-              }
               name="otp"
-              rules={[{ required: true, message: "Nhập OTP!" }]}
+              rules={[{ required: true, message: "Vui lòng nhập mã OTP!" }]}
             >
               <Input
-                placeholder="****"
+                placeholder="MÃ OTP (4-6 SỐ)"
                 style={{
                   borderRadius: "0",
                   padding: "12px 15px",
                   border: "1px solid #ddd",
                   textAlign: "center",
-                  fontSize: "20px",
-                  letterSpacing: "10px",
+                  fontSize: "18px",
+                  letterSpacing: "6px",
                 }}
               />
             </Form.Item>
 
             <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Mật khẩu mới
-                </span>
-              }
               name="newPassword"
               extra={
                 <span
@@ -216,7 +229,7 @@ const ForgotPassword = () => {
                   }}
                 >
                   Yêu cầu: 8-16 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số
-                  và 1 ký tự đặc biệt (!@#$%^&*()>.).
+                  và 1 ký tự đặc biệt.
                 </span>
               }
               rules={[
@@ -227,9 +240,10 @@ const ForgotPassword = () => {
                   message: "Mật khẩu chưa đạt yêu cầu bảo mật!",
                 },
               ]}
+              style={{ marginBottom: "15px" }}
             >
               <Input.Password
-                placeholder="******"
+                placeholder="Mật khẩu mới"
                 style={{
                   borderRadius: "0",
                   padding: "12px 15px",
@@ -240,22 +254,10 @@ const ForgotPassword = () => {
             </Form.Item>
 
             <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Xác nhận mật khẩu mới
-                </span>
-              }
               name="confirmPassword"
               dependencies={["newPassword"]}
               rules={[
-                { required: true, message: "Xác nhận mật khẩu!" },
+                { required: true, message: "Vui lòng xác nhận mật khẩu mới!" },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     return !value || getFieldValue("newPassword") === value
@@ -264,10 +266,10 @@ const ForgotPassword = () => {
                   },
                 }),
               ]}
-              style={{ marginTop: "5px" }}
+              style={{ marginBottom: "20px" }}
             >
               <Input.Password
-                placeholder="******"
+                placeholder="Xác nhận mật khẩu mới"
                 style={{
                   borderRadius: "0",
                   padding: "12px 15px",
@@ -290,11 +292,11 @@ const ForgotPassword = () => {
                 fontSize: "11px",
                 letterSpacing: "2px",
                 textTransform: "uppercase",
-                marginTop: "15px",
               }}
             >
               XÁC NHẬN ĐỔI MẬT KHẨU <ArrowRightOutlined />
             </Button>
+
             <div style={{ textAlign: "center", marginTop: "15px" }}>
               <Button
                 type="link"
@@ -302,7 +304,7 @@ const ForgotPassword = () => {
                 icon={<ArrowLeftOutlined />}
                 style={{ color: "#888", fontSize: "12px" }}
               >
-                Quay lại nhập mail
+                Đổi email khác
               </Button>
             </div>
           </Form>

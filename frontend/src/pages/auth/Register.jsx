@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Modal } from "antd";
+import { Form, Input, Button, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -13,6 +13,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // XỬ LÝ BƯỚC 1: GỬI OTP
   const onFinishStep1 = async (values) => {
     setLoading(true);
     try {
@@ -21,16 +22,13 @@ const Register = () => {
         { email: values.email },
       );
       setEmail(values.email);
-      Modal.success({
-        title: "Gửi mã thành công",
-        content: res.data.message,
-        onOk: () => setStep(2),
-        centered: true,
-      });
+      // Dùng message hiển thị mượt mà thay vì Modal che màn hình
+      message.success(res.data.message || "Đã gửi mã OTP đến email của bạn!");
+      setStep(2); // Chuyển sang bước 2
     } catch (error) {
       Modal.error({
         title: "Lỗi",
-        content: error.response?.data?.message || "Có lỗi xảy ra",
+        content: error.response?.data?.message || "Có lỗi xảy ra khi gửi email",
         centered: true,
       });
     } finally {
@@ -38,44 +36,37 @@ const Register = () => {
     }
   };
 
+  // XỬ LÝ BƯỚC 2: KIỂM TRA OTP & ĐĂNG KÝ (Gọi 2 API liên tiếp)
   const onFinishStep2 = async (values) => {
     setLoading(true);
     try {
+      // 1. Gọi API xác thực OTP trước
       await axios.post("http://localhost:5000/api/auth/verify-otp", {
         email,
         otp: values.otp,
       });
-      setStep(3);
-    } catch (error) {
-      Modal.error({
-        title: "Lỗi",
-        content: error.response?.data?.message || "Mã OTP không chính xác!",
-        centered: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const onFinishStep3 = async (values) => {
-    setLoading(true);
-    try {
+      // 2. Nếu OTP hợp lệ, tự động gọi tiếp API tạo user
       await axios.post("http://localhost:5000/api/auth/register", {
         email,
         fullName: values.fullName,
         phone: values.phone,
         password: values.password,
       });
+
       Modal.success({
-        title: "Thành công",
-        content: "Đăng ký hoàn tất, vui lòng đăng nhập.",
+        title: "Đăng ký thành công!",
+        content:
+          "Chào mừng bạn đến với CaoHien Studio. Vui lòng đăng nhập để tiếp tục.",
         onOk: () => navigate("/login"),
         centered: true,
       });
     } catch (error) {
       Modal.error({
         title: "Lỗi",
-        content: error.response?.data?.message || "Có lỗi xảy ra",
+        content:
+          error.response?.data?.message ||
+          "Mã OTP không chính xác hoặc thông tin không hợp lệ!",
         centered: true,
       });
     } finally {
@@ -124,10 +115,11 @@ const Register = () => {
               textTransform: "uppercase",
             }}
           >
-            Bước {step} / 3
+            Bước {step} / 2
           </p>
         </div>
 
+        {/* ================= BƯỚC 1: CHỈ NHẬP EMAIL ================= */}
         {step === 1 && (
           <Form layout="vertical" onFinish={onFinishStep1} requiredMark={false}>
             <Form.Item
@@ -145,7 +137,11 @@ const Register = () => {
               }
               name="email"
               rules={[
-                { required: true, type: "email", message: "Sai định dạng!" },
+                {
+                  required: true,
+                  type: "email",
+                  message: "Sai định dạng email!",
+                },
               ]}
             >
               <Input
@@ -157,6 +153,7 @@ const Register = () => {
                 }}
               />
             </Form.Item>
+
             <Button
               type="primary"
               htmlType="submit"
@@ -174,39 +171,168 @@ const Register = () => {
             >
               GỬI MÃ OTP <ArrowRightOutlined />
             </Button>
+
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "30px",
+                fontSize: "12px",
+                color: "#888",
+              }}
+            >
+              Đã có tài khoản?{" "}
+              <span
+                onClick={() => navigate("/login")}
+                style={{
+                  color: PRIMARY_COLOR,
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                ĐĂNG NHẬP
+              </span>
+            </div>
           </Form>
         )}
 
+        {/* ================= BƯỚC 2: NHẬP OTP + THÔNG TIN ================= */}
         {step === 2 && (
           <Form layout="vertical" onFinish={onFinishStep2} requiredMark={false}>
+            <div
+              style={{
+                textAlign: "center",
+                marginBottom: "20px",
+                fontSize: "13px",
+                color: "#666",
+              }}
+            >
+              Mã xác thực đã được gửi đến: <br /> <strong>{email}</strong>
+            </div>
+
+            {/* Ô nhập OTP nổi bật */}
             <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Nhập mã OTP
-                </span>
-              }
               name="otp"
-              rules={[{ required: true, message: "Nhập OTP!" }]}
+              rules={[{ required: true, message: "Vui lòng nhập mã OTP!" }]}
             >
               <Input
-                placeholder="****"
+                placeholder="MÃ OTP (4-6 SỐ)"
                 style={{
                   borderRadius: "0",
                   padding: "12px 15px",
                   border: "1px solid #ddd",
                   textAlign: "center",
-                  fontSize: "20px",
-                  letterSpacing: "10px",
+                  fontSize: "18px",
+                  letterSpacing: "6px",
                 }}
               />
             </Form.Item>
+
+            {/* Thông tin cá nhân */}
+            <Form.Item
+              name="fullName"
+              rules={[
+                { required: true, message: "Vui lòng nhập họ và tên!" },
+                {
+                  pattern:
+                    /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$/,
+                  message: "Họ tên không được chứa số hoặc ký tự đặc biệt!",
+                },
+              ]}
+              style={{ marginBottom: "15px" }}
+            >
+              <Input
+                placeholder="Họ và tên (VD: Nguyễn Văn A)"
+                style={{
+                  borderRadius: "0",
+                  padding: "10px 15px",
+                  border: "1px solid #ddd",
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="phone"
+              rules={[
+                { required: true, message: "Vui lòng nhập SĐT!" },
+                {
+                  pattern: /^0[0-9]{9,10}$/,
+                  message:
+                    "Số điện thoại phải bắt đầu bằng số 0 và có 10-11 chữ số!",
+                },
+              ]}
+              style={{ marginBottom: "15px" }}
+            >
+              <Input
+                placeholder="Số điện thoại (VD: 09xx xxx xxx)"
+                style={{
+                  borderRadius: "0",
+                  padding: "10px 15px",
+                  border: "1px solid #ddd",
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="password"
+              extra={
+                <span
+                  style={{
+                    fontSize: "10px",
+                    color: "#888",
+                    lineHeight: "1.2",
+                    display: "block",
+                    marginTop: "5px",
+                  }}
+                >
+                  Yêu cầu: 8-16 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số
+                  và 1 ký tự đặc biệt.
+                </span>
+              }
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu!" },
+                {
+                  pattern:
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()>\.]).{8,16}$/,
+                  message: "Mật khẩu chưa đạt yêu cầu bảo mật!",
+                },
+              ]}
+              style={{ marginBottom: "15px" }}
+            >
+              <Input.Password
+                placeholder="Mật khẩu"
+                style={{
+                  borderRadius: "0",
+                  padding: "10px 15px",
+                  border: "1px solid #ddd",
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="confirmPassword"
+              dependencies={["password"]}
+              rules={[
+                { required: true, message: "Vui lòng xác nhận mật khẩu!" },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    return !value || getFieldValue("password") === value
+                      ? Promise.resolve()
+                      : Promise.reject(new Error("Mật khẩu không khớp!"));
+                  },
+                }),
+              ]}
+              style={{ marginBottom: "20px" }}
+            >
+              <Input.Password
+                placeholder="Xác nhận mật khẩu"
+                style={{
+                  borderRadius: "0",
+                  padding: "10px 15px",
+                  border: "1px solid #ddd",
+                }}
+              />
+            </Form.Item>
+
             <Button
               type="primary"
               htmlType="submit"
@@ -223,8 +349,9 @@ const Register = () => {
                 marginBottom: "15px",
               }}
             >
-              XÁC NHẬN MÃ <ArrowRightOutlined />
+              HOÀN TẤT ĐĂNG KÝ
             </Button>
+
             <div style={{ textAlign: "center" }}>
               <Button
                 type="link"
@@ -232,205 +359,11 @@ const Register = () => {
                 icon={<ArrowLeftOutlined />}
                 style={{ color: "#888", fontSize: "12px" }}
               >
-                Quay lại nhập mail
+                Đổi email khác
               </Button>
             </div>
           </Form>
         )}
-
-        {step === 3 && (
-          <Form layout="vertical" onFinish={onFinishStep3} requiredMark={false}>
-            <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Họ và tên
-                </span>
-              }
-              name="fullName"
-              rules={[
-                { required: true, message: "Vui lòng nhập họ và tên!" },
-                {
-                  pattern:
-                    /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$/,
-                  message: "Họ tên không được chứa số hoặc ký tự đặc biệt!",
-                },
-              ]}
-            >
-              <Input
-                placeholder="Ví dụ: Nguyễn Văn A"
-                style={{
-                  borderRadius: "0",
-                  padding: "10px 15px",
-                  border: "1px solid #ddd",
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Số điện thoại
-                </span>
-              }
-              name="phone"
-              rules={[
-                { required: true, message: "Vui lòng nhập SĐT!" },
-                {
-                  pattern: /^0[0-9]{9,10}$/,
-                  message:
-                    "Số điện thoại phải bắt đầu bằng số 0 và có 10-11 chữ số!",
-                },
-              ]}
-            >
-              <Input
-                placeholder="09xx xxx xxx"
-                style={{
-                  borderRadius: "0",
-                  padding: "10px 15px",
-                  border: "1px solid #ddd",
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Mật khẩu
-                </span>
-              }
-              name="password"
-              extra={
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: "#888",
-                    lineHeight: "1.2",
-                    display: "block",
-                    marginTop: "5px",
-                  }}
-                >
-                  Yêu cầu: 8-16 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số
-                  và 1 ký tự đặc biệt (!@#$%^&*()&gt;.).
-                </span>
-              }
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu!" },
-                {
-                  pattern:
-                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()>\.]).{8,16}$/,
-                  message: "Mật khẩu chưa đạt yêu cầu bảo mật!",
-                },
-              ]}
-            >
-              <Input.Password
-                placeholder="******"
-                style={{
-                  borderRadius: "0",
-                  padding: "10px 15px",
-                  border: "1px solid #ddd",
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Xác nhận mật khẩu
-                </span>
-              }
-              name="confirmPassword"
-              dependencies={["password"]}
-              rules={[
-                { required: true, message: "Xác nhận mật khẩu!" },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    return !value || getFieldValue("password") === value
-                      ? Promise.resolve()
-                      : Promise.reject(new Error("Mật khẩu không khớp!"));
-                  },
-                }),
-              ]}
-              style={{ marginTop: "5px" }}
-            >
-              <Input.Password
-                placeholder="******"
-                style={{
-                  borderRadius: "0",
-                  padding: "10px 15px",
-                  border: "1px solid #ddd",
-                }}
-              />
-            </Form.Item>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              style={{
-                background: PRIMARY_COLOR,
-                borderRadius: "0",
-                height: "45px",
-                border: "none",
-                fontSize: "11px",
-                letterSpacing: "2px",
-                textTransform: "uppercase",
-                marginTop: "10px",
-              }}
-            >
-              HOÀN TẤT ĐĂNG KÝ
-            </Button>
-          </Form>
-        )}
-
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "30px",
-            fontSize: "12px",
-            color: "#888",
-          }}
-        >
-          Đã có tài khoản?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            style={{
-              color: PRIMARY_COLOR,
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            ĐĂNG NHẬP
-          </span>
-        </div>
       </div>
     </div>
   );

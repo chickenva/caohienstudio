@@ -47,10 +47,10 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      fullName,
-      phone,
-      email,
-      password: hashedPassword,
+      full_name: fullName, // SỬA CHỖ NÀY: full_name thay vì fullName
+      phone: phone,
+      email: email,
+      password_hash: hashedPassword, // SỬA CHỖ NÀY: password_hash thay vì password
     });
     await newUser.save();
 
@@ -72,7 +72,7 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ message: "Email hoặc mật khẩu không đúng!" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
       return res
         .status(400)
@@ -115,7 +115,7 @@ exports.resetPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    await User.findOneAndUpdate({ email }, { password_hash: hashedPassword });
     await OTP.deleteMany({ email }); // Xóa OTP sau khi dùng xong
 
     res.status(200).json({ message: "Đổi mật khẩu thành công!" });
@@ -196,14 +196,17 @@ exports.verifyOTP = async (req, res) => {
 exports.sendUpdateOtp = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    const { email } = req.body;
+    // Nếu có email mới, gửi OTP đến email mới; nếu không, gửi đến email hiện tại
+    const targetEmail = email || user.email;
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-    await OTP.deleteMany({ email: user.email });
-    await new OTP({ email: user.email, otp: otpCode }).save();
+    await OTP.deleteMany({ email: targetEmail });
+    await new OTP({ email: targetEmail, otp: otpCode }).save();
 
     await transporter.sendMail({
       from: '"Cao Hien Studio" <no-reply@caohien.com>',
-      to: user.email,
+      to: targetEmail,
       subject: "Mã OTP xác nhận thay đổi thông tin bảo mật",
       html: `<p>Bạn đang thực hiện thay đổi Email hoặc Mật khẩu. Mã OTP của bạn là: <b>${otpCode}</b> (Hiệu lực 5 phút).</p>`,
     });
@@ -227,30 +230,85 @@ exports.getMe = async (req, res) => {
 // Cập nhật Profile (Họ tên, SĐT, Email)
 exports.updateProfile = async (req, res) => {
   try {
-    const { fullName, phone, email } = req.body;
+    // Nhận dữ liệu từ Frontend (bao gồm cả OTP nếu có)
+    const { full_name, phone, email, otp } = req.body;
 
-    // Check trùng email nếu user muốn đổi sang email khác
-    if (email) {
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+    const updateData = {};
+
+    // ==========================================
+    // 1. CẬP NHẬT TỪNG PHẦN (HỌ TÊN, SĐT)
+    // Logic: Khách gửi trường nào lên, và trường đó khác rỗng -> Mới lưu.
+    // Giúp tránh lỗi "để trống bị bắt nhập".
+    // ==========================================
+    if (full_name !== undefined && full_name.trim() !== "") {
+      updateData.full_name = full_name.trim();
+    }
+    if (phone !== undefined && phone.trim() !== "") {
+      updateData.phone = phone.trim();
+    }
+
+    // ==========================================
+    // 2. LOGIC ĐỔI EMAIL (BẮT BUỘC CÓ OTP)
+    // ==========================================
+    const isEmailChanged =
+      email && email.trim() !== "" && email !== currentUser.email;
+
+    if (isEmailChanged) {
+      // a. Check trùng Email với người khác
       const existingUser = await User.findOne({
         email,
         _id: { $ne: req.user.id },
       });
-      if (existingUser)
+      if (existingUser) {
         return res
           .status(400)
           .json({ message: "Email này đã được người khác sử dụng!" });
+      }
+
+      // b. Bắt buộc phải có mã OTP đi kèm
+      if (!otp) {
+        return res
+          .status(400)
+          .json({ message: "Hệ thống cần mã OTP để xác nhận đổi Email!" });
+      }
+
+      // c. Kiểm tra OTP trong Database xem có khớp và còn hạn không
+      const otpRecord = await OTP.findOne({ email, otp });
+      if (!otpRecord) {
+        return res
+          .status(400)
+          .json({ message: "Mã OTP không chính xác hoặc đã hết hạn!" });
+      }
+
+      // d. Đạt chuẩn -> Cho phép cập nhật Email & Xóa OTP
+      updateData.email = email;
+      await OTP.deleteMany({ email });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      { fullName, phone, email },
-      { new: true },
-    ).select("-password");
+    // ==========================================
+    // 3. LƯU VÀO DATABASE
+    // ==========================================
+    if (Object.keys(updateData).length === 0) {
+      return res
+        .status(200)
+        .json({
+          message: "Không có thông tin nào được thay đổi",
+          user: currentUser,
+        });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
+      new: true,
+    }).select("-password_hash"); // Giấu mật khẩu đi cho an toàn
 
     res
       .status(200)
       .json({ message: "Cập nhật thành công!", user: updatedUser });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };

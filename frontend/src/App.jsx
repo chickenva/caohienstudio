@@ -8,7 +8,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 
-// Customer Pages
+// Common Pages
 import Home from "./pages/customer/Home";
 import About from "./pages/customer/About";
 import Galleries from "./pages/customer/Galleries";
@@ -21,6 +21,7 @@ import BookingDetail from "./pages/customer/BookingDetail";
 import Rentals from "./pages/customer/Rentals";
 import Contact from "./pages/customer/Contact";
 
+// Customer Pages
 import Profile from "./pages/customer/Profile";
 import MyBookings from "./pages/customer/MyBookings";
 
@@ -33,8 +34,6 @@ import StaffList from "./pages/admin/StaffList";
 import AddStaff from "./pages/admin/AddStaff";
 
 // --- Payment VNPay Pages ---
-import Payment from "./pages/customer/Payment";
-import BookingSuccess from "./pages/customer/BookingSuccess";
 import VnpayReturn from "./pages/customer/VnpayReturn";
 // ----------------------------------
 
@@ -59,13 +58,10 @@ function App() {
           <Route path="/rentals" element={<Rentals />} />
           <Route path="/contact" element={<Contact />} />
 
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/my-bookings/:id" element={<BookingDetail />} />
+          <Route path="/customer/profile" element={<Profile />} />
+          <Route path="/customer/my-bookings" element={<MyBookings />} />
+          <Route path="/customer/my-bookings/:id" element={<BookingDetail />} />
 
-          {/* Các Route thanh toán mới */}
-          <Route path="/payment/:id" element={<Payment />} />
-          <Route path="/booking-success/:id" element={<BookingSuccess />} />
           <Route path="/vnpay-return" element={<VnpayReturn />} />
         </Route>
 

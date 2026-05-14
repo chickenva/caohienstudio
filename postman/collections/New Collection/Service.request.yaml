@@ -1,0 +1,5 @@
+$kind: http-request
+name: Service
+url: http://localhost:5000/api/services
+method: GET
+order: 2924202546959231

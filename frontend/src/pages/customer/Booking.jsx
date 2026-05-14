@@ -10,7 +10,7 @@ import {
   message,
 } from "antd";
 import { EnvironmentOutlined } from "@ant-design/icons";
-import { useLocation } from "react-router-dom"; // THÊM IMPORT NÀY
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -18,25 +18,39 @@ const FONT_SERIF = "'Playfair Display', serif";
 
 const Booking = () => {
   const [form] = Form.useForm();
-  const location = useLocation(); // SỬ DỤNG HOOK ĐỂ BẮT DATA TỪ TRANG DETAIL
+  const location = useLocation();
   const [services, setServices] = useState([]);
+  const [photographers, setPhotographers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const appointmentDate = Form.useWatch("appointmentDate", form);
 
-  // 1. Lấy danh sách gói dịch vụ và Điền sẵn data (nếu có)
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await axios.get("http://localhost:5000/api/services");
-        setServices(res.data);
+        setServices(
+          Array.isArray(res.data) ? res.data : res.data.services || [],
+        );
       } catch (err) {
         message.error("Không thể tải danh sách dịch vụ");
       }
     };
-    fetchServices();
 
-    // LOGIC MỚI: Tự động chọn Gói dịch vụ nếu đi từ trang Chi tiết qua
+    const fetchPhotographers = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/users/photographers",
+        );
+        setPhotographers(res.data.photographers || []);
+      } catch (err) {
+        message.error("Không thể tải danh sách thợ chụp");
+      }
+    };
+
+    fetchServices();
+    fetchPhotographers();
+
     if (location.state && location.state.service_id) {
       form.setFieldsValue({
         serviceId: location.state.service_id,
@@ -44,7 +58,6 @@ const Booking = () => {
     }
   }, [location, form]);
 
-  // 2. Logic tính toán mức cọc
   const getDepositInfo = () => {
     if (!appointmentDate)
       return { percent: "30%", label: "Đặt sớm", color: "#333", value: 30 };
@@ -72,7 +85,6 @@ const Booking = () => {
 
   const depositInfo = getDepositInfo();
 
-  // 3. Xử lý khi nhấn nút Thanh toán
   const onFinish = async (values) => {
     setLoading(true);
     try {
@@ -83,13 +95,13 @@ const Booking = () => {
         return;
       }
 
-      // LOGIC MỚI: Đóng gói dữ liệu chuẩn Schema Booking để gửi xuống Backend
       const submitData = {
         service_id: values.serviceId,
+        photographer_ids: [values.photographerId],
         start_time: values.appointmentDate.toISOString(),
         location: values.location,
         note: values.note,
-        deposit_percent: depositInfo.value, // Truyền phần trăm cọc (30, 50, 100) để Backend tính tiền
+        deposit_percent: depositInfo.value,
       };
 
       const res = await axios.post(
@@ -103,6 +115,15 @@ const Booking = () => {
       }
     } catch (err) {
       console.error("Booking error:", err);
+
+      if (err.response?.status === 409) {
+        message.error(
+          err.response?.data?.message ||
+            "Thợ chụp đã có lịch trong khung giờ này",
+        );
+        return;
+      }
+
       message.error(err.response?.data?.message || "Lỗi khởi tạo thanh toán");
     } finally {
       setLoading(false);
@@ -135,8 +156,24 @@ const Booking = () => {
               <Select placeholder="Chọn gói dịch vụ bạn muốn...">
                 {services.map((s) => (
                   <Select.Option key={s._id} value={s._id}>
-                    {/* LOGIC MỚI: Đổi s.price thành s.base_price */}
                     {s.name} - {s.base_price?.toLocaleString()}đ
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="CHỌN THỢ CHỤP"
+              name="photographerId"
+              rules={[{ required: true, message: "Vui lòng chọn thợ chụp" }]}
+            >
+              <Select placeholder="Chọn thợ chụp bạn muốn...">
+                {photographers.map((p) => (
+                  <Select.Option key={p._id} value={p._id}>
+                    {p.full_name}
+                    {p.portfolio?.specialties?.length > 0
+                      ? ` - ${p.portfolio.specialties.join(", ")}`
+                      : ""}
                   </Select.Option>
                 ))}
               </Select>
@@ -145,17 +182,22 @@ const Booking = () => {
             <Row gutter={20}>
               <Col span={12}>
                 <Form.Item
-                  label="NGÀY CHỤP"
+                  label="NGÀY/GIỜ CHỤP"
                   name="appointmentDate"
-                  rules={[{ required: true, message: "Chọn ngày chụp" }]}
+                  rules={[{ required: true, message: "Chọn ngày giờ chụp" }]}
                 >
                   <DatePicker
                     style={{ width: "100%" }}
-                    format="DD/MM/YYYY"
+                    format="DD/MM/YYYY HH:mm"
+                    showTime={{
+                      format: "HH:mm",
+                      minuteStep: 30,
+                    }}
                     disabledDate={(d) => d && d < dayjs().startOf("day")}
                   />
                 </Form.Item>
               </Col>
+
               <Col span={12}>
                 <Form.Item
                   label="ĐỊA ĐIỂM"

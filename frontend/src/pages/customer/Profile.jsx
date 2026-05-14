@@ -19,11 +19,11 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [isOtpModalVisible, setIsOtpModalVisible] = useState(false);
   const [pendingData, setPendingData] = useState(null);
+  const [originalData, setOriginalData] = useState({});
 
   const [isInfoChanged, setIsInfoChanged] = useState(false);
   const [isPassFilled, setIsPassFilled] = useState(false);
 
-  // Validation Regex đồng bộ 100% với trang Đăng ký
   const nameRegex =
     /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$/;
   const phoneRegex = /^0[0-9]{9,10}$/;
@@ -40,30 +40,91 @@ const Profile = () => {
       const res = await axios.get("http://localhost:5000/api/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      formInfo.setFieldsValue(res.data);
+
+      // FIX: Map đúng trường full_name từ DB vào fullName của Form
+      const userData = {
+        fullName: res.data.full_name,
+        phone: res.data.phone,
+        email: res.data.email,
+      };
+
+      formInfo.setFieldsValue(userData);
+      setOriginalData(userData);
     } catch (err) {
       message.error("Không thể tải thông tin tài khoản");
     }
   };
 
   const handleRequestOtp = (values, type) => {
-    setPendingData({ type, ...values });
+    if (type === "INFO") {
+      const dataToSend = {};
+      // FIX: Đổi lại thành full_name để gửi xuống Backend cho chuẩn với Schema
+      if (values.fullName) dataToSend.full_name = values.fullName;
+      if (values.phone) dataToSend.phone = values.phone;
+      if (values.email) dataToSend.email = values.email;
 
-    // Hiện ngay Modal nhập OTP để người dùng sẵn sàng nhập mã
+      const isEmailChanged =
+        values.email && values.email !== originalData.email;
+
+      if (!isEmailChanged) {
+        handleDirectInfoUpdate(dataToSend);
+        return;
+      }
+
+      setPendingData({ type, ...dataToSend });
+      requestOtpAndVerify(values.email);
+      return;
+    }
+
+    setPendingData({ type, ...values });
+    requestOtpAndVerify();
+  };
+
+  const handleDirectInfoUpdate = async (values) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        "http://localhost:5000/api/auth/update-profile",
+        values,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      // FIX: Backend trả về user sau khi update, map lại full_name
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...res.data.user,
+          name: res.data.user.full_name, // Đồng bộ lại với format lúc Login
+        }),
+      );
+
+      setOriginalData({
+        fullName: res.data.user.full_name,
+        phone: res.data.user.phone,
+        email: res.data.user.email,
+      });
+      message.success("Cập nhật thông tin thành công!");
+      setIsInfoChanged(false);
+    } catch (err) {
+      message.error(err.response?.data?.message || "Cập nhật thất bại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestOtpAndVerify = (targetEmail = null) => {
     setIsOtpModalVisible(true);
-    message.loading({
-      content: "Đang gửi mã OTP đến email của bạn...",
-      key: "sending_otp",
-    });
+    message.loading({ content: "Đang gửi mã OTP...", key: "sending_otp" });
 
     const token = localStorage.getItem("token");
     axios
       .post(
         "http://localhost:5000/api/auth/send-update-otp",
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        targetEmail ? { email: targetEmail } : {},
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       .then(() => {
         message.success({
@@ -83,30 +144,39 @@ const Profile = () => {
     try {
       const token = localStorage.getItem("token");
       const emailCurrent = JSON.parse(localStorage.getItem("user")).email;
+      const verifyEmail = pendingData.email || emailCurrent;
 
       await axios.post("http://localhost:5000/api/auth/verify-otp", {
-        email: emailCurrent,
+        email: verifyEmail,
         otp: otpValue.otp,
       });
 
       if (pendingData.type === "INFO") {
         const res = await axios.put(
           "http://localhost:5000/api/auth/update-profile",
-          pendingData,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { ...pendingData, otp: otpValue.otp },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...res.data.user,
+            name: res.data.user.full_name,
+          }),
+        );
+
+        setOriginalData({
+          fullName: res.data.user.full_name,
+          phone: res.data.user.phone,
+          email: res.data.user.email,
+        });
         message.success("Cập nhật thông tin thành công!");
         setIsInfoChanged(false);
       } else {
         await axios.put(
           "http://localhost:5000/api/auth/reset-password-profile",
-          {
-            email: emailCurrent,
-            newPassword: pendingData.newPassword,
-          },
+          { email: emailCurrent, newPassword: pendingData.newPassword },
           { headers: { Authorization: `Bearer ${token}` } },
         );
         message.success("Đổi mật khẩu thành công!");
@@ -163,50 +233,33 @@ const Profile = () => {
           <Form.Item
             label="HỌ VÀ TÊN"
             name="fullName"
-            rules={[
-              { required: true, message: "Nhập họ tên!" },
-              {
-                pattern: nameRegex,
-                message: "Tên không chứa số/ký tự đặc biệt!",
-              },
-            ]}
+            rules={[{ pattern: nameRegex, message: "Tên không hợp lệ!" }]}
           >
             <Input
               prefix={<UserOutlined />}
               style={{ borderRadius: 0, padding: "10px" }}
             />
           </Form.Item>
-
           <Form.Item
             label="SỐ ĐIỆN THOẠI"
             name="phone"
-            rules={[
-              { required: true, message: "Nhập SĐT!" },
-              {
-                pattern: phoneRegex,
-                message: "SĐT bắt đầu bằng 0 (10-11 số)!",
-              },
-            ]}
+            rules={[{ pattern: phoneRegex, message: "SĐT không hợp lệ!" }]}
           >
             <Input
               prefix={<PhoneOutlined />}
               style={{ borderRadius: 0, padding: "10px" }}
             />
           </Form.Item>
-
           <Form.Item
             label="EMAIL"
             name="email"
-            rules={[
-              { required: true, type: "email", message: "Email không hợp lệ!" },
-            ]}
+            rules={[{ type: "email", message: "Email không hợp lệ!" }]}
           >
             <Input
               prefix={<MailOutlined />}
               style={{ borderRadius: 0, padding: "10px" }}
             />
           </Form.Item>
-
           <Button
             type="primary"
             htmlType="submit"
@@ -269,7 +322,6 @@ const Profile = () => {
               style={{ borderRadius: 0, padding: "10px" }}
             />
           </Form.Item>
-
           <Form.Item
             label="XÁC NHẬN MẬT KHẨU"
             name="confirmPassword"
@@ -287,7 +339,6 @@ const Profile = () => {
           >
             <Input.Password style={{ borderRadius: 0, padding: "10px" }} />
           </Form.Item>
-
           <Button
             htmlType="submit"
             disabled={!isPassFilled}

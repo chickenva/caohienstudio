@@ -87,13 +87,13 @@ const CustomerLayout = () => {
       key: "1",
       label: "Thông tin tài khoản",
       icon: <InfoCircleOutlined />,
-      onClick: () => navigate("/profile"),
+      onClick: () => navigate("/customer/profile"),
     },
     {
       key: "2",
       label: "Quản lý đơn đặt lịch",
       icon: <CalendarOutlined />,
-      onClick: () => navigate("/my-bookings"),
+      onClick: () => navigate("/customer/my-bookings"),
     },
     {
       type: "divider",

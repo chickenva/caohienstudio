@@ -6,19 +6,20 @@ const userSchema = new mongoose.Schema(
     password_hash: { type: String, required: true },
     full_name: { type: String, required: true },
     phone: { type: String },
+
     role: {
       type: String,
-      enum: ["ADMIN", "PHOTOGRAPHER"],
+      enum: ["ADMIN", "PHOTOGRAPHER", "CUSTOMER"],
       default: "CUSTOMER",
     },
 
     // Nơi chứa thông tin show ra trang giới thiệu thợ chụp
     portfolio: {
-      avatar: String, // Ảnh chân dung thợ chụp
-      bio: String, // Vài dòng tự giới thiệu nghệ, chảnh chảnh xíu
-      specialties: [{ type: String }], // Thể loại mạnh nhất (Ví dụ: "Phóng sự cưới", "Chân dung")
+      avatar: String,
+      bio: String,
+      specialties: [{ type: String }],
       years_of_experience: Number,
-      featured_images: [{ type: String }], // <--- ĐÂY LÀ CHÌA KHÓA: Mảng chứa 3-4 ảnh đỉnh nhất của thợ này
+      featured_images: [{ type: String }],
     },
 
     is_active: { type: Boolean, default: true },

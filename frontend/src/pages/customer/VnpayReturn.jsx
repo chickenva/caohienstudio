@@ -6,47 +6,50 @@ import axios from "axios";
 const VnpayReturn = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
-  const [paymentStatus, setPaymentStatus] = useState("processing"); // 'processing', 'success', 'error'
+  const [paymentStatus, setPaymentStatus] = useState("processing");
 
   useEffect(() => {
     const handleReturn = async () => {
-      const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
-      const token = localStorage.getItem("token");
+      try {
+        const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
+        const vnpayData = Object.fromEntries(searchParams.entries());
 
-      // LOGIC MỚI: Gom toàn bộ tham số VNPay trên URL thành một Object
-      const vnpayData = Object.fromEntries(searchParams.entries());
+        if (!vnp_ResponseCode) {
+          setPaymentStatus("error");
+          return;
+        }
 
-      if (vnp_ResponseCode === "00") {
-        try {
-          // LOGIC MỚI: Gửi dữ liệu xuống Backend để kiểm tra chữ ký (Bảo mật 100%)
-          // Backend sẽ tự động cập nhật bảng Payment -> SUCCESS và Booking -> DEPOSITED
+        if (vnp_ResponseCode === "00") {
           await axios.post(
-            `http://localhost:5000/api/bookings/vnpay-return`,
+            "http://localhost:5000/api/bookings/vnpay-return",
             vnpayData,
-            { headers: { Authorization: `Bearer ${token}` } },
           );
+
           setPaymentStatus("success");
-        } catch (err) {
-          console.error("Update DB Error:", err);
+        } else {
           setPaymentStatus("error");
         }
-      } else {
+      } catch (err) {
+        console.error("VNPay return error:", err);
         setPaymentStatus("error");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
     handleReturn();
   }, [searchParams]);
 
-  if (loading)
+  if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "100px" }}>
         <Spin size="large" tip="Đang kiểm tra giao dịch..." />
       </div>
     );
+  }
 
-  // GIAO DIỆN GIỮ NGUYÊN 100%
   return (
     <div style={{ maxWidth: "800px", margin: "80px auto", padding: "0 20px" }}>
       <Result
@@ -58,7 +61,7 @@ const VnpayReturn = () => {
         }
         subTitle={
           paymentStatus === "success"
-            ? "Lịch hẹn của bạn đã được xác nhận. Hẹn gặp bạn tại studio!"
+            ? "Lịch hẹn của bạn đã được ghi nhận. Bạn có thể xem lại trong danh sách lịch chụp."
             : "Giao dịch không thành công hoặc đã bị hủy. Bạn có thể thử thanh toán lại trong chi tiết đơn hàng."
         }
         extra={[
@@ -68,7 +71,7 @@ const VnpayReturn = () => {
           <Button
             key="list"
             type="primary"
-            onClick={() => navigate("/my-bookings")}
+            onClick={() => navigate("/customer/my-bookings")}
             style={{ background: "#333", border: "none" }}
           >
             XEM ĐƠN ĐẶT LỊCH

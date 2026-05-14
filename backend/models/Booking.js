@@ -4,7 +4,7 @@ const bookingSchema = new mongoose.Schema(
   {
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
+      ref: "User",
       required: true,
     },
     service_id: {
@@ -12,7 +12,14 @@ const bookingSchema = new mongoose.Schema(
       ref: "Service",
       required: true,
     },
-    photographer_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Thợ chụp sẽ được Admin gán sau
+    // photographer_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    photographer_ids: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+    ],
     resource_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "Resource" }], // Thiết bị sẽ được Admin gán sau
 
     start_time: { type: Date, required: true },

@@ -35,7 +35,7 @@ const BookingSuccess = () => {
             key="buy"
             type="primary"
             style={{ background: "#9a8a78", border: "none" }}
-            onClick={() => navigate("/my-bookings")}
+            onClick={() => navigate("/customer/my-bookings")}
           >
             QUẢN LÝ ĐƠN ĐẶT LỊCH
           </Button>,

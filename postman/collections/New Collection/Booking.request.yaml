@@ -1,0 +1,80 @@
+$kind: http-request
+name: Booking
+url: http://localhost:5000/api/bookings/create-vnpay
+method: POST
+body:
+  type: json
+  content: "// {\r
+
+    //   \"service_id\": \"69ff71dfb4dcf459209e121b\",\r
+
+    //   \"photographer_ids\": [\"69ff6e72b4dcf459209e120d\"],\r
+
+    //   \"start_time\": \"2026-06-20T08:00:00\",\r
+
+    //   \"location\": \"TP.HCM\",\r
+
+    //   \"note\": \"Test đặt lịch với Andy Nguyễn\",\r
+
+    //   \"deposit_percent\": 30\r
+
+    // }\r
+
+    \r
+
+    // {\r
+
+    //   \"service_id\": \"69ff71dfb4dcf459209e121b\",\r
+
+    //   \"photographer_ids\": [\"69ff6e72b4dcf459209e120d\"],\r
+
+    //   \"start_time\": \"2026-06-20T09:00:00\",\r
+
+    //   \"location\": \"TP.HCM\",\r
+
+    //   \"note\": \"Test trùng lịch với Andy Nguyễn\",\r
+
+    //   \"deposit_percent\": 30\r
+
+    // }\r
+
+    \r
+
+    // {\r
+
+    //   \"service_id\": \"69ff71dfb4dcf459209e121b\",\r
+
+    //   \"photographer_ids\": [\"69ff6e72b4dcf459209e120d\"],\r
+
+    //   \"start_time\": \"2026-06-20T13:00:00\",\r
+
+    //   \"location\": \"TP.HCM\",\r
+
+    //   \"note\": \"Test không trùng lịch với Andy Nguyễn\",\r
+
+    //   \"deposit_percent\": 30\r
+
+    // }\r
+
+    \r
+
+    {\r
+
+    \  \"service_id\": \"69ff71dfb4dcf459209e121b\",\r
+
+    \  \"photographer_ids\": [\"69ff6e72b4dcf459209e120e\"],\r
+
+    \  \"start_time\": \"2026-06-20T09:00:00\",\r
+
+    \  \"location\": \"TP.HCM\",\r
+
+    \  \"note\": \"Test cùng giờ nhưng đổi sang Minh Trần\",\r
+
+    \  \"deposit_percent\": 30\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMDE0Mzg5MzAzNzQ0ZDlhZTFiYjc2YSIsImlhdCI6MTc3ODczMDUxMiwiZXhwIjoxNzc4ODE2OTEyfQ.AaA3_K285rIFKXtdCIjfdaR_m2QuXIOdKb3MEiz1SU0
+order: 3027883460482668
