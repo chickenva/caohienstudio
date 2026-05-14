@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Form, Input, Button, Row, Col, message } from "antd";
 import {
   EnvironmentOutlined,
@@ -14,7 +15,15 @@ const FONT_SERIF = '"Playfair Display", serif';
 
 const Contact = () => {
   const [form] = Form.useForm();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (location.state?.contactMessage) {
+      form.setFieldsValue({
+        message: location.state.contactMessage,
+      });
+    }
+  }, [location, form]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -23,6 +32,7 @@ const Contact = () => {
       message.success("Cảm ơn bạn! CaoHien Studio đã nhận được lời nhắn.");
       form.resetFields(); // Gửi xong thì xóa trắng form
     } catch (err) {
+      console.error("Contact submit error:", err);
       message.error("Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -205,11 +215,11 @@ const Contact = () => {
             >
               <iframe
                 title="CaoHien Studio Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1m3!1d3918.42059489658!2d106.77259021533446!3d10.852136061614275!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3175276e02613d5b%3A0x8cf66eb855848bb2!2sHo%20Chi%20Minh%20City%20University%20of%20Technology%20and%20Education!5e0!3m2!1sen!2s!4v1680000000000!5m2!1sen!2s"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d245.41476578611977!2d106.36950480840319!3d10.210165375882626!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x310aa817e154d5fb%3A0x1c3f03df3445cddf!2zTMOyIELDoW5oIE3DrCBRdWFuZyBUw6Jt!5e0!3m2!1svi!2s!4v1778748088349!5m2!1svi!2s"
                 width="100%"
                 height="250"
                 style={{ border: 0, display: "block" }}
-                allowFullScreen=""
+                allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
@@ -240,12 +250,15 @@ const Contact = () => {
                   label="Họ và Tên"
                   name="name"
                   rules={[
-                    { required: true, message: "Vui lòng nhập tên của bạn!" },
+                    {
+                      required: true,
+                      message: "Vui lòng nhập họ và tên của bạn!",
+                    },
                   ]}
                 >
                   <Input
                     size="large"
-                    placeholder="Ví dụ: Nguyễn Văn A"
+                    placeholder="Nhập họ và tên..."
                     style={{ borderRadius: "0" }}
                   />
                 </Form.Item>
@@ -264,16 +277,25 @@ const Contact = () => {
                     >
                       <Input
                         size="large"
-                        placeholder="0987..."
+                        placeholder="Nhập số điện thoại..."
                         style={{ borderRadius: "0" }}
                       />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item label="Email (Tùy chọn)" name="email">
+                    <Form.Item
+                      label="Email (Tùy chọn)"
+                      name="email"
+                      rules={[
+                        {
+                          type: "email",
+                          message: "Email không hợp lệ!",
+                        },
+                      ]}
+                    >
                       <Input
                         size="large"
-                        placeholder="abc@gmail.com"
+                        placeholder="Nhập email..."
                         style={{ borderRadius: "0" }}
                       />
                     </Form.Item>
@@ -292,7 +314,7 @@ const Contact = () => {
                 >
                   <Input.TextArea
                     rows={5}
-                    placeholder="Ví dụ: Mình muốn tham khảo gói chụp Pre-wedding ngoại cảnh..."
+                    placeholder="Nhập vấn đề bạn cần tư vấn..."
                     style={{ borderRadius: "0" }}
                   />
                 </Form.Item>

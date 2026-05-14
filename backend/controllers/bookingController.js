@@ -4,6 +4,7 @@ const Payment = require("../models/Payment");
 const User = require("../models/User");
 const crypto = require("crypto");
 const moment = require("moment");
+const BOOKING_HOLD_MINUTES = 15;
 
 // ==========================================
 // HÀM HELPER CHUẨN CỦA VNPAY (Bắt buộc phải có)
@@ -48,6 +49,11 @@ const generateVnpayUrl = (req, payment) => {
   vnp_Params["vnp_IpAddr"] =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1";
   vnp_Params["vnp_CreateDate"] = createDate;
+  if (payment.expires_at) {
+    vnp_Params["vnp_ExpireDate"] = moment(payment.expires_at).format(
+      "YYYYMMDDHHmmss",
+    );
+  }
 
   // Sắp xếp param và mã hóa chữ ký chuẩn VNPay
   vnp_Params = sortObject(vnp_Params);
@@ -69,129 +75,35 @@ const generateVnpayUrl = (req, payment) => {
   return finalUrl;
 };
 
-// ==========================================
-// 1. TẠO ĐƠN & TẠO LINK VNPAY
-// ==========================================
-// exports.createVnpayPayment = async (req, res) => {
-//   try {
-//     const {
-//       service_id,
-//       photographer_ids,
-//       start_time,
-//       location,
-//       note,
-//       deposit_percent,
-//     } = req.body;
+const markExpiredPendingBookings = async (customerId = null) => {
+  const query = {
+    status: "PENDING",
+    expires_at: { $lte: new Date() },
+  };
 
-//     const service = await Service.findById(service_id);
-//     if (!service)
-//       return res.status(404).json({ message: "Không tìm thấy gói dịch vụ" });
+  if (customerId) {
+    query.customer_id = customerId;
+  }
 
-//     const total_amount = service.base_price;
+  const expiredBookingIds = await Booking.find(query).distinct("_id");
 
-//     const depositPercent = Number(deposit_percent || 30);
-//     if (![30, 50, 100].includes(depositPercent)) {
-//       return res.status(400).json({
-//         message: "Phần trăm thanh toán không hợp lệ",
-//       });
-//     }
-//     const depositAmount = Math.round((total_amount * depositPercent) / 100);
+  if (expiredBookingIds.length === 0) return;
 
-//     const end_time = moment(start_time)
-//       .add(service.duration_hours || 4, "hours")
-//       .toDate();
+  await Booking.updateMany(
+    { _id: { $in: expiredBookingIds } },
+    { status: "EXPIRED" },
+  );
 
-//     // VALIDATION: Bắt buộc phải chọn thợ chụp, và phải là thợ chụp đang hoạt động
-//     if (
-//       !photographer_ids ||
-//       !Array.isArray(photographer_ids) ||
-//       photographer_ids.length === 0
-//     ) {
-//       return res.status(400).json({
-//         message: "Vui lòng chọn ít nhất 1 thợ chụp",
-//       });
-//     }
-//     const photographers = await User.find({
-//       _id: { $in: photographer_ids },
-//       role: "PHOTOGRAPHER",
-//       is_active: true,
-//     });
+  await Payment.updateMany(
+    {
+      reference_type: "BOOKING",
+      reference_id: { $in: expiredBookingIds },
+      status: "PENDING",
+    },
+    { status: "EXPIRED" },
+  );
+};
 
-//     if (photographers.length !== photographer_ids.length) {
-//       return res.status(400).json({
-//         message: "Danh sách thợ chụp không hợp lệ",
-//       });
-//     }
-
-//     // VALIDATION: Kiểm tra trùng lịch của thợ chụp
-//     const startDate = new Date(start_time);
-//     const endDate = end_time;
-
-//     if (isNaN(startDate.getTime())) {
-//       return res.status(400).json({
-//         message: "Thời gian bắt đầu không hợp lệ",
-//       });
-//     }
-
-//     if (startDate < new Date()) {
-//       return res.status(400).json({
-//         message: "Không thể đặt lịch trong quá khứ",
-//       });
-//     }
-
-//     const conflictBooking = await Booking.findOne({
-//       photographer_ids: { $in: photographer_ids },
-//       status: { $in: ["PENDING", "DEPOSITED"] },
-//       start_time: { $lt: endDate },
-//       end_time: { $gt: startDate },
-//     })
-//       .populate("photographer_ids", "full_name email")
-//       .populate("service_id", "name");
-
-//     if (conflictBooking) {
-//       return res.status(409).json({
-//         message: "Thợ chụp đã có lịch trong khung giờ này",
-//         conflict: {
-//           booking_id: conflictBooking._id,
-//           start_time: conflictBooking.start_time,
-//           end_time: conflictBooking.end_time,
-//           service: conflictBooking.service_id?.name,
-//           photographers: conflictBooking.photographer_ids,
-//         },
-//       });
-//     }
-
-//     // Tạo đơn hàng với trạng thái PENDING
-//     const newBooking = await Booking.create({
-//       customer_id: req.user.id,
-//       service_id: service._id,
-//       photographer_ids,
-//       start_time: startDate,
-//       end_time: endDate,
-//       location,
-//       note,
-//       total_amount,
-//       status: "PENDING",
-//     });
-
-//     const newPayment = await Payment.create({
-//       reference_id: newBooking._id,
-//       reference_type: "BOOKING",
-//       amount: depositAmount,
-//       payment_method: "VNPAY",
-//       payment_type: `DEPOSIT_${depositPercent}`,
-//       status: "PENDING",
-//     });
-
-//     const paymentUrl = generateVnpayUrl(req, newPayment);
-//     res.status(200).json({ paymentUrl });
-//   } catch (error) {
-//     console.error(error);
-//     res
-//       .status(500)
-//       .json({ message: "Lỗi khởi tạo đơn hàng", error: error.message });
-//   }
-// };
 exports.createVnpayPayment = async (req, res) => {
   try {
     const {
@@ -260,11 +172,20 @@ exports.createVnpayPayment = async (req, res) => {
       .add(service.duration_hours || 4, "hours")
       .toDate();
 
+    await markExpiredPendingBookings();
+
     const conflictBooking = await Booking.findOne({
       photographer_ids: { $in: photographer_ids },
-      status: { $in: ["PENDING", "DEPOSITED"] },
       start_time: { $lt: endDate },
       end_time: { $gt: startDate },
+      $or: [
+        { status: "DEPOSITED" },
+        { status: "COMPLETED" },
+        {
+          status: "PENDING",
+          expires_at: { $gt: new Date() },
+        },
+      ],
     })
       .populate("photographer_ids", "full_name email")
       .populate("service_id", "name");
@@ -303,6 +224,7 @@ exports.createVnpayPayment = async (req, res) => {
       note,
       total_amount,
       status: "PENDING",
+      expires_at: moment().add(BOOKING_HOLD_MINUTES, "minutes").toDate(),
     });
 
     const newPayment = await Payment.create({
@@ -312,6 +234,7 @@ exports.createVnpayPayment = async (req, res) => {
       payment_method: "VNPAY",
       payment_type: `DEPOSIT_${depositPercent}`,
       status: "PENDING",
+      expires_at: expiresAt,
     });
 
     const paymentUrl = generateVnpayUrl(req, newPayment);
@@ -319,6 +242,7 @@ exports.createVnpayPayment = async (req, res) => {
     res.status(200).json({
       message: "Tạo đơn đặt lịch và link thanh toán thành công",
       booking_id: newBooking._id,
+      expires_at: newBooking.expires_at,
       paymentUrl,
     });
   } catch (error) {
@@ -335,6 +259,8 @@ exports.createVnpayPayment = async (req, res) => {
 // ==========================================
 exports.getMyBookings = async (req, res) => {
   try {
+    await markExpiredPendingBookings(req.user.id);
+
     const bookings = await Booking.find({ customer_id: req.user.id })
       .populate("service_id", "name thumbnail base_price duration_hours")
       .populate("photographer_ids", "full_name email phone portfolio.avatar")
@@ -354,6 +280,7 @@ exports.getMyBookings = async (req, res) => {
 // ==========================================
 exports.getBookingDetail = async (req, res) => {
   try {
+    await markExpiredPendingBookings(req.user.id);
     const booking = await Booking.findOne({
       _id: req.params.id,
       customer_id: req.user.id,
@@ -386,21 +313,33 @@ exports.getBookingDetail = async (req, res) => {
 // ==========================================
 exports.checkPaymentStatus = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking)
+    await markExpiredPendingBookings(req.user.id);
+
+    const booking = await Booking.findOne({
+      _id: req.params.id,
+      customer_id: req.user.id,
+    });
+
+    if (!booking) {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
 
     const payment = await Payment.findOne({ reference_id: req.params.id }).sort(
-      { createdAt: -1 },
+      {
+        createdAt: -1,
+      },
     );
+
     res.status(200).json({
       status: booking.status,
       payment_status: payment?.status || "PENDING",
+      expires_at: booking.expires_at,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Lỗi lấy chi tiết đơn", error: error.message });
+    res.status(500).json({
+      message: "Lỗi lấy trạng thái thanh toán",
+      error: error.message,
+    });
   }
 };
 
@@ -413,8 +352,22 @@ exports.repayBooking = async (req, res) => {
       _id: req.params.id,
       customer_id: req.user.id,
     });
-    if (!booking)
-      return res.status(404).json({ message: "Không tìm thấy đơn" });
+    if (booking.expires_at && booking.expires_at < new Date()) {
+      booking.status = "EXPIRED";
+      await booking.save();
+      await Payment.updateMany(
+        {
+          reference_id: booking._id,
+          reference_type: "BOOKING",
+          status: "PENDING",
+        },
+        { status: "EXPIRED" },
+      );
+      return res.status(400).json({
+        message: "Đơn hàng đã quá hạn thanh toán, vui lòng đặt lịch lại",
+      });
+    }
+
     if (booking.status !== "PENDING") {
       return res
         .status(400)
@@ -487,15 +440,40 @@ exports.vnpayReturn = async (req, res) => {
       if (!payment)
         return res.status(404).json({ message: "Không tìm thấy giao dịch" });
 
-      // FIX 3: Bắt buộc check mã ResponseCode == "00" (Giao dịch thành công)
       if (vnp_Params["vnp_ResponseCode"] === "00") {
+        const booking = await Booking.findById(payment.reference_id);
+
+        if (!booking) {
+          return res
+            .status(404)
+            .json({ message: "Không tìm thấy đơn đặt lịch" });
+        }
+
+        if (
+          booking.status === "EXPIRED" ||
+          booking.status === "CANCELED" ||
+          booking.status === "PAYMENT_FAILED" ||
+          (booking.expires_at && booking.expires_at < new Date())
+        ) {
+          booking.status = "EXPIRED";
+          await booking.save();
+
+          payment.status = "EXPIRED";
+          await payment.save();
+
+          return res.status(400).json({
+            message: "Đơn đặt lịch đã quá hạn thanh toán",
+            code: "EXPIRED",
+          });
+        }
+
         payment.status = "SUCCESS";
         payment.paid_at = new Date();
         await payment.save();
 
-        await Booking.findByIdAndUpdate(payment.reference_id, {
-          status: "DEPOSITED",
-        });
+        booking.status = "DEPOSITED";
+        await booking.save();
+
         return res.status(200).json({
           message: "Giao dịch thành công, đã cập nhật DB",
           code: "00",
@@ -504,6 +482,11 @@ exports.vnpayReturn = async (req, res) => {
         // Khách hàng bấm hủy thanh toán, hoặc thẻ hết tiền
         payment.status = "FAILED";
         await payment.save();
+
+        await Booking.findByIdAndUpdate(payment.reference_id, {
+          status: "PAYMENT_FAILED",
+        });
+
         return res.status(400).json({
           message: "Giao dịch thất bại hoặc bị hủy",
           code: vnp_Params["vnp_ResponseCode"],

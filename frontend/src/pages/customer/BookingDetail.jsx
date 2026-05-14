@@ -193,26 +193,63 @@ const BookingDetail = () => {
               border: "1px solid #ffe58f",
             }}
           >
-            <p style={{ fontSize: "16px", marginBottom: "15px" }}>
+            <p style={{ fontSize: "16px", marginBottom: "10px" }}>
               Đơn hàng của bạn đang chờ thanh toán cọc để được xác nhận chính
               thức.
             </p>
 
-            <Button
-              type="primary"
-              size="large"
-              icon={<CreditCardOutlined />}
-              onClick={handleRepay}
-              loading={repayLoading}
-              style={{
-                background: PRIMARY_COLOR,
-                borderColor: PRIMARY_COLOR,
-                height: "50px",
-                padding: "0 40px",
-              }}
-            >
-              THANH TOÁN NGAY QUA VNPAY
-            </Button>
+            {booking.expires_at && (
+              <p
+                style={{
+                  color: "#cf1322",
+                  fontWeight: 600,
+                  marginBottom: "15px",
+                }}
+              >
+                Vui lòng thanh toán trước:{" "}
+                {dayjs(booking.expires_at).format("HH:mm DD/MM/YYYY")}
+              </p>
+            )}
+
+            {!booking.expires_at ||
+            dayjs(booking.expires_at).isAfter(dayjs()) ? (
+              <Button
+                type="primary"
+                size="large"
+                icon={<CreditCardOutlined />}
+                onClick={handleRepay}
+                loading={repayLoading}
+                style={{
+                  background: PRIMARY_COLOR,
+                  borderColor: PRIMARY_COLOR,
+                  height: "50px",
+                  padding: "0 40px",
+                }}
+              >
+                THANH TOÁN NGAY QUA VNPAY
+              </Button>
+            ) : (
+              <p style={{ color: "#cf1322", fontWeight: 600 }}>
+                Đơn này đã quá hạn thanh toán. Vui lòng đặt lịch lại.
+              </p>
+            )}
+          </div>
+        )}
+
+        {booking.status === "EXPIRED" && (
+          <div
+            style={{
+              marginTop: 30,
+              textAlign: "center",
+              background: "#fff1f0",
+              padding: "20px",
+              borderRadius: "8px",
+              border: "1px solid #ffa39e",
+            }}
+          >
+            <p style={{ color: "#cf1322", fontWeight: 600, marginBottom: 0 }}>
+              Đơn này đã quá hạn thanh toán. Vui lòng đặt lịch lại.
+            </p>
           </div>
         )}
 

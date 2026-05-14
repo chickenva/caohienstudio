@@ -14,12 +14,20 @@ const paymentSchema = new mongoose.Schema(
     payment_type: { type: String }, // Phân loại: DEPOSIT_30, DEPOSIT_50, FULL_100
 
     transaction_id: { type: String }, // Mã giao dịch trả về từ VNPay
+
     status: {
       type: String,
-      enum: ["PENDING", "SUCCESS", "FAILED"],
+      enum: ["PENDING", "SUCCESS", "FAILED", "EXPIRED"],
       default: "PENDING",
     },
+
     paid_at: { type: Date },
+
+    // Thời điểm link thanh toán hết hạn.
+    // Nên trùng với Booking.expires_at và vnp_ExpireDate gửi sang VNPay.
+    expires_at: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );

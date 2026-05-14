@@ -30,7 +30,12 @@ const MyBookings = () => {
         },
       );
 
-      setBookings(res.data);
+      const visibleBookings = res.data.filter(
+        (booking) =>
+          booking.status !== "PAYMENT_FAILED" && booking.status !== "EXPIRED",
+      );
+
+      setBookings(visibleBookings);
     } catch (err) {
       message.error("Không thể tải danh sách lịch chụp");
     } finally {

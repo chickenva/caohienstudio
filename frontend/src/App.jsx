@@ -12,14 +12,17 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Home from "./pages/customer/Home";
 import About from "./pages/customer/About";
 import Galleries from "./pages/customer/Galleries";
-import GalleryDetail from "./pages/customer/GalleryDetail";
 import Photographers from "./pages/customer/Photographers";
 import Services from "./pages/customer/Services";
-import ServiceDetail from "./pages/customer/ServiceDetail";
 import Booking from "./pages/customer/Booking";
-import BookingDetail from "./pages/customer/BookingDetail";
 import Rentals from "./pages/customer/Rentals";
 import Contact from "./pages/customer/Contact";
+
+import GalleryDetail from "./pages/customer/GalleryDetail";
+import ServiceDetail from "./pages/customer/ServiceDetail";
+import BookingDetail from "./pages/customer/BookingDetail";
+import RentalDetail from "./pages/customer/RentalDetail";
+import PhotographerDetail from "./pages/customer/PhotographerDetail";
 
 // Customer Pages
 import Profile from "./pages/customer/Profile";
@@ -52,10 +55,12 @@ function App() {
           <Route path="/galleries" element={<Galleries />} />
           <Route path="/galleries/:id" element={<GalleryDetail />} />
           <Route path="/photographers" element={<Photographers />} />
+          <Route path="/photographers/:id" element={<PhotographerDetail />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/booking" element={<Booking />} />
           <Route path="/rentals" element={<Rentals />} />
+          <Route path="/rentals/:id" element={<RentalDetail />} />
           <Route path="/contact" element={<Contact />} />
 
           <Route path="/customer/profile" element={<Profile />} />

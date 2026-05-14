@@ -47,10 +47,10 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      full_name: fullName, // SỬA CHỖ NÀY: full_name thay vì fullName
+      full_name: fullName,
       phone: phone,
       email: email,
-      password_hash: hashedPassword, // SỬA CHỖ NÀY: password_hash thay vì password
+      password_hash: hashedPassword,
     });
     await newUser.save();
 
@@ -88,7 +88,8 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        name: user.fullName,
+        full_name: user.full_name,
+        phone: user.phone,
         role: user.role,
       },
     });
@@ -293,12 +294,10 @@ exports.updateProfile = async (req, res) => {
     // 3. LƯU VÀO DATABASE
     // ==========================================
     if (Object.keys(updateData).length === 0) {
-      return res
-        .status(200)
-        .json({
-          message: "Không có thông tin nào được thay đổi",
-          user: currentUser,
-        });
+      return res.status(200).json({
+        message: "Không có thông tin nào được thay đổi",
+        user: currentUser,
+      });
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {

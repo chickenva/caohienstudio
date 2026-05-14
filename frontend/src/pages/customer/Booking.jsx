@@ -51,10 +51,18 @@ const Booking = () => {
     fetchServices();
     fetchPhotographers();
 
-    if (location.state && location.state.service_id) {
-      form.setFieldsValue({
-        serviceId: location.state.service_id,
-      });
+    if (location.state) {
+      const initialValues = {};
+
+      if (location.state.service_id) {
+        initialValues.serviceId = location.state.service_id;
+      }
+
+      if (location.state.photographer_id) {
+        initialValues.photographerId = location.state.photographer_id;
+      }
+
+      form.setFieldsValue(initialValues);
     }
   }, [location, form]);
 
@@ -250,6 +258,17 @@ const Booking = () => {
                 {depositInfo.label === "Đặt gấp"
                   ? "* Lưu ý: Đơn đặt gấp (< 3 ngày) sẽ thanh toán 100% và không hỗ trợ hoàn tiền."
                   : "* Hỗ trợ hoàn cọc 100% nếu bạn hủy đơn trong vòng 12h kể từ lúc thanh toán."}
+              </p>
+              <p
+                style={{
+                  margin: "5px 0 0",
+                  fontSize: "12px",
+                  color: "#cf1322",
+                  fontStyle: "italic",
+                }}
+              >
+                * Sau khi tạo đơn, bạn cần hoàn tất thanh toán trong 15 phút.
+                Quá thời gian này, lịch sẽ tự hết hạn và không còn giữ thợ chụp.
               </p>
             </div>
 

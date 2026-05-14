@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Spin, message, Row, Col, Typography } from "antd";
 import { InstagramOutlined, CameraOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -7,7 +8,8 @@ const { Title, Paragraph, Text } = Typography;
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
-const Staff = () => {
+const Photographer = () => {
+  const navigate = useNavigate();
   const [staffs, setStaffs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -172,6 +174,7 @@ const Staff = () => {
                     }}
                   />
                   <div
+                    onClick={() => navigate(`/photographers/${staff._id}`)}
                     style={{
                       cursor: "pointer",
                       fontSize: "13px",
@@ -182,8 +185,8 @@ const Staff = () => {
                       gap: "8px",
                     }}
                   >
-                    <InstagramOutlined style={{ fontSize: "18px" }} /> XEM THÊM
-                    PORTFOLIO
+                    <InstagramOutlined style={{ fontSize: "18px" }} /> XEM CHI
+                    TIẾT
                   </div>
                 </div>
               </Col>
@@ -251,4 +254,4 @@ const Staff = () => {
   );
 };
 
-export default Staff;
+export default Photographer;

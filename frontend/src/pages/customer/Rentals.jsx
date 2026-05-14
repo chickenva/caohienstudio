@@ -6,11 +6,13 @@ import {
   ShoppingCartOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", serif';
 
 const Rentals = () => {
+  const navigate = useNavigate();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState("ALL");
@@ -39,6 +41,14 @@ const Rentals = () => {
     { key: "LIGHT", label: "ĐÈN & STUDIO" },
     { key: "ACCESSORY", label: "PHỤ KIỆN KHÁC" },
   ];
+
+  const handleContactRental = (item) => {
+    navigate("/contact", {
+      state: {
+        contactMessage: `Tôi muốn thuê thiết bị ${item.name}. Vui lòng tư vấn giúp tôi về giá thuê, tiền cọc, giấy tờ cần chuẩn bị và thời gian nhận/trả thiết bị.`,
+      },
+    });
+  };
 
   return (
     <div
@@ -220,16 +230,16 @@ const Rentals = () => {
                 <Button
                   block
                   type="primary"
-                  disabled={item.status !== "AVAILABLE"}
                   icon={<ShoppingCartOutlined />}
+                  onClick={() => navigate(`/rentals/${item._id}`)}
                   style={{
-                    background: item.status === "AVAILABLE" ? "#333" : "#ccc",
+                    background: "#333",
                     border: "none",
                     height: "45px",
                     letterSpacing: "1px",
                   }}
                 >
-                  {item.status === "AVAILABLE" ? "THUÊ NGAY" : "TẠM HẾT HÀNG"}
+                  XEM CHI TIẾT
                 </Button>
               </Card>
             </Col>

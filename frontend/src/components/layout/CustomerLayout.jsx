@@ -47,11 +47,12 @@ const CustomerLayout = () => {
   // Kiểm tra trạng thái đăng nhập để hiển thị Header
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-
     if (savedUser) {
       const userData = JSON.parse(savedUser);
+      console.log("USER LOCALSTORAGE:", userData);
+
       // Nếu là admin đi lạc ra ngoài trang khách, có thể cho họ xem hoặc điều hướng về admin
-      if (userData.role === "admin") {
+      if (userData.role === "ADMIN") {
         // Tùy bạn quyết định, nhưng tạm thời cứ set user bình thường
       }
       setUser(userData);
@@ -236,7 +237,7 @@ const CustomerLayout = () => {
                     textTransform: "uppercase",
                   }}
                 >
-                  {user.name}
+                  {user.full_name || "TÀI KHOẢN"}
                 </span>
                 <Avatar
                   size="small"
