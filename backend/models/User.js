@@ -13,13 +13,17 @@ const userSchema = new mongoose.Schema(
       default: "CUSTOMER",
     },
 
-    // Nơi chứa thông tin show ra trang giới thiệu thợ chụp
+    // Dành cho user có role PHOTOGRAPHER
     portfolio: {
       avatar: String,
       bio: String,
       specialties: [{ type: String }],
       years_of_experience: Number,
       featured_images: [{ type: String }],
+
+      // Sau này dùng cho Google Drive
+      google_drive_folder_id: String,
+      google_drive_folder_url: String,
     },
 
     is_active: { type: Boolean, default: true },

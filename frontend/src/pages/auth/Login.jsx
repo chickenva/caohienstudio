@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Modal, message } from "antd";
+import { Form, Input, Button, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -11,26 +11,34 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
+    setLoading(true);
+
     try {
       const res = await axios.post(
         "http://localhost:5000/api/auth/login",
         values,
       );
 
-      // Lưu token và thông tin user
+      const user = res.data.user;
+
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("user", JSON.stringify(user));
 
       message.success("Đăng nhập thành công!");
 
-      // LOGIC CHUYỂN HƯỚNG TẠI ĐÂY
-      if (res.data.user.role === "admin") {
-        window.location.href = "/admin/dashboard"; // Trực tiếp bay thẳng vào trang Admin
+      if (user.role === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else if (user.role === "PHOTOGRAPHER") {
+        navigate("/");
       } else {
-        window.location.href = "/"; // Customer thì về trang chủ
+        navigate("/");
       }
     } catch (error) {
-      message.error("Sai email hoặc mật khẩu!");
+      message.error(
+        error.response?.data?.message || "Email hoặc mật khẩu không đúng!",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 

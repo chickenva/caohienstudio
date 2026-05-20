@@ -138,10 +138,15 @@ const Galleries = () => {
                 <img
                   src={
                     item.coverImage ||
+                    item.thumbnailLink ||
                     "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop"
                   }
                   alt={item.title}
                   loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop";
+                  }}
                 />
 
                 <div className="card-shade" />

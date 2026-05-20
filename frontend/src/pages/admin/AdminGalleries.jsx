@@ -24,33 +24,40 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
-const Services = () => {
+const categoryLabels = {
+  WEDDING: "Ảnh cưới",
+  PORTRAIT: "Chân dung",
+  EVENT: "Sự kiện",
+  GRADUATION: "Kỷ yếu",
+};
+
+const statusConfig = {
+  true: { color: "green", text: "Đang hiển thị" },
+  false: { color: "default", text: "Đã ẩn" },
+};
+
+const AdminGalleries = () => {
   const navigate = useNavigate();
 
-  const [services, setServices] = useState([]);
+  const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   useEffect(() => {
-    fetchServices();
+    fetchGalleries();
   }, []);
 
   const getToken = () => localStorage.getItem("token");
 
-  const fetchServices = async () => {
+  const fetchGalleries = async () => {
     setLoading(true);
 
     try {
-      const res = await axios.get(`${API_URL}/services/admin/all`, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
-
-      setServices(res.data || []);
+      const res = await axios.get(`${API_URL}/galleries?category=ALL`);
+      setGalleries(res.data || []);
     } catch (err) {
       message.error(
-        err.response?.data?.message || "Không thể tải danh sách dịch vụ",
+        err.response?.data?.message || "Không thể tải danh sách album",
       );
     } finally {
       setLoading(false);
@@ -62,7 +69,7 @@ const Services = () => {
 
     try {
       await axios.patch(
-        `${API_URL}/services/admin/${record._id}/toggle-active`,
+        `${API_URL}/galleries/admin/${record._id}/toggle-active`,
         {},
         {
           headers: {
@@ -71,11 +78,11 @@ const Services = () => {
         },
       );
 
-      message.success("Cập nhật trạng thái dịch vụ thành công");
-      fetchServices();
+      message.success("Cập nhật trạng thái album thành công");
+      fetchGalleries();
     } catch (err) {
       message.error(
-        err.response?.data?.message || "Không thể cập nhật trạng thái dịch vụ",
+        err.response?.data?.message || "Không thể cập nhật trạng thái album",
       );
     } finally {
       setActionLoadingId(null);
@@ -84,26 +91,26 @@ const Services = () => {
 
   const handleDelete = (record) => {
     Modal.confirm({
-      title: "Ẩn gói dịch vụ này?",
+      title: "Xóa album khỏi hệ thống?",
       content:
-        "Thao tác này sẽ tạm ẩn dịch vụ khỏi website khách hàng, không xóa dữ liệu khỏi hệ thống.",
-      okText: "Ẩn dịch vụ",
+        "Thao tác này chỉ xóa thông tin album trong MongoDB, không xóa folder và ảnh trên Google Drive.",
+      okText: "Xóa",
       okButtonProps: { danger: true },
       cancelText: "Hủy",
       onOk: async () => {
         setActionLoadingId(record._id);
 
         try {
-          await axios.delete(`${API_URL}/services/admin/${record._id}`, {
+          await axios.delete(`${API_URL}/galleries/admin/${record._id}`, {
             headers: {
               Authorization: `Bearer ${getToken()}`,
             },
           });
 
-          message.success("Đã tạm ẩn dịch vụ");
-          fetchServices();
+          message.success("Xóa album thành công");
+          fetchGalleries();
         } catch (err) {
-          message.error(err.response?.data?.message || "Không thể ẩn dịch vụ");
+          message.error(err.response?.data?.message || "Không thể xóa album");
         } finally {
           setActionLoadingId(null);
         }
@@ -113,91 +120,99 @@ const Services = () => {
 
   const columns = [
     {
-      title: "ẢNH",
-      dataIndex: "thumbnail",
-      key: "thumbnail",
+      title: "ẢNH BÌA",
+      dataIndex: "coverImage",
+      key: "coverImage",
       width: 110,
-      render: (thumbnail) => (
+      render: (coverImage) => (
         <Image
           src={
-            thumbnail ||
+            coverImage ||
             "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=300&auto=format&fit=crop"
           }
-          width={78}
-          height={58}
+          width={76}
+          height={56}
           style={{ objectFit: "cover", borderRadius: 6 }}
           preview={false}
         />
       ),
     },
     {
-      title: "GÓI DỊCH VỤ",
-      dataIndex: "name",
-      key: "name",
+      title: "ALBUM",
+      dataIndex: "title",
+      key: "title",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 700 }}>{record.name}</div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#888",
-              maxWidth: 420,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {record.description || "Chưa có mô tả"}
+          <div style={{ fontWeight: 700 }}>{record.title}</div>
+          <div style={{ fontSize: 12, color: "#888" }}>
+            {record.location || "Chưa cập nhật địa điểm"}
           </div>
         </div>
       ),
     },
     {
-      title: "GIÁ",
-      dataIndex: "base_price",
-      key: "base_price",
-      width: 160,
-      align: "right",
-      render: (price) => (
-        <strong>{Number(price || 0).toLocaleString("vi-VN")}đ</strong>
+      title: "DANH MỤC",
+      dataIndex: "category",
+      key: "category",
+      width: 140,
+      render: (category) => (
+        <Tag color="blue">{categoryLabels[category] || category}</Tag>
       ),
     },
     {
-      title: "THỜI LƯỢNG",
-      dataIndex: "duration_hours",
-      key: "duration_hours",
-      width: 130,
-      render: (hours) => <Tag color="blue">{hours} giờ</Tag>,
+      title: "THỢ CHỤP",
+      dataIndex: "photographer_id",
+      key: "photographer_id",
+      width: 180,
+      render: (photographer) =>
+        photographer?.full_name || (
+          <span style={{ color: "#999" }}>Cao Hien Studio</span>
+        ),
+    },
+    {
+      title: "GÓI DỊCH VỤ",
+      dataIndex: "service_id",
+      key: "service_id",
+      width: 180,
+      render: (service) =>
+        service?.name || <span style={{ color: "#999" }}>Chưa gắn</span>,
+    },
+    {
+      title: "NỔI BẬT",
+      dataIndex: "featured",
+      key: "featured",
+      width: 100,
+      render: (featured) =>
+        featured ? <Tag color="gold">NỔI BẬT</Tag> : <Tag>THƯỜNG</Tag>,
     },
     {
       title: "TRẠNG THÁI",
       dataIndex: "is_active",
       key: "is_active",
       width: 140,
-      render: (isActive) =>
-        isActive ? (
-          <Tag color="green">ĐANG HIỂN THỊ</Tag>
-        ) : (
-          <Tag color="default">ĐÃ ẨN</Tag>
-        ),
+      render: (isActive) => {
+        const config = statusConfig[String(isActive)];
+
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
     },
     {
       title: "THAO TÁC",
       key: "action",
       align: "right",
-      width: 300,
+      width: 260,
       render: (_, record) => (
         <Space>
           <Button
             icon={<EyeOutlined />}
-            onClick={() => window.open(`/services/${record._id}`, "_blank")}
+            onClick={() => window.open(`/galleries/${record._id}`, "_blank")}
           >
             Xem
           </Button>
 
           <Button
             icon={<EditOutlined />}
-            onClick={() => navigate(`/admin/services/edit/${record._id}`)}
+            onClick={() => navigate(`/admin/galleries/edit/${record._id}`)}
           >
             Sửa
           </Button>
@@ -235,39 +250,40 @@ const Services = () => {
       >
         <div>
           <Title level={3} style={{ marginBottom: 4 }}>
-            Quản lý gói dịch vụ
+            Quản lý thư viện ảnh
           </Title>
           <Text type="secondary">
-            Thêm, chỉnh sửa, ẩn/hiện các gói dịch vụ chụp ảnh trên website.
+            Quản lý thông tin album. Ảnh trong album được lấy trực tiếp từ
+            folder Google Drive.
           </Text>
         </div>
 
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchServices}>
+          <Button icon={<ReloadOutlined />} onClick={fetchGalleries}>
             Làm mới
           </Button>
 
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/admin/services/add")}
+            onClick={() => navigate("/admin/galleries/create")}
           >
-            Thêm dịch vụ
+            Tạo album
           </Button>
         </Space>
       </div>
 
       <Table
         columns={columns}
-        dataSource={services}
+        dataSource={galleries}
         rowKey="_id"
         loading={loading}
         bordered
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1200 }}
         pagination={{ pageSize: 8 }}
       />
     </div>
   );
 };
 
-export default Services;
+export default AdminGalleries;

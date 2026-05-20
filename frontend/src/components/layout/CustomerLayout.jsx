@@ -47,20 +47,27 @@ const CustomerLayout = () => {
   // Kiểm tra trạng thái đăng nhập để hiển thị Header
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      console.log("USER LOCALSTORAGE:", userData);
 
-      // Nếu là admin đi lạc ra ngoài trang khách, có thể cho họ xem hoặc điều hướng về admin
+    if (!savedUser) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(savedUser);
+
       if (userData.role === "ADMIN") {
-        // Tùy bạn quyết định, nhưng tạm thời cứ set user bình thường
+        navigate("/admin/dashboard", { replace: true });
+        return;
       }
+
       setUser(userData);
-    } else {
-      // Nếu không có user (Khách vãng lai), set User = null để hiện nút Đăng Nhập
+    } catch (error) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setUser(null);
     }
-  }, [location.pathname]); // Cập nhật lại mỗi khi chuyển trang
+  }, [location.pathname, navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -175,11 +182,7 @@ const CustomerLayout = () => {
             THỢ CHỤP
           </span>
 
-          <Dropdown
-            menu={{ items: serviceMenuItems }}
-            placement="bottomCenter"
-            arrow
-          >
+          <Dropdown menu={{ items: serviceMenuItems }} placement="bottom" arrow>
             <span
               style={{
                 cursor: "default",

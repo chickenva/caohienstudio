@@ -31,10 +31,20 @@ import MyBookings from "./pages/customer/MyBookings";
 // Admin Pages
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import ResourceList from "./pages/admin/ResourceList";
-import AddResource from "./pages/admin/AddResource";
 import StaffList from "./pages/admin/StaffList";
 import AddStaff from "./pages/admin/AddStaff";
+
+import Orders from "./pages/admin/Orders";
+import AdminGalleries from "./pages/admin/AdminGalleries";
+import GalleryForm from "./pages/admin/GalleryForm";
+import AdminServices from "./pages/admin/Services";
+import ServiceForm from "./pages/admin/ServiceForm";
+import AdminPhotographers from "./pages/admin/Photographers";
+import PhotographerForm from "./pages/admin/PhotographerForm";
+import AdminResources from "./pages/admin/Resources";
+import ResourceForm from "./pages/admin/ResourceForm";
+import AdminCustomers from "./pages/admin/Customers";
+import Dashboard from "./pages/admin/Dashboard";
 
 // --- Payment VNPay Pages ---
 import VnpayReturn from "./pages/customer/VnpayReturn";
@@ -70,27 +80,40 @@ function App() {
           <Route path="/vnpay-return" element={<VnpayReturn />} />
         </Route>
 
+        {/* LUỒNG ADMIN */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="profile" element={<AdminProfile />} />
-          <Route path="resources" element={<ResourceList />} />
-          <Route path="resources/add" element={<AddResource />} />
-          <Route
-            path="resources/edit/:id"
-            element={<div>Trang chỉnh sửa (Làm sau)</div>}
-          />
+
           <Route path="staff" element={<StaffList />} />
           <Route path="staff/add" element={<AddStaff />} />
           <Route
             path="staff/edit/:id"
             element={<div>Trang sửa nhân sự (Làm sau)</div>}
           />
-          <Route path="customers" element={<div>Danh sách Khách hàng</div>} />
-          <Route path="services" element={<div>Danh sách Dịch vụ</div>} />
-          <Route path="services/add" element={<div>Thêm Dịch vụ</div>} />
-          <Route path="orders" element={<div>Danh sách Đơn hàng</div>} />
           <Route path="orders/detail" element={<div>Chi tiết Đơn hàng</div>} />
           <Route path="orders/create" element={<div>Tạo đơn đặt hộ</div>} />
+
+          <Route path="orders" element={<Orders />} />
+
+          <Route path="galleries" element={<AdminGalleries />} />
+          <Route path="galleries/create" element={<GalleryForm />} />
+          <Route path="galleries/edit/:id" element={<GalleryForm />} />
+
+          <Route path="services" element={<AdminServices />} />
+          <Route path="services/add" element={<ServiceForm />} />
+          <Route path="services/edit/:id" element={<ServiceForm />} />
+
+          <Route path="photographers" element={<AdminPhotographers />} />
+          <Route path="photographers/add" element={<PhotographerForm />} />
+          <Route path="photographers/edit/:id" element={<PhotographerForm />} />
+
+          <Route path="resources" element={<AdminResources />} />
+          <Route path="resources/add" element={<ResourceForm />} />
+          <Route path="resources/edit/:id" element={<ResourceForm />} />
+
+          <Route path="customers" element={<AdminCustomers />} />
+
+          <Route path="dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

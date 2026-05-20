@@ -1,0 +1,5 @@
+$kind: http-request
+url: ""
+method: GET
+examples: .resources/CreateAlbum.resources/examples
+order: 4136534649320686

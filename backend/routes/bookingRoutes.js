@@ -16,6 +16,10 @@ router.post("/vnpay-return", bookingController.vnpayReturn);
 // ==========================================
 router.post("/create-vnpay", verifyToken, bookingController.createVnpayPayment);
 router.get("/my-bookings", verifyToken, bookingController.getMyBookings);
+
+router.get("/admin/all", verifyToken, bookingController.getAllBookingsForAdmin);
+router.put("/:id/status", verifyToken, bookingController.updateBookingStatus);
+
 router.get("/:id", verifyToken, bookingController.getBookingDetail);
 router.get(
   "/:id/check-status",
@@ -28,6 +32,5 @@ router.post("/:id/repay", verifyToken, bookingController.repayBooking);
 // 3. ADMIN ROUTES - Quản trị viên
 // ==========================================
 // Tạm thời dùng verifyToken để test, sau này xong middleware verifyAdmin thì thay vào
-router.put("/:id/status", verifyToken, bookingController.updateBookingStatus);
 
 module.exports = router;

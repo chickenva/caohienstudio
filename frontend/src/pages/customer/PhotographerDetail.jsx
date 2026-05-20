@@ -26,8 +26,11 @@ const PhotographerDetail = () => {
     setLoading(true);
 
     try {
-      const res = await axios.get(`http://localhost:5000/api/staff/${id}`);
-      setPhotographer(res.data);
+      const res = await axios.get(
+        `http://localhost:5000/api/users/photographers/${id}`,
+      );
+
+      setPhotographer(res.data.photographer);
     } catch (err) {
       message.error(
         err.response?.data?.message || "Không thể tải chi tiết nhiếp ảnh gia",

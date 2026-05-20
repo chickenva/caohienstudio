@@ -503,3 +503,33 @@ exports.vnpayReturn = async (req, res) => {
       .json({ message: "Lỗi xử lý kết quả VNPay", error: error.message });
   }
 };
+
+// ==========================================
+// -----------------ADMIN-----------------
+// ==========================================
+exports.getAllBookingsForAdmin = async (req, res) => {
+  try {
+    await markExpiredPendingBookings();
+
+    const { status } = req.query;
+
+    const query = {};
+
+    if (status && status !== "ALL") {
+      query.status = status;
+    }
+
+    const bookings = await Booking.find(query)
+      .populate("customer_id", "full_name email phone")
+      .populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("photographer_ids", "full_name email phone portfolio.avatar")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi lấy danh sách đơn đặt lịch",
+      error: error.message,
+    });
+  }
+};

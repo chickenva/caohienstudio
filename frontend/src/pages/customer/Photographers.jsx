@@ -15,15 +15,21 @@ const Photographer = () => {
 
   useEffect(() => {
     const fetchStaffs = async () => {
+      setLoading(true);
+
       try {
-        const res = await axios.get("http://localhost:5000/api/staff");
-        setStaffs(res.data);
+        const res = await axios.get(
+          "http://localhost:5000/api/users/photographers",
+        );
+
+        setStaffs(res.data.photographers || []);
       } catch (err) {
         message.error("Không thể tải danh sách nhiếp ảnh gia");
       } finally {
         setLoading(false);
       }
     };
+
     fetchStaffs();
   }, []);
 
