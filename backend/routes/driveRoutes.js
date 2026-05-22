@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const driveController = require("../controllers/driveController");
-const { verifyToken } = require("../middleware/authMiddleware");
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ const upload = multer({
 });
 
 // Admin tạo folder Google Drive
-router.post("/folders", verifyToken, driveController.createFolder);
+router.post("/folders", verifyAdmin, driveController.createFolder);
 
 // Public lấy ảnh từ folder
 router.get("/folders/:folderId/images", driveController.listImages);
@@ -28,7 +28,7 @@ router.get("/folders/:folderId/images", driveController.listImages);
 // Admin upload ảnh vào folder
 router.post(
   "/folders/:folderId/images",
-  verifyToken,
+  verifyAdmin,
   upload.array("images", 20),
   driveController.uploadImages,
 );

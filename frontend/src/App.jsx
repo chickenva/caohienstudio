@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import CustomerLayout from "./components/layout/CustomerLayout";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -31,20 +31,18 @@ import MyBookings from "./pages/customer/MyBookings";
 // Admin Pages
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import StaffList from "./pages/admin/StaffList";
-import AddStaff from "./pages/admin/AddStaff";
-
-import Orders from "./pages/admin/Orders";
+import AdminOrders from "./pages/admin/AdminOrders";
 import AdminGalleries from "./pages/admin/AdminGalleries";
-import GalleryForm from "./pages/admin/GalleryForm";
-import AdminServices from "./pages/admin/Services";
-import ServiceForm from "./pages/admin/ServiceForm";
-import AdminPhotographers from "./pages/admin/Photographers";
-import PhotographerForm from "./pages/admin/PhotographerForm";
-import AdminResources from "./pages/admin/Resources";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminPhotographers from "./pages/admin/AdminPhotographers";
+import AdminResources from "./pages/admin/AdminResources";
+import AdminCustomers from "./pages/admin/AdminCustomers";
+
+import CreateOrder from "./pages/admin/CreateOrder";
 import ResourceForm from "./pages/admin/ResourceForm";
-import AdminCustomers from "./pages/admin/Customers";
-import Dashboard from "./pages/admin/Dashboard";
+import PhotographerForm from "./pages/admin/PhotographerForm";
+import ServiceForm from "./pages/admin/ServiceForm";
+import GalleryForm from "./pages/admin/GalleryForm";
 
 // --- Payment VNPay Pages ---
 import VnpayReturn from "./pages/customer/VnpayReturn";
@@ -84,16 +82,18 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="profile" element={<AdminProfile />} />
 
-          <Route path="staff" element={<StaffList />} />
+          {/* <Route path="staff" element={<StaffList />} />
           <Route path="staff/add" element={<AddStaff />} />
           <Route
             path="staff/edit/:id"
             element={<div>Trang sửa nhân sự (Làm sau)</div>}
           />
-          <Route path="orders/detail" element={<div>Chi tiết Đơn hàng</div>} />
-          <Route path="orders/create" element={<div>Tạo đơn đặt hộ</div>} />
+          <Route path="orders/detail" element={<div>Chi tiết Đơn hàng</div>} /> */}
+          <Route path="customers" element={<AdminCustomers />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
 
-          <Route path="orders" element={<Orders />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders/create" element={<CreateOrder />} />
 
           <Route path="galleries" element={<AdminGalleries />} />
           <Route path="galleries/create" element={<GalleryForm />} />
@@ -110,10 +110,6 @@ function App() {
           <Route path="resources" element={<AdminResources />} />
           <Route path="resources/add" element={<ResourceForm />} />
           <Route path="resources/edit/:id" element={<ResourceForm />} />
-
-          <Route path="customers" element={<AdminCustomers />} />
-
-          <Route path="dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

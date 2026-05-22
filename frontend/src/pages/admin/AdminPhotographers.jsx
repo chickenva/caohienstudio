@@ -23,7 +23,7 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
-const Photographers = () => {
+const AdminPhotographers = () => {
   const navigate = useNavigate();
 
   const [photographers, setPhotographers] = useState([]);
@@ -254,4 +254,4 @@ const Photographers = () => {
   );
 };
 
-export default Photographers;
+export default AdminPhotographers;

@@ -1,22 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const galleryController = require("../controllers/galleryController");
-const { verifyToken } = require("../middleware/authMiddleware");
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 // ==========================================
-// ADMIN ROUTES - PHẢI ĐẶT TRƯỚC /:id
+// ADMIN ROUTES
 // ==========================================
-router.post("/admin", verifyToken, galleryController.createGallery);
+router.post("/admin", verifyAdmin, galleryController.createGallery);
 
-router.put("/admin/:id", verifyToken, galleryController.updateGallery);
+router.put("/admin/:id", verifyAdmin, galleryController.updateGallery);
 
 router.patch(
   "/admin/:id/toggle-active",
-  verifyToken,
+  verifyAdmin,
   galleryController.toggleGalleryActive,
 );
 
-router.delete("/admin/:id", verifyToken, galleryController.deleteGallery);
+router.delete("/admin/:id", verifyAdmin, galleryController.deleteGallery);
 
 // ==========================================
 // PUBLIC ROUTES

@@ -45,7 +45,7 @@ const statusConfig = {
   MAINTENANCE: { color: "orange", text: "Bảo trì" },
 };
 
-const Resources = () => {
+const AdminResources = () => {
   const navigate = useNavigate();
 
   const [resources, setResources] = useState([]);
@@ -367,4 +367,4 @@ const Resources = () => {
   );
 };
 
-export default Resources;
+export default AdminResources;

@@ -24,7 +24,7 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
-const Customers = () => {
+const AdminCustomers = () => {
   const navigate = useNavigate();
 
   const [customers, setCustomers] = useState([]);
@@ -302,4 +302,4 @@ const Customers = () => {
   );
 };
 
-export default Customers;
+export default AdminCustomers;

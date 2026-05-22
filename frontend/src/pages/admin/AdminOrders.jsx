@@ -42,7 +42,7 @@ const statusConfig = {
   PAYMENT_FAILED: { color: "volcano", text: "Thanh toán thất bại" },
 };
 
-export default function Orders() {
+export default function AdminOrders() {
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);

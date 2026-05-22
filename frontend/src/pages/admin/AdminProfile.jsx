@@ -9,132 +9,278 @@ import {
   Avatar,
   message,
   Divider,
+  Typography,
+  Space,
+  Tag,
 } from "antd";
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
+  ReloadOutlined,
+  SaveOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+
+const { Title, Text } = Typography;
+
+const API_URL = "http://localhost:5000/api";
 
 const AdminProfile = () => {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+
   const [loading, setLoading] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
 
-  // Lấy thông tin user hiện tại từ LocalStorage
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || {},
-  );
-
-  // Đổ dữ liệu vào Form khi load trang
-  useEffect(() => {
-    if (user) {
-      form.setFieldsValue({
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-      });
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      return {};
     }
-  }, [user, form]);
+  });
 
-  // Xử lý Cập nhật thông tin cá nhân
+  const getToken = () => localStorage.getItem("token");
+
+  useEffect(() => {
+    fillForm(user);
+    fetchCurrentUser();
+  }, []);
+
+  const fillForm = (userData) => {
+    form.setFieldsValue({
+      full_name: userData?.full_name || userData?.fullName || "",
+      email: userData?.email || "",
+      phone: userData?.phone || "",
+    });
+  };
+
+  const saveUserToLocal = (userData) => {
+    const normalizedUser = {
+      ...user,
+      ...userData,
+      full_name: userData.full_name || userData.fullName || user.full_name,
+    };
+
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
+    fillForm(normalizedUser);
+  };
+
+  const requestWithFallback = async (method, urls, data = null) => {
+    let lastError = null;
+
+    for (const url of urls) {
+      try {
+        return await axios({
+          method,
+          url: `${API_URL}${url}`,
+          data,
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+      } catch (error) {
+        lastError = error;
+
+        // Nếu route tồn tại nhưng lỗi do validation/quyền/token thì không thử route khác nữa
+        if (![404, 405].includes(error.response?.status)) {
+          throw error;
+        }
+      }
+    }
+
+    throw lastError;
+  };
+
+  const fetchCurrentUser = async () => {
+    setFetching(true);
+
+    try {
+      const res = await requestWithFallback("get", [
+        "/auth/me",
+        "/users/me",
+        "/users/profile",
+      ]);
+
+      const currentUser = res.data.user || res.data.data || res.data;
+
+      if (currentUser) {
+        saveUserToLocal(currentUser);
+      }
+    } catch (error) {
+      // Không báo đỏ nếu chỉ lỗi fetch profile, vì localStorage vẫn có user để hiển thị
+      fillForm(user);
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const handleUpdateProfile = async (values) => {
     setLoading(true);
+
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.put(
-        "http://localhost:5000/api/users/profile",
-        values,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const payload = {
+        full_name: values.full_name,
+        phone: values.phone,
+      };
+
+      const res = await requestWithFallback(
+        "put",
+        ["/auth/update-profile", "/auth/me/update-profile", "/users/profile"],
+        payload,
       );
 
-      // Cập nhật lại LocalStorage và State
-      const updatedUser = { ...user, ...res.data };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      const updatedUser = res.data.user || res.data.data || res.data;
 
-      message.success("Cập nhật thông tin thành công!");
+      saveUserToLocal(updatedUser);
+
+      message.success("Cập nhật thông tin tài khoản thành công");
     } catch (error) {
-      message.error(error.response?.data?.message || "Lỗi cập nhật thông tin");
+      message.error(
+        error.response?.data?.message || "Lỗi cập nhật thông tin tài khoản",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Xử lý Đổi mật khẩu
   const handleChangePassword = async (values) => {
     setPassLoading(true);
+
     try {
-      const token = localStorage.getItem("token");
-      await axios.put(
-        "http://localhost:5000/api/users/change-password",
-        values,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const payload = {
+        oldPassword: values.oldPassword,
+        old_password: values.oldPassword,
+        currentPassword: values.oldPassword,
+        current_password: values.oldPassword,
+
+        newPassword: values.newPassword,
+        new_password: values.newPassword,
+        password: values.newPassword,
+      };
+
+      await requestWithFallback(
+        "put",
+        [
+          "/users/change-password",
+          "/auth/change-password",
+          "/auth/update-profile",
+          "/auth/me/update-profile",
+        ],
+        payload,
       );
 
-      message.success("Đổi mật khẩu thành công!");
-      passwordForm.resetFields(); // Xóa trắng form đổi pass
+      message.success("Đổi mật khẩu thành công");
+      passwordForm.resetFields();
     } catch (error) {
-      message.error(error.response?.data?.message || "Mật khẩu cũ không đúng!");
+      message.error(
+        error.response?.data?.message ||
+          "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu cũ.",
+      );
     } finally {
       setPassLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <h2 style={{ marginBottom: "24px", fontSize: "24px" }}>
-        Thông tin tài khoản Quản trị
-      </h2>
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <Title level={3} style={{ marginBottom: 4 }}>
+            Tài khoản quản trị
+          </Title>
+          <Text type="secondary">
+            Quản lý thông tin cá nhân và bảo mật tài khoản admin.
+          </Text>
+        </div>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchCurrentUser}
+          loading={fetching}
+        >
+          Làm mới
+        </Button>
+      </div>
 
       <Row gutter={[24, 24]}>
-        {/* CỘT TRÁI: Avatar & Thông tin cơ bản */}
-        <Col xs={24} md={8}>
-          <Card style={{ textAlign: "center", borderRadius: "8px" }}>
+        <Col xs={24} lg={8}>
+          <Card
+            bordered={false}
+            style={{
+              textAlign: "center",
+              borderRadius: 18,
+              background: "#f8f5f1",
+            }}
+          >
             <Avatar
               size={120}
-              src={user.avatar}
-              icon={!user.avatar && <UserOutlined />}
-              style={{ backgroundColor: "#141414", marginBottom: "16px" }}
+              src={user.avatar || user.portfolio?.avatar}
+              icon={<UserOutlined />}
+              style={{
+                backgroundColor: "#9a8a78",
+                marginBottom: 18,
+              }}
             />
-            <h3 style={{ margin: 0, fontSize: "20px" }}>{user.fullName}</h3>
-            <p style={{ color: "#888", marginBottom: "16px" }}>
-              {user.role === "admin" ? "Quản trị viên hệ thống" : "Khách hàng"}
-            </p>
+
+            <Title level={4} style={{ marginBottom: 6 }}>
+              {user.full_name || user.fullName || "Admin"}
+            </Title>
+
+            <Tag color="gold" style={{ marginBottom: 16 }}>
+              {user.role === "ADMIN" ? "QUẢN TRỊ VIÊN" : user.role || "ADMIN"}
+            </Tag>
+
             <Divider />
-            <div style={{ textAlign: "left", color: "#555" }}>
-              <p>
-                <MailOutlined style={{ marginRight: "8px" }} /> {user.email}
+
+            <div style={{ textAlign: "left" }}>
+              <p style={{ marginBottom: 12 }}>
+                <MailOutlined style={{ marginRight: 8, color: "#9a8a78" }} />
+                {user.email || "Chưa có email"}
               </p>
-              <p>
-                <PhoneOutlined style={{ marginRight: "8px" }} />{" "}
-                {user.phone || "Chưa cập nhật"}
+
+              <p style={{ marginBottom: 0 }}>
+                <PhoneOutlined style={{ marginRight: 8, color: "#9a8a78" }} />
+                {user.phone || "Chưa cập nhật số điện thoại"}
               </p>
             </div>
           </Card>
         </Col>
 
-        {/* CỘT PHẢI: Form chỉnh sửa */}
-        <Col xs={24} md={16}>
+        <Col xs={24} lg={16}>
           <Card
             title="Cập nhật thông tin"
-            style={{ borderRadius: "8px", marginBottom: "24px" }}
+            bordered={false}
+            style={{
+              borderRadius: 18,
+              marginBottom: 24,
+              boxShadow: "0 12px 34px rgba(0,0,0,0.04)",
+            }}
           >
             <Form form={form} layout="vertical" onFinish={handleUpdateProfile}>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Họ và tên"
-                    name="fullName"
+                    name="full_name"
                     rules={[
-                      { required: true, message: "Vui lòng nhập họ tên!" },
+                      {
+                        required: true,
+                        message: "Vui lòng nhập họ tên",
+                      },
                     ]}
                   >
                     <Input
@@ -143,7 +289,8 @@ const AdminProfile = () => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+
+                <Col xs={24} md={12}>
                   <Form.Item label="Số điện thoại" name="phone">
                     <Input
                       prefix={<PhoneOutlined />}
@@ -153,32 +300,49 @@ const AdminProfile = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="Email (Không thể thay đổi)" name="email">
+              <Form.Item label="Email" name="email">
                 <Input prefix={<MailOutlined />} disabled />
               </Form.Item>
 
               <Button
                 type="primary"
                 htmlType="submit"
+                icon={<SaveOutlined />}
                 loading={loading}
-                style={{ background: "#141414" }}
+                style={{
+                  background: "#2f2f2f",
+                  borderColor: "#2f2f2f",
+                  borderRadius: 999,
+                  height: 42,
+                  padding: "0 24px",
+                }}
               >
                 Lưu thay đổi
               </Button>
             </Form>
           </Card>
 
-          <Card title="Đổi mật khẩu" style={{ borderRadius: "8px" }}>
+          <Card
+            title="Đổi mật khẩu"
+            bordered={false}
+            style={{
+              borderRadius: 18,
+              boxShadow: "0 12px 34px rgba(0,0,0,0.04)",
+            }}
+          >
             <Form
               form={passwordForm}
               layout="vertical"
               onFinish={handleChangePassword}
             >
               <Form.Item
-                label="Mật khẩu cũ"
+                label="Mật khẩu hiện tại"
                 name="oldPassword"
                 rules={[
-                  { required: true, message: "Vui lòng nhập mật khẩu cũ!" },
+                  {
+                    required: true,
+                    message: "Vui lòng nhập mật khẩu hiện tại",
+                  },
                 ]}
               >
                 <Input.Password
@@ -188,16 +352,19 @@ const AdminProfile = () => {
               </Form.Item>
 
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Mật khẩu mới"
                     name="newPassword"
                     rules={[
                       {
                         required: true,
-                        message: "Vui lòng nhập mật khẩu mới!",
+                        message: "Vui lòng nhập mật khẩu mới",
                       },
-                      { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+                      {
+                        min: 6,
+                        message: "Mật khẩu phải có ít nhất 6 ký tự",
+                      },
                     ]}
                   >
                     <Input.Password
@@ -206,7 +373,8 @@ const AdminProfile = () => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+
+                <Col xs={24} md={12}>
                   <Form.Item
                     label="Xác nhận mật khẩu mới"
                     name="confirmPassword"
@@ -214,7 +382,7 @@ const AdminProfile = () => {
                     rules={[
                       {
                         required: true,
-                        message: "Vui lòng xác nhận mật khẩu!",
+                        message: "Vui lòng xác nhận mật khẩu mới",
                       },
                       ({ getFieldValue }) => ({
                         validator(_, value) {
@@ -224,8 +392,9 @@ const AdminProfile = () => {
                           ) {
                             return Promise.resolve();
                           }
+
                           return Promise.reject(
-                            new Error("Mật khẩu xác nhận không khớp!"),
+                            new Error("Mật khẩu xác nhận không khớp"),
                           );
                         },
                       }),
@@ -239,14 +408,27 @@ const AdminProfile = () => {
                 </Col>
               </Row>
 
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={passLoading}
-                style={{ background: "#141414" }}
-              >
-                Cập nhật mật khẩu
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<LockOutlined />}
+                  loading={passLoading}
+                  style={{
+                    background: "#2f2f2f",
+                    borderColor: "#2f2f2f",
+                    borderRadius: 999,
+                    height: 42,
+                    padding: "0 24px",
+                  }}
+                >
+                  Cập nhật mật khẩu
+                </Button>
+
+                <Button onClick={() => passwordForm.resetFields()}>
+                  Xóa form
+                </Button>
+              </Space>
             </Form>
           </Card>
         </Col>

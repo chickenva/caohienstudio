@@ -76,6 +76,10 @@ const AdminLayout = () => {
       key: "/admin/orders",
       icon: <ShoppingCartOutlined />,
       label: "Đơn đặt lịch",
+      children: [
+        { key: "/admin/orders", label: "Danh sách đơn" },
+        { key: "/admin/orders/create", label: "Tạo đơn đặt hộ" },
+      ],
     },
     {
       key: "/admin/services",
@@ -197,6 +201,10 @@ const AdminLayout = () => {
 
     if (path === "/admin/dashboard") return "Tổng quan";
     if (path === "/admin/orders") return "Quản lý đơn đặt lịch";
+    if (path === "/admin/orders/create") return "Tạo đơn đặt hộ";
+    if (path.startsWith("/admin/orders/detail/")) {
+      return "Chi tiết đơn đặt lịch";
+    }
 
     if (path === "/admin/services") return "Quản lý gói dịch vụ";
     if (path === "/admin/services/add") return "Thêm gói dịch vụ";

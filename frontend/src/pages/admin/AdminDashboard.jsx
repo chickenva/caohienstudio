@@ -1,280 +1,404 @@
-import React from "react";
-import { Row, Col, Card, Statistic, Table, Tag } from "antd";
+import React, { useEffect, useState } from "react";
 import {
-  DollarOutlined,
+  Row,
+  Col,
+  Card,
+  Statistic,
+  Table,
+  Tag,
+  Button,
+  message,
+  Typography,
+  Space,
+  Progress,
+} from "antd";
+import {
+  ReloadOutlined,
   ShoppingCartOutlined,
+  DollarOutlined,
+  UserOutlined,
+  CameraOutlined,
+  AppstoreOutlined,
+  PictureOutlined,
+  ToolOutlined,
   CheckCircleOutlined,
-  HourglassOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+import axios from "axios";
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
-// --- HARDCODED DATA DÀNH CHO STUDIO ---
+const { Title, Text } = Typography;
 
-// Dữ liệu doanh thu theo 6 tháng gần nhất
-const monthlyRevenueData = [
-  { month: "Tháng 11", revenue: 45000000 },
-  { month: "Tháng 12", revenue: 85000000 }, // Mùa cưới/Kỷ yếu
-  { month: "Tháng 1", revenue: 60000000 },
-  { month: "Tháng 2", revenue: 40000000 },
-  { month: "Tháng 3", revenue: 55000000 },
-  { month: "Tháng 4", revenue: 72000000 },
-];
+const API_URL = "http://localhost:5000/api";
 
-// Dữ liệu tỷ trọng các gói dịch vụ
-const serviceShareData = [
-  { name: "Pre-Wedding", value: 45 },
-  { name: "Kỷ Yếu", value: 30 },
-  { name: "Chân Dung Nghệ Thuật", value: 15 },
-  { name: "Sự Kiện", value: 10 },
-];
-const COLORS = ["#141414", "#9a8a78", "#d4b895", "#f0f0f0"]; // Tone màu chuẩn studio
+const statusConfig = {
+  PENDING: { color: "gold", text: "Chờ thanh toán" },
+  DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+  COMPLETED: { color: "green", text: "Hoàn thành" },
+  CANCELED: { color: "red", text: "Đã hủy" },
+  CANCELLED: { color: "red", text: "Đã hủy" },
+  EXPIRED: { color: "default", text: "Hết hạn" },
+  PAYMENT_FAILED: { color: "volcano", text: "Thanh toán lỗi" },
+};
 
-// Dữ liệu đơn hàng gần đây
-const recentOrders = [
-  {
-    key: "1",
-    orderId: "ORD-2026-001",
-    customer: "Nguyễn Văn A",
-    service: "Pre-Wedding Nắng Sài Gòn",
-    date: "25/04/2026",
-    total: 15000000,
-    status: "Confirmed",
-  },
-  {
-    key: "2",
-    orderId: "ORD-2026-002",
-    customer: "Trần Thị B",
-    service: "Kỷ Yếu HCMUTE",
-    date: "28/04/2026",
-    total: 5000000,
-    status: "Pending",
-  },
-  {
-    key: "3",
-    orderId: "ORD-2026-003",
-    customer: "Lê Hoàng C",
-    service: "Chân Dung Nàng Thơ",
-    date: "20/04/2026",
-    total: 2500000,
-    status: "Completed",
-  },
-];
-
-const columns = [
-  { title: "Mã Đơn", dataIndex: "orderId", key: "orderId", fontWeight: "bold" },
-  { title: "Khách Hàng", dataIndex: "customer", key: "customer" },
-  { title: "Gói Dịch Vụ", dataIndex: "service", key: "service" },
-  { title: "Ngày Chụp", dataIndex: "date", key: "date" },
-  {
-    title: "Tổng Tiền",
-    dataIndex: "total",
-    key: "total",
-    render: (val) => (
-      <span style={{ fontWeight: "bold" }}>{val.toLocaleString()}đ</span>
-    ),
-  },
-  {
-    title: "Trạng Thái",
-    dataIndex: "status",
-    key: "status",
-    render: (status) => {
-      let color =
-        status === "Confirmed"
-          ? "blue"
-          : status === "Completed"
-            ? "green"
-            : "orange";
-      let text =
-        status === "Confirmed"
-          ? "ĐÃ CỌC"
-          : status === "Completed"
-            ? "HOÀN THÀNH"
-            : "CHỜ THANH TOÁN";
-      return <Tag color={color}>{text}</Tag>;
-    },
-  },
-];
+const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchOverview();
+  }, []);
+
+  const getToken = () => localStorage.getItem("token");
+
+  const fetchOverview = async () => {
+    setLoading(true);
+
+    try {
+      const res = await axios.get(`${API_URL}/dashboard/admin/overview`, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+
+      setOverview(res.data);
+    } catch (err) {
+      message.error(
+        err.response?.data?.message || "Không thể tải dữ liệu dashboard",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cards = overview?.cards || {};
+  const revenue = overview?.revenue || {};
+  const bookingStatus = overview?.bookingStatus || {};
+  const recentBookings = overview?.recentBookings || [];
+
+  const totalStatusCount =
+    Object.values(bookingStatus).reduce(
+      (sum, item) => sum + Number(item || 0),
+      0,
+    ) || 1;
+
+  const columns = [
+    {
+      title: "MÃ ĐƠN",
+      dataIndex: "_id",
+      key: "_id",
+      width: 120,
+      render: (id) => <strong>#{id?.slice(-6).toUpperCase()}</strong>,
+    },
+    {
+      title: "KHÁCH HÀNG",
+      dataIndex: "customer_id",
+      key: "customer_id",
+      render: (customer) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>
+            {customer?.full_name || "Khách hàng"}
+          </div>
+          <div style={{ fontSize: 12, color: "#888" }}>
+            {customer?.email || ""}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "DỊCH VỤ",
+      dataIndex: "service_id",
+      key: "service_id",
+      render: (service) => service?.name || "Dịch vụ",
+    },
+    {
+      title: "NGÀY CHỤP",
+      dataIndex: "start_time",
+      key: "start_time",
+      width: 150,
+      render: (date) => (
+        <div>
+          <div>{dayjs(date).format("DD/MM/YYYY")}</div>
+          <div style={{ fontSize: 12, color: "#888" }}>
+            {dayjs(date).format("HH:mm")}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "TRẠNG THÁI",
+      dataIndex: "status",
+      key: "status",
+      width: 150,
+      render: (status) => {
+        const config = statusConfig[status] || {
+          color: "default",
+          text: status,
+        };
+
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
+    },
+    {
+      title: "TỔNG TIỀN",
+      dataIndex: "total_amount",
+      key: "total_amount",
+      align: "right",
+      width: 150,
+      render: (amount) => <strong>{formatMoney(amount)}</strong>,
+    },
+  ];
+
   return (
-    <div style={{ padding: "24px", background: "#f5f5f5", minHeight: "100vh" }}>
-      <h2
+    <div>
+      <div
         style={{
-          fontSize: "24px",
-          fontWeight: "bold",
-          marginBottom: "24px",
-          color: "#141414",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 16,
+          flexWrap: "wrap",
         }}
       >
-        Tổng quan thống kê
-      </h2>
+        <div>
+          <Title level={3} style={{ marginBottom: 4 }}>
+            Tổng quan hệ thống
+          </Title>
+          <Text type="secondary">
+            Theo dõi tình hình đơn đặt lịch, doanh thu, khách hàng và tài nguyên
+            của Cao Hien Studio.
+          </Text>
+        </div>
 
-      {/* HÀNG 1: 4 THẺ THỐNG KÊ TỔNG QUAN */}
-      <Row gutter={[24, 24]} style={{ marginBottom: "24px" }}>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={fetchOverview}>
+            Làm mới
+          </Button>
+
+          <Button type="primary" onClick={() => navigate("/admin/orders")}>
+            Xem đơn đặt lịch
+          </Button>
+        </Space>
+      </div>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-            }}
-          >
+          <Card loading={loading}>
             <Statistic
-              title="Tổng Doanh Thu (Tháng này)"
-              value={72000000}
-              suffix="đ"
-              prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
-              valueStyle={{ color: "#52c41a", fontWeight: "bold" }}
+              title="Tổng đơn đặt lịch"
+              value={cards.totalBookings || 0}
+              prefix={<ShoppingCartOutlined />}
             />
+            <Text type="secondary">
+              Tháng này: {cards.monthlyBookings || 0} đơn
+            </Text>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-            }}
-          >
+          <Card loading={loading}>
             <Statistic
-              title="Tổng Đơn Đặt Lịch"
-              value={45}
-              prefix={<ShoppingCartOutlined style={{ color: "#1890ff" }} />}
-              valueStyle={{ color: "#1890ff", fontWeight: "bold" }}
+              title="Chờ thanh toán"
+              value={cards.pendingBookings || 0}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: "#d48806" }}
             />
+            <Text type="secondary">Đơn đang chờ khách thanh toán cọc</Text>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-            }}
-          >
+          <Card loading={loading}>
             <Statistic
-              title="Đang Chờ Thanh Toán"
-              value={8}
-              prefix={<HourglassOutlined style={{ color: "#faad14" }} />}
-              valueStyle={{ color: "#faad14", fontWeight: "bold" }}
+              title="Đã đặt cọc"
+              value={cards.depositedBookings || 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#08979c" }}
             />
+            <Text type="secondary">Đơn đã xác nhận lịch hẹn</Text>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} lg={6}>
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-            }}
-          >
+          <Card loading={loading}>
             <Statistic
-              title="Lịch Chụp Hoàn Thành"
-              value={120}
-              prefix={<CheckCircleOutlined style={{ color: "#141414" }} />}
-              valueStyle={{ color: "#141414", fontWeight: "bold" }}
+              title="Hoàn thành"
+              value={cards.completedBookings || 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#389e0d" }}
             />
+            <Text type="secondary">Đơn đã hoàn tất dịch vụ</Text>
           </Card>
         </Col>
       </Row>
 
-      {/* HÀNG 2: BIỂU ĐỒ */}
-      <Row gutter={[24, 24]} style={{ marginBottom: "24px" }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Doanh thu dự kiến"
+              value={revenue.expectedRevenue || 0}
+              formatter={formatMoney}
+              prefix={<DollarOutlined />}
+            />
+            <Text type="secondary">Từ đơn đã cọc và hoàn thành</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Thanh toán VNPay thành công"
+              value={revenue.actualPaidRevenue || 0}
+              formatter={formatMoney}
+              prefix={<DollarOutlined />}
+              valueStyle={{ color: "#389e0d" }}
+            />
+            <Text type="secondary">
+              {revenue.successfulPaymentCount || 0} giao dịch thành công
+            </Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Doanh thu tháng này"
+              value={revenue.monthlyRevenue || 0}
+              formatter={formatMoney}
+              prefix={<DollarOutlined />}
+              valueStyle={{ color: "#0958d9" }}
+            />
+            <Text type="secondary">Tính theo đơn đã cọc/hoàn thành</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Khách hàng"
+              value={cards.totalCustomers || 0}
+              prefix={<UserOutlined />}
+            />
+            <Text type="secondary">
+              Đang hoạt động: {cards.activeCustomers || 0}
+            </Text>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Nhiếp ảnh gia"
+              value={cards.activePhotographers || 0}
+              prefix={<CameraOutlined />}
+            />
+            <Text type="secondary">
+              Tổng: {cards.totalPhotographers || 0} người
+            </Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Gói dịch vụ"
+              value={cards.activeServices || 0}
+              prefix={<AppstoreOutlined />}
+            />
+            <Text type="secondary">Dịch vụ đang hiển thị</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Album ảnh"
+              value={cards.activeGalleries || 0}
+              prefix={<PictureOutlined />}
+            />
+            <Text type="secondary">Album đang hiển thị</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Thiết bị cho thuê"
+              value={cards.activeRentalResources || 0}
+              prefix={<ToolOutlined />}
+            />
+            <Text type="secondary">
+              Tổng tài nguyên active: {cards.activeResources || 0}
+            </Text>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
+        <Col xs={24} lg={8}>
+          <Card title="Tỷ lệ trạng thái đơn" loading={loading}>
+            {Object.entries(bookingStatus).map(([status, count]) => {
+              const config = statusConfig[status] || {
+                color: "default",
+                text: status,
+              };
+
+              const percent = Math.round(
+                (Number(count || 0) / totalStatusCount) * 100,
+              );
+
+              return (
+                <div key={status} style={{ marginBottom: 14 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span>
+                      <Tag color={config.color}>{config.text}</Tag>
+                    </span>
+                    <strong>{count || 0}</strong>
+                  </div>
+
+                  <Progress percent={percent} size="small" showInfo={false} />
+                </div>
+              );
+            })}
+          </Card>
+        </Col>
+
         <Col xs={24} lg={16}>
           <Card
-            title="Doanh thu 6 tháng gần nhất"
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-              height: "400px",
-            }}
+            title="Đơn đặt lịch mới nhất"
+            extra={
+              <Button type="link" onClick={() => navigate("/admin/orders")}>
+                Xem tất cả
+              </Button>
+            }
+            loading={loading}
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={monthlyRevenueData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(val) => `${val / 1000000}tr`}
-                />
-                <RechartsTooltip
-                  formatter={(value) =>
-                    new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(value)
-                  }
-                  cursor={{ fill: "transparent" }}
-                />
-                <Bar
-                  dataKey="revenue"
-                  fill="#141414"
-                  radius={[4, 4, 0, 0]}
-                  barSize={40}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card
-            title="Tỷ trọng dịch vụ (%)"
-            bordered={false}
-            style={{
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-              height: "400px",
-            }}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={serviceShareData}
-                  innerRadius={80}
-                  outerRadius={110}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {serviceShareData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <RechartsTooltip formatter={(value) => `${value}%`} />
-                <Legend verticalAlign="bottom" height={36} />
-              </PieChart>
-            </ResponsiveContainer>
+            <Table
+              columns={columns}
+              dataSource={recentBookings}
+              rowKey="_id"
+              pagination={false}
+              size="small"
+              scroll={{ x: 900 }}
+            />
           </Card>
         </Col>
       </Row>
-
-      {/* HÀNG 3: BẢNG DỮ LIỆU */}
-      <Card
-        title="Đơn Đặt Lịch Mới Nhất"
-        bordered={false}
-        style={{ borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
-      >
-        <Table columns={columns} dataSource={recentOrders} pagination={false} />
-      </Card>
     </div>
   );
 };

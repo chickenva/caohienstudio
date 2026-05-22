@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
-const { verifyToken } = require("../middleware/authMiddleware");
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 // ==========================================
 // PUBLIC ROUTES
@@ -14,31 +14,31 @@ router.get("/photographers/:id", userController.getPhotographerDetail);
 // ==========================================
 router.get(
   "/admin/photographers",
-  verifyToken,
+  verifyAdmin,
   userController.getAllPhotographersForAdmin,
 );
 
 router.get(
   "/admin/photographers/:id",
-  verifyToken,
+  verifyAdmin,
   userController.getPhotographerDetailForAdmin,
 );
 
 router.post(
   "/admin/photographers",
-  verifyToken,
+  verifyAdmin,
   userController.createPhotographer,
 );
 
 router.put(
   "/admin/photographers/:id",
-  verifyToken,
+  verifyAdmin,
   userController.updatePhotographer,
 );
 
 router.patch(
   "/admin/photographers/:id/toggle-active",
-  verifyToken,
+  verifyAdmin,
   userController.togglePhotographerActive,
 );
 
@@ -46,20 +46,26 @@ router.patch(
 // ADMIN: CUSTOMERS
 // ==========================================
 router.get(
+  "/admin/customers/search",
+  verifyAdmin,
+  userController.searchCustomersForAdmin,
+);
+
+router.get(
   "/admin/customers",
-  verifyToken,
+  verifyAdmin,
   userController.getAllCustomersForAdmin,
 );
 
 router.get(
   "/admin/customers/:id",
-  verifyToken,
+  verifyAdmin,
   userController.getCustomerDetailForAdmin,
 );
 
 router.patch(
   "/admin/customers/:id/toggle-active",
-  verifyToken,
+  verifyAdmin,
   userController.toggleCustomerActive,
 );
 

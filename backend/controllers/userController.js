@@ -328,3 +328,40 @@ exports.toggleCustomerActive = async (req, res) => {
     });
   }
 };
+
+// ==========================================
+// ADMIN: Tìm khách hàng theo email / sđt / họ tên
+// GET /api/users/admin/customers/search?keyword=...
+// ==========================================
+exports.searchCustomersForAdmin = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword || keyword.trim().length < 2) {
+      return res.status(400).json({
+        message: "Vui lòng nhập ít nhất 2 ký tự để tìm khách hàng",
+      });
+    }
+
+    const searchText = keyword.trim();
+
+    const customers = await User.find({
+      role: "CUSTOMER",
+      $or: [
+        { email: { $regex: searchText, $options: "i" } },
+        { phone: { $regex: searchText, $options: "i" } },
+        { full_name: { $regex: searchText, $options: "i" } },
+      ],
+    })
+      .select("full_name email phone is_active createdAt")
+      .limit(10)
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(customers);
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi tìm khách hàng",
+      error: error.message,
+    });
+  }
+};

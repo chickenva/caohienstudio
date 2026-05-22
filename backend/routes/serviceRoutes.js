@@ -1,33 +1,33 @@
 const express = require("express");
 const router = express.Router();
 const serviceController = require("../controllers/serviceController");
-const { verifyToken } = require("../middleware/authMiddleware");
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 // ==========================================
-// ADMIN ROUTES - PHẢI ĐẶT TRƯỚC /:id
+// ADMIN ROUTES
 // ==========================================
 
 // Lấy tất cả dịch vụ, kể cả dịch vụ đã ẩn
-router.get("/admin/all", verifyToken, serviceController.getAllServicesForAdmin);
+router.get("/admin/all", verifyAdmin, serviceController.getAllServicesForAdmin);
 
 // Lấy chi tiết dịch vụ cho admin
-router.get("/admin/:id", verifyToken, serviceController.getServiceByIdForAdmin);
+router.get("/admin/:id", verifyAdmin, serviceController.getServiceByIdForAdmin);
 
 // Tạo dịch vụ mới
-router.post("/admin", verifyToken, serviceController.createService);
+router.post("/admin", verifyAdmin, serviceController.createService);
 
 // Cập nhật dịch vụ
-router.put("/admin/:id", verifyToken, serviceController.updateService);
+router.put("/admin/:id", verifyAdmin, serviceController.updateService);
 
 // Ẩn / hiện dịch vụ
 router.patch(
   "/admin/:id/toggle-active",
-  verifyToken,
+  verifyAdmin,
   serviceController.toggleServiceActive,
 );
 
 // Xóa mềm dịch vụ
-router.delete("/admin/:id", verifyToken, serviceController.deleteService);
+router.delete("/admin/:id", verifyAdmin, serviceController.deleteService);
 
 // ==========================================
 // PUBLIC ROUTES

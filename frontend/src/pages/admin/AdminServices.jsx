@@ -24,7 +24,7 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
-const Services = () => {
+const AdminServices = () => {
   const navigate = useNavigate();
 
   const [services, setServices] = useState([]);
@@ -270,4 +270,4 @@ const Services = () => {
   );
 };
 
-export default Services;
+export default AdminServices;
