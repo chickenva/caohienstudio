@@ -243,7 +243,7 @@ exports.createVnpayPayment = async (req, res) => {
       payment_method: "VNPAY",
       payment_type: `DEPOSIT_${depositPercent}`,
       status: "PENDING",
-      expires_at: expiresAt,
+      // expires_at: expiresAt,
     });
 
     const paymentUrl = generateVnpayUrl(req, newPayment);
@@ -607,8 +607,8 @@ exports.createBookingForAdmin = async (req, res) => {
     const endDate = end_time
       ? new Date(end_time)
       : moment(startDate)
-          .add(service.duration_hours || 4, "hours")
-          .toDate();
+        .add(service.duration_hours || 4, "hours")
+        .toDate();
 
     if (isNaN(endDate.getTime()) || endDate <= startDate) {
       return res.status(400).json({

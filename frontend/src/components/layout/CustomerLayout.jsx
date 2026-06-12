@@ -15,10 +15,10 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 
-// Design System đồng bộ
-const PRIMARY_COLOR = "#9a8a78";
+// Design System đồng bộ (Light Luxury)
+const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
-const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
+const FONT_SANS = '"Outfit", "Helvetica Neue", Arial, sans-serif';
 
 const CustomerLayout = () => {
   const navigate = useNavigate();
@@ -80,9 +80,9 @@ const CustomerLayout = () => {
 
   const menuStyle = (path) => ({
     cursor: "pointer",
-    borderBottom: isActive(path) ? "1px solid #333" : "none",
+    borderBottom: isActive(path) ? `1.5px solid ${PRIMARY_COLOR}` : "none",
     paddingBottom: "3px",
-    color: isActive(path) ? "#000" : "#555",
+    color: isActive(path) ? PRIMARY_COLOR : "#2F2F2F",
     transition: "all 0.3s",
     fontSize: "11px",
     fontWeight: 600,
@@ -135,13 +135,16 @@ const CustomerLayout = () => {
           left: 0,
           right: 0,
           height: "90px",
-          backgroundColor: "#ffffff",
+          backgroundColor: "rgba(250, 247, 242, 0.95)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 40px",
           zIndex: 1000,
-          borderBottom: "1px solid #f0f0f0",
+          borderBottom: "1px solid #E8DED2",
+          fontFamily: FONT_SANS,
         }}
       >
         {/* Logo */}
@@ -152,8 +155,10 @@ const CustomerLayout = () => {
             fontFamily: FONT_SERIF,
             letterSpacing: "1px",
             cursor: "pointer",
-            color: "#333",
+            color: "#2F2F2F",
+            fontWeight: 500,
           }}
+          className="nav-logo"
         >
           CAOHIENPHOTOGRAPHY
         </div>
@@ -190,12 +195,13 @@ const CustomerLayout = () => {
                   location.pathname.includes("/services") ||
                   location.pathname.includes("/booking") ||
                   location.pathname.includes("/rentals")
-                    ? "#000"
-                    : "#555",
+                    ? PRIMARY_COLOR
+                    : "#2F2F2F",
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "1px",
               }}
+              className="nav-dropdown-trigger"
             >
               DỊCH VỤ
             </span>
@@ -236,7 +242,7 @@ const CustomerLayout = () => {
                   style={{
                     fontSize: "12px",
                     fontWeight: 600,
-                    color: "#333",
+                    color: "#2F2F2F",
                     textTransform: "uppercase",
                   }}
                 >
@@ -260,7 +266,9 @@ const CustomerLayout = () => {
                   fontSize: "11px",
                   letterSpacing: "1px",
                   textTransform: "uppercase",
+                  color: "#2F2F2F"
                 }}
+                className="btn-nav-login"
               >
                 ĐĂNG NHẬP
               </Button>
@@ -275,7 +283,9 @@ const CustomerLayout = () => {
                   fontSize: "11px",
                   letterSpacing: "1px",
                   padding: "0 25px",
+                  fontWeight: 500
                 }}
+                className="btn-nav-register"
               >
                 ĐĂNG KÝ <ArrowRightOutlined />
               </Button>
