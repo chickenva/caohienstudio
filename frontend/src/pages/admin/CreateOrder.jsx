@@ -33,16 +33,15 @@ const { TextArea } = Input;
 const API_URL = "http://localhost:5000/api";
 
 const statusOptions = [
-  { value: "PENDING", label: "Chờ thanh toán" },
-  { value: "DEPOSITED", label: "Đã cọc / đã xác nhận" },
+  { value: "PENDING", label: "Chờ thanh toán (sẽ tạo link VNPay)" },
+  { value: "DEPOSITED", label: "Đã đặt cọc / đã xác nhận" },
   { value: "COMPLETED", label: "Hoàn thành" },
 ];
 
 const paymentMethodOptions = [
-  { value: "MANUAL", label: "Thủ công" },
-  { value: "CASH", label: "Tiền mặt" },
-  { value: "BANK_TRANSFER", label: "Chuyển khoản" },
-  { value: "OTHER", label: "Khác" },
+  { value: "MANUAL", label: "Thủ công (tiền mặt / chuyển khoản)" },
+  { value: "VNPAY", label: "VNPay" },
+  { value: "PAYOS", label: "PayOS" },
 ];
 
 const OrdersCreate = () => {
@@ -59,6 +58,8 @@ const OrdersCreate = () => {
   const [photographers, setPhotographers] = useState([]);
 
   const [selectedService, setSelectedService] = useState(null);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [paidAmount, setPaidAmount] = useState(0);
 
   const getToken = () => localStorage.getItem("token");
 
@@ -145,10 +146,9 @@ const OrdersCreate = () => {
     setSelectedService(service || null);
 
     if (service) {
-      form.setFieldsValue({
-        total_amount: service.base_price,
-      });
-
+      const price = service.base_price || 0;
+      form.setFieldsValue({ total_amount: price });
+      setTotalAmount(price);
       autoFillEndTime(service);
     }
   };
@@ -215,7 +215,11 @@ const OrdersCreate = () => {
       message.success("Tạo đơn đặt hộ thành công");
       navigate("/admin/orders");
     } catch (err) {
-      if (err.response?.status === 409) {
+      if (err.response?.data?.code === "HAS_PENDING_BOOKING") {
+        message.error(
+          `Khách hàng đang có đơn chờ thanh toán (mã: #${err.response.data.booking_id?.slice(-6).toUpperCase()}). Vui lòng xử lý đơn đó trước.`,
+        );
+      } else if (err.response?.status === 409) {
         message.error(
           err.response?.data?.message ||
             "Nhiếp ảnh gia đã có lịch trong khung giờ này",
@@ -536,6 +540,7 @@ const OrdersCreate = () => {
                       }
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       addonAfter="VNĐ"
+                      onChange={(v) => setTotalAmount(Number(v) || 0)}
                     />
                   </Form.Item>
                 </Col>
@@ -565,6 +570,7 @@ const OrdersCreate = () => {
                       }
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       addonAfter="VNĐ"
+                      onChange={(v) => setPaidAmount(Number(v) || 0)}
                     />
                   </Form.Item>
                 </Col>
@@ -577,6 +583,48 @@ const OrdersCreate = () => {
                     <Select options={paymentMethodOptions} />
                   </Form.Item>
                 </Col>
+
+                {/* Preview số tiền còn lại */}
+                {totalAmount > 0 && (
+                  <Col xs={24}>
+                    <div
+                      style={{
+                        background: "#fafafa",
+                        border: "1px solid #f0f0f0",
+                        borderRadius: 10,
+                        padding: "12px 16px",
+                        display: "flex",
+                        gap: 32,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>TỔNG TIỀN</div>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>
+                          {totalAmount.toLocaleString("vi-VN")}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>ĐÃ TRẢ</div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#389e0d" }}>
+                          {paidAmount.toLocaleString("vi-VN")}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>CÒN LẠI</div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 15,
+                            color: totalAmount - paidAmount > 0 ? "#cf1322" : "#389e0d",
+                          }}
+                        >
+                          {Math.max(0, totalAmount - paidAmount).toLocaleString("vi-VN")}đ
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                )}
               </Row>
             </Card>
           </Col>

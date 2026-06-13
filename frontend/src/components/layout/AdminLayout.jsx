@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Layout, Menu, Button, message, Avatar, Dropdown, Space } from "antd";
+import { Layout, Menu, Button, message, Avatar, Dropdown, Divider, Tooltip } from "antd";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   DashboardOutlined,
@@ -13,12 +13,13 @@ import {
   HomeOutlined,
   ContactsOutlined,
   BarChartOutlined,
-  DownOutlined,
-  SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   PictureOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 const PRIMARY_COLOR = "#9a8a78";
 const SIDEBAR_BG = "#f8f5f1";
@@ -104,8 +105,8 @@ const AdminLayout = () => {
       icon: <TeamOutlined />,
       label: "Nhiếp ảnh gia",
       children: [
-        { key: "/admin/photographers", label: "Danh sách nhiếp ảnh gia" },
-        { key: "/admin/photographers/add", label: "Thêm nhiếp ảnh gia" },
+        { key: "/admin/photographers", label: "Danh sách" },
+        { key: "/admin/photographers/add", label: "Thêm mới" },
       ],
     },
     {
@@ -131,11 +132,6 @@ const AdminLayout = () => {
       key: "/admin/revenue",
       icon: <BarChartOutlined />,
       label: "Doanh thu",
-    },
-    {
-      key: "/admin/profile",
-      icon: <UserOutlined />,
-      label: "Tài khoản quản trị",
     },
   ];
 
@@ -171,10 +167,10 @@ const AdminLayout = () => {
     }
   }, [currentOpenKeys, collapsed]);
 
-  const adminDropdownItems = [
+  const userDropdownItems = [
     {
       key: "profile",
-      icon: <UserOutlined />,
+      icon: <SettingOutlined />,
       label: "Thông tin tài khoản",
       onClick: () => navigate("/admin/profile"),
     },
@@ -182,11 +178,9 @@ const AdminLayout = () => {
       key: "website",
       icon: <HomeOutlined />,
       label: "Xem website",
-      onClick: () => navigate("/"),
+      onClick: () => window.open("/", "_blank"),
     },
-    {
-      type: "divider",
-    },
+    { type: "divider" },
     {
       key: "logout",
       icon: <LogoutOutlined />,
@@ -196,125 +190,129 @@ const AdminLayout = () => {
     },
   ];
 
-  const getPageTitle = () => {
-    const path = location.pathname;
-
-    if (path === "/admin/dashboard") return "Tổng quan";
-    if (path === "/admin/orders") return "Quản lý đơn đặt lịch";
-    if (path === "/admin/orders/create") return "Tạo đơn đặt hộ";
-    if (path.startsWith("/admin/orders/detail/")) {
-      return "Chi tiết đơn đặt lịch";
-    }
-
-    if (path === "/admin/services") return "Quản lý gói dịch vụ";
-    if (path === "/admin/services/add") return "Thêm gói dịch vụ";
-    if (path.startsWith("/admin/services/edit/")) {
-      return "Chỉnh sửa gói dịch vụ";
-    }
-
-    if (path === "/admin/galleries") return "Quản lý thư viện ảnh";
-    if (path === "/admin/galleries/create") return "Tạo album mới";
-    if (path.startsWith("/admin/galleries/edit/")) {
-      return "Chỉnh sửa album";
-    }
-
-    if (path === "/admin/photographers") return "Quản lý nhiếp ảnh gia";
-    if (path === "/admin/photographers/add") return "Thêm nhiếp ảnh gia";
-    if (path.startsWith("/admin/photographers/edit/")) {
-      return "Chỉnh sửa nhiếp ảnh gia";
-    }
-
-    if (path === "/admin/resources") return "Quản lý tài nguyên";
-    if (path === "/admin/resources/add") return "Thêm tài nguyên";
-    if (path.startsWith("/admin/resources/edit/")) {
-      return "Chỉnh sửa tài nguyên";
-    }
-
-    if (path === "/admin/customers") return "Quản lý khách hàng";
-    if (path === "/admin/contacts") return "Liên hệ tư vấn";
-    if (path === "/admin/revenue") return "Thống kê doanh thu";
-    if (path === "/admin/profile") return "Tài khoản quản trị";
-
-    return "Quản trị hệ thống";
-  };
-
   if (!admin) return null;
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f6f3ef" }}>
+    <Layout style={{ minHeight: "100vh", background: "#f0ece6" }}>
       <Sider
-        width={280}
-        collapsedWidth={86}
-        collapsible
+        width={260}
+        collapsedWidth={72}
         collapsed={collapsed}
-        onCollapse={setCollapsed}
-        breakpoint="lg"
         style={{
           background: SIDEBAR_BG,
           borderRight: `1px solid ${BORDER_COLOR}`,
-          boxShadow: "6px 0 24px rgba(80, 60, 40, 0.04)",
+          boxShadow: "4px 0 20px rgba(80, 60, 40, 0.06)",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
         trigger={null}
       >
+        {/* ── Logo + Collapse toggle ── */}
         <div
-          onClick={() => navigate("/admin/dashboard")}
           style={{
-            height: 92,
-            padding: collapsed ? "22px 0" : "22px 24px",
+            height: 72,
+            padding: "0 16px",
             display: "flex",
             alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            gap: 12,
-            cursor: "pointer",
+            justifyContent: "space-between",
             borderBottom: `1px solid ${BORDER_COLOR}`,
+            flexShrink: 0,
           }}
         >
+          {/* Logo */}
           <div
+            onClick={() => navigate("/admin/dashboard")}
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: "50%",
-              background: TEXT_DARK,
-              color: "#fff",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontFamily: '"Playfair Display", serif',
-              fontSize: 18,
+              gap: 10,
+              cursor: "pointer",
+              overflow: "hidden",
             }}
           >
-            CH
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: TEXT_DARK,
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: '"Playfair Display", serif',
+                fontSize: 15,
+                flexShrink: 0,
+              }}
+            >
+              CH
+            </div>
+
+            {!collapsed && (
+              <div style={{ overflow: "hidden" }}>
+                <div
+                  style={{
+                    fontFamily: '"Playfair Display", "Times New Roman", serif',
+                    fontSize: 17,
+                    color: TEXT_DARK,
+                    lineHeight: 1.1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Cao Hien
+                </div>
+                <div
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: 2,
+                    color: PRIMARY_COLOR,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Studio Admin
+                </div>
+              </div>
+            )}
           </div>
 
-          {!collapsed && (
-            <div>
-              <div
-                style={{
-                  fontFamily: '"Playfair Display", "Times New Roman", serif',
-                  fontSize: 20,
-                  color: TEXT_DARK,
-                  lineHeight: 1,
-                }}
-              >
-                Cao Hien
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  color: PRIMARY_COLOR,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                }}
-              >
-                Studio Admin
-              </div>
-            </div>
-          )}
+          {/* Collapse button */}
+          <Tooltip
+            title={collapsed ? "Mở rộng" : "Thu gọn"}
+            placement="right"
+          >
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 8,
+                color: "#999",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            />
+          </Tooltip>
         </div>
 
-        <div style={{ padding: collapsed ? "18px 10px" : "20px 14px" }}>
+        {/* ── Menu ── */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            padding: collapsed ? "12px 6px" : "12px 10px",
+          }}
+        >
           <Menu
             mode="inline"
             selectedKeys={selectedKeys}
@@ -332,149 +330,78 @@ const AdminLayout = () => {
           />
         </div>
 
-        {!collapsed && (
-          <div
-            style={{
-              position: "absolute",
-              left: 18,
-              right: 18,
-              bottom: 22,
-              padding: 16,
-              borderRadius: 16,
-              background: "#fff",
-              border: `1px solid ${BORDER_COLOR}`,
-              boxShadow: "0 12px 30px rgba(80, 60, 40, 0.06)",
-            }}
+        {/* ── User panel ── */}
+        <div
+          style={{
+            borderTop: `1px solid ${BORDER_COLOR}`,
+            padding: collapsed ? "12px 0" : "12px 14px",
+            flexShrink: 0,
+          }}
+        >
+          <Dropdown
+            menu={{ items: userDropdownItems }}
+            placement="topLeft"
+            trigger={["click"]}
           >
             <div
               style={{
-                fontSize: 12,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                color: PRIMARY_COLOR,
-                fontWeight: 700,
-                marginBottom: 8,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                cursor: "pointer",
+                padding: collapsed ? "6px 0" : "8px 10px",
+                borderRadius: 12,
+                justifyContent: collapsed ? "center" : "flex-start",
+                transition: "background 0.2s",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(154,138,120,0.1)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
             >
-              Studio Manager
-            </div>
-            <div style={{ color: "#777", fontSize: 12, lineHeight: 1.7 }}>
-              Quản lý đơn đặt lịch, dịch vụ, album, nhiếp ảnh gia và dữ liệu
-              khách hàng của Cao Hien Studio.
-            </div>
-          </div>
-        )}
-      </Sider>
+              <Avatar
+                size={36}
+                icon={<UserOutlined />}
+                style={{ backgroundColor: PRIMARY_COLOR, flexShrink: 0 }}
+              />
 
-      <Layout style={{ background: "#f6f3ef" }}>
-        <Header
-          style={{
-            height: 76,
-            padding: "0 28px",
-            background: "rgba(255, 255, 255, 0.9)",
-            backdropFilter: "blur(14px)",
-            borderBottom: `1px solid ${BORDER_COLOR}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <Button
-              type="text"
-              icon={<SettingOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "#f4eee8",
-                color: TEXT_DARK,
-              }}
-            />
-
-            <div>
-              <div
-                style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: TEXT_DARK,
-                  lineHeight: 1.2,
-                }}
-              >
-                {getPageTitle()}
-              </div>
-              <div style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
-                Cao Hien Studio Management System
-              </div>
-            </div>
-          </div>
-
-          <Space size={14}>
-            <Button
-              icon={<HomeOutlined />}
-              onClick={() => navigate("/")}
-              style={{
-                height: 40,
-                borderRadius: 999,
-                borderColor: BORDER_COLOR,
-                background: "#fff",
-              }}
-            >
-              Xem website
-            </Button>
-
-            <Dropdown
-              menu={{ items: adminDropdownItems }}
-              placement="bottomRight"
-              arrow
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  cursor: "pointer",
-                  background: "#fff",
-                  border: `1px solid ${BORDER_COLOR}`,
-                  borderRadius: 999,
-                  padding: "7px 12px 7px 7px",
-                  boxShadow: "0 8px 22px rgba(80, 60, 40, 0.04)",
-                }}
-              >
-                <Avatar
-                  size={36}
-                  icon={<UserOutlined />}
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                />
-
-                <div style={{ lineHeight: 1.15 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>
+              {!collapsed && (
+                <div style={{ overflow: "hidden", flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: TEXT_DARK,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {admin.full_name || admin.email || "Admin"}
                   </div>
                   <div style={{ fontSize: 11, color: "#999" }}>
                     Quản trị viên
                   </div>
                 </div>
+              )}
+            </div>
+          </Dropdown>
+        </div>
+      </Sider>
 
-                <DownOutlined style={{ fontSize: 11, color: "#999" }} />
-              </div>
-            </Dropdown>
-          </Space>
-        </Header>
-
-        <Content style={{ padding: 28 }}>
+      {/* ── Main content (no Header) ── */}
+      <Layout style={{ background: "#f0ece6" }}>
+        <Content style={{ padding: 24 }}>
           <div
             style={{
-              minHeight: "calc(100vh - 132px)",
+              minHeight: "calc(100vh - 48px)",
               background: "#fff",
-              borderRadius: 22,
+              borderRadius: 20,
               padding: 28,
               border: `1px solid ${BORDER_COLOR}`,
-              boxShadow: "0 20px 50px rgba(80, 60, 40, 0.06)",
+              boxShadow: "0 16px 48px rgba(80, 60, 40, 0.06)",
             }}
           >
             <Outlet />
@@ -483,16 +410,14 @@ const AdminLayout = () => {
       </Layout>
 
       <style>{`
-        .ant-layout-sider-trigger {
-          display: none;
-        }
+        .ant-layout-sider-trigger { display: none; }
 
         .ant-menu .ant-menu-item,
         .ant-menu .ant-menu-submenu-title {
-          border-radius: 12px;
-          margin: 4px 0;
-          height: 42px;
-          line-height: 42px;
+          border-radius: 10px;
+          margin: 3px 0;
+          height: 40px;
+          line-height: 40px;
         }
 
         .ant-menu-light .ant-menu-item-selected {
@@ -511,8 +436,8 @@ const AdminLayout = () => {
         }
 
         .ant-menu-light .ant-menu-sub {
-          background: rgba(255, 255, 255, 0.55) !important;
-          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.6) !important;
+          border-radius: 10px;
           padding: 4px;
         }
 
@@ -529,7 +454,7 @@ const AdminLayout = () => {
 
         .ant-menu-inline-collapsed > .ant-menu-item,
         .ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
-          padding-inline: calc(50% - 16px);
+          padding-inline: calc(50% - 16px) !important;
         }
       `}</style>
     </Layout>

@@ -1,11 +1,117 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Tag, Button, message, Descriptions, Spin, Space } from "antd";
-import { CreditCardOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import {
+  Card,
+  Tag,
+  Button,
+  message,
+  Descriptions,
+  Spin,
+  Space,
+  Alert,
+  Statistic,
+  Modal,
+  Row,
+  Col,
+  Divider,
+  Typography,
+} from "antd";
+import {
+  CreditCardOutlined,
+  ArrowLeftOutlined,
+  CloseCircleOutlined,
+  ReloadOutlined,
+  ExclamationCircleFilled,
+  CalendarOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
 
+const { Countdown } = Statistic;
+const { Text, Paragraph } = Typography;
+
+const API_URL = "http://localhost:5000/api";
 const PRIMARY_COLOR = "#9a8a78";
+
+const formatCurrency = (value) => {
+  return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+};
+
+const isExpiredPendingBooking = (booking) => {
+  if (!booking || booking.status !== "PENDING") return false;
+  if (!booking.expires_at) return true;
+
+  return dayjs(booking.expires_at).isSame(dayjs()) ||
+    dayjs(booking.expires_at).isBefore(dayjs());
+};
+
+const isPayableBooking = (booking) => {
+  return (
+    booking?.status === "PENDING" &&
+    booking?.expires_at &&
+    dayjs(booking.expires_at).isAfter(dayjs())
+  );
+};
+
+const getDisplayOrderStatus = (booking) => {
+  if (isExpiredPendingBooking(booking)) {
+    return "CANCELED";
+  }
+
+  if (booking?.status === "EXPIRED" || booking?.status === "PAYMENT_FAILED") {
+    return "CANCELED";
+  }
+
+  return booking?.status;
+};
+
+const getDisplayPaymentStatus = (booking) => {
+  if (isExpiredPendingBooking(booking)) {
+    return "Chưa thanh toán";
+  }
+
+  if (booking?.payment_status_text === "Đã hết hạn") {
+    return "Chưa thanh toán";
+  }
+
+  return booking?.payment_status_text || "Chưa thanh toán";
+};
+
+const renderOrderStatus = (status) => {
+  const map = {
+    PENDING: { color: "gold", text: "Chờ thanh toán" },
+    DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+    COMPLETED: { color: "green", text: "Hoàn thành" },
+    CANCELED: { color: "red", text: "Đã hủy" },
+
+    // Chống dữ liệu cũ
+    EXPIRED: { color: "red", text: "Đã hủy" },
+    PAYMENT_FAILED: { color: "red", text: "Đã hủy" },
+  };
+
+  const item = map[status] || { color: "default", text: status || "Không rõ" };
+
+  return <Tag color={item.color}>{item.text}</Tag>;
+};
+
+const renderPaymentStatus = (text) => {
+  const finalText = text === "Đã hết hạn" ? "Chưa thanh toán" : text;
+
+  let color = "orange";
+
+  if (finalText === "Đã thanh toán") color = "blue";
+  if (finalText === "Đã tất toán") color = "green";
+
+  return <Tag color={color}>{finalText || "Chưa thanh toán"}</Tag>;
+};
+
+const getPaidAmountColor = (amount) => {
+  return Number(amount || 0) > 0 ? "#389e0d" : "#000";
+};
+
+const getRemainingAmountColor = (amount) => {
+  return Number(amount || 0) > 0 ? "#cf1322" : "#000";
+};
 
 const BookingDetail = () => {
   const { id } = useParams();
@@ -15,6 +121,8 @@ const BookingDetail = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [repayLoading, setRepayLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
   useEffect(() => {
     fetchBooking();
@@ -26,12 +134,12 @@ const BookingDetail = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.get(`http://localhost:5000/api/bookings/${id}`, {
+      const res = await axios.get(`${API_URL}/bookings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       setBooking(res.data.booking);
-      setPayments(res.data.payments || []);
+      setPayments(res.data.payments || res.data.booking?.payments || []);
     } catch (err) {
       message.error(
         err.response?.data?.message || "Không thể tải chi tiết đơn hàng",
@@ -48,7 +156,7 @@ const BookingDetail = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.post(
-        `http://localhost:5000/api/bookings/${id}/repay`,
+        `${API_URL}/bookings/${id}/repay`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -64,33 +172,55 @@ const BookingDetail = () => {
       message.error(
         err.response?.data?.message || "Lỗi khởi tạo thanh toán lại",
       );
+      fetchBooking();
     } finally {
       setRepayLoading(false);
     }
   };
 
-  const renderStatus = (status) => {
-    let color = "blue";
-    let text = status;
+  const handleCancelBooking = async () => {
+    setCancelLoading(true);
 
-    if (status === "PENDING") {
-      color = "gold";
-      text = "Chờ thanh toán";
-    } else if (status === "DEPOSITED") {
-      color = "cyan";
-      text = "Đã đặt cọc";
-    } else if (status === "COMPLETED") {
-      color = "green";
-      text = "Hoàn thành";
-    } else if (status === "CANCELED") {
-      color = "red";
-      text = "Đã hủy";
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.post(
+        `${API_URL}/bookings/${id}/cancel`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      message.success(res.data.message || "Hủy đơn thành công");
+      fetchBooking();
+    } catch (err) {
+      message.error(err.response?.data?.message || "Không thể hủy đơn");
+      setCancelModalOpen(false);
+    } finally {
+      setCancelLoading(false);
     }
-
-    return <Tag color={color}>{text}</Tag>;
   };
 
-  const latestPayment = payments?.[0];
+  const handleRebook = () => {
+    navigate("/booking", {
+      state: {
+        service_id: booking.service_id?._id,
+        photographer_id: booking.photographer_ids?.[0]?._id,
+        location: booking.location,
+      },
+    });
+  };
+
+  const deadline = useMemo(() => {
+    if (!booking?.expires_at) return null;
+    return dayjs(booking.expires_at).valueOf();
+  }, [booking]);
+
+  const canPay = isPayableBooking(booking);
+  const isPendingExpired = isExpiredPendingBooking(booking);
+  const displayOrderStatus = getDisplayOrderStatus(booking);
+  const displayPaymentStatus = getDisplayPaymentStatus(booking);
 
   if (loading) return <Spin fullscreen tip="Đang tải..." />;
 
@@ -102,11 +232,66 @@ const BookingDetail = () => {
     );
   }
 
+  const handleCountdownFinish = async () => {
+    message.warning("Đơn hàng đã quá hạn thanh toán. Đang cập nhật trạng thái...");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.get(`${API_URL}/bookings/${id}/check-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      fetchBooking();
+    } catch (err) {
+      fetchBooking();
+    }
+  };
+
   return (
-    <div style={{ maxWidth: "900px", margin: "40px auto", padding: "0 20px" }}>
+    <div style={{ maxWidth: "1000px", margin: "40px auto", padding: "0 20px" }}>
       <Card
         title={<span style={{ fontSize: "20px" }}>CHI TIẾT ĐƠN ĐẶT LỊCH</span>}
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={fetchBooking}>
+            Làm mới
+          </Button>
+        }
       >
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} md={8}>
+            <Card size="small">
+              <div style={{ color: "#888" }}>Tổng giá trị</div>
+              <strong style={{ fontSize: 22 }}>
+                {formatCurrency(booking.total_amount)}
+              </strong>
+            </Card>
+          </Col>
+
+          <Col xs={24} md={8}>
+            <Card size="small">
+              <div style={{ color: "#888" }}>Đã thanh toán</div>
+              <strong style={{ fontSize: 22, color: getPaidAmountColor(booking.paid_amount) }}>
+                {formatCurrency(booking.paid_amount)}
+              </strong>
+            </Card>
+          </Col>
+
+          <Col xs={24} md={8}>
+            <Card size="small">
+              <div style={{ color: "#888" }}>Còn lại</div>
+              <strong
+                style={{
+                  fontSize: 22,
+                  color: getRemainingAmountColor(booking.remaining_amount)
+                }}
+              >
+                {formatCurrency(booking.remaining_amount)}
+              </strong>
+            </Card>
+          </Col>
+        </Row>
+
         <Descriptions bordered column={1}>
           <Descriptions.Item label="Mã đơn hàng">
             {booking._id}
@@ -128,15 +313,15 @@ const BookingDetail = () => {
           <Descriptions.Item label="Thợ chụp">
             {booking.photographer_ids?.length > 0 ? (
               <Space direction="vertical">
-                {booking.photographer_ids.map((p) => (
-                  <div key={p._id}>
-                    <strong>{p.full_name}</strong>
-                    {p.phone ? ` - ${p.phone}` : ""}
-                    {p.portfolio?.specialties?.length > 0 && (
+                {booking.photographer_ids.map((photographer) => (
+                  <div key={photographer._id}>
+                    <strong>{photographer.full_name}</strong>
+                    {photographer.phone ? ` - ${photographer.phone}` : ""}
+                    {photographer.email ? (
                       <div style={{ fontSize: 12, color: "#777" }}>
-                        {p.portfolio.specialties.join(", ")}
+                        {photographer.email}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ))}
               </Space>
@@ -153,113 +338,254 @@ const BookingDetail = () => {
             {booking.note || "Không có"}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Tổng giá trị">
-            <strong>{booking.total_amount?.toLocaleString("vi-VN")}đ</strong>
-          </Descriptions.Item>
-
-          <Descriptions.Item label="Số tiền cọc">
-            <span style={{ fontWeight: "bold", color: "#cf1322" }}>
-              {latestPayment?.amount
-                ? `${latestPayment.amount.toLocaleString("vi-VN")}đ`
-                : "Chưa có giao dịch"}
-            </span>
-          </Descriptions.Item>
-
           <Descriptions.Item label="Trạng thái đơn">
-            {renderStatus(booking.status)}
+            {renderOrderStatus(displayOrderStatus)}
           </Descriptions.Item>
 
           <Descriptions.Item label="Trạng thái thanh toán">
-            {latestPayment?.status ? (
-              <Tag
-                color={latestPayment.status === "SUCCESS" ? "green" : "gold"}
-              >
-                {latestPayment.status}
-              </Tag>
+            {renderPaymentStatus(displayPaymentStatus)}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Phương thức thanh toán">
+            {booking.latest_payment?.payment_method || "Chưa có"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Thời gian thanh toán">
+            {booking.latest_payment?.paid_at ? (
+              dayjs(booking.latest_payment.paid_at).format("HH:mm DD/MM/YYYY")
             ) : (
-              <Tag>CHƯA CÓ</Tag>
+              renderPaymentStatus("Chưa thanh toán")
             )}
           </Descriptions.Item>
         </Descriptions>
 
-        {booking.status === "PENDING" && (
+        {canPay && (
           <div
             style={{
               marginTop: 30,
-              textAlign: "center",
               background: "#fffbe6",
-              padding: "20px",
+              padding: "22px",
               borderRadius: "8px",
               border: "1px solid #ffe58f",
             }}
           >
-            <p style={{ fontSize: "16px", marginBottom: "10px" }}>
-              Đơn hàng của bạn đang chờ thanh toán cọc để được xác nhận chính
-              thức.
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              message="Đơn hàng đang chờ thanh toán"
+              description="Bạn cần hoàn tất thanh toán trong 15 phút để giữ lịch chụp. Nếu quá hạn, đơn sẽ tự chuyển sang trạng thái đã hủy."
+              style={{ marginBottom: 18 }}
+            />
 
-            {booking.expires_at && (
-              <p
-                style={{
-                  color: "#cf1322",
-                  fontWeight: 600,
-                  marginBottom: "15px",
-                }}
-              >
-                Vui lòng thanh toán trước:{" "}
-                {dayjs(booking.expires_at).format("HH:mm DD/MM/YYYY")}
-              </p>
-            )}
+            <div style={{ textAlign: "center" }}>
+              <Countdown
+                title="Thời gian thanh toán còn lại"
+                value={deadline}
+                format="mm:ss"
+                onFinish={handleCountdownFinish}
+              />
 
-            {!booking.expires_at ||
-            dayjs(booking.expires_at).isAfter(dayjs()) ? (
-              <Button
-                type="primary"
-                size="large"
-                icon={<CreditCardOutlined />}
-                onClick={handleRepay}
-                loading={repayLoading}
-                style={{
-                  background: PRIMARY_COLOR,
-                  borderColor: PRIMARY_COLOR,
-                  height: "50px",
-                  padding: "0 40px",
-                }}
-              >
-                THANH TOÁN NGAY QUA VNPAY
-              </Button>
-            ) : (
-              <p style={{ color: "#cf1322", fontWeight: 600 }}>
-                Đơn này đã quá hạn thanh toán. Vui lòng đặt lịch lại.
-              </p>
-            )}
+              <Space wrap style={{ marginTop: 18 }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CreditCardOutlined />}
+                  onClick={handleRepay}
+                  loading={repayLoading}
+                  style={{
+                    background: PRIMARY_COLOR,
+                    borderColor: PRIMARY_COLOR,
+                    height: "46px",
+                    padding: "0 32px",
+                  }}
+                >
+                  THANH TOÁN NGAY QUA VNPAY
+                </Button>
+
+                <Button
+                  danger
+                  size="large"
+                  icon={<CloseCircleOutlined />}
+                  loading={cancelLoading}
+                  onClick={() => setCancelModalOpen(true)}
+                  style={{
+                    height: "46px",
+                    padding: "0 28px",
+                  }}
+                >
+                  HỦY ĐƠN
+                </Button>
+
+                {/* Modal xác nhận hủy đơn */}
+                <Modal
+                  open={cancelModalOpen}
+                  onCancel={() => setCancelModalOpen(false)}
+                  footer={null}
+                  centered
+                  width={440}
+                  closable={!cancelLoading}
+                  maskClosable={!cancelLoading}
+                >
+                  <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+                    {/* Icon cảnh báo */}
+                    <ExclamationCircleFilled
+                      style={{
+                        fontSize: 56,
+                        color: "#ff4d4f",
+                        marginBottom: 16,
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: "#1a1a1a",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Xác nhận hủy đơn đặt lịch?
+                    </div>
+
+                    <Paragraph
+                      style={{
+                        color: "#595959",
+                        fontSize: 14,
+                        marginBottom: 6,
+                      }}
+                    >
+                      Bạn đang yêu cầu hủy đơn:
+                    </Paragraph>
+
+                    <div
+                      style={{
+                        background: "#fafafa",
+                        border: "1px solid #f0f0f0",
+                        borderRadius: 8,
+                        padding: "12px 16px",
+                        marginBottom: 20,
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{ marginBottom: 6 }}>
+                        <Text type="secondary">Dịch vụ: </Text>
+                        <Text strong>
+                          {booking?.service_id?.name || booking?.serviceName || "Dịch vụ"}
+                        </Text>
+                      </div>
+                      <div style={{ marginBottom: 6 }}>
+                        <Text type="secondary">Ngày chụp: </Text>
+                        <Text strong>
+                          {booking?.start_time
+                            ? dayjs(booking.start_time).format("DD/MM/YYYY")
+                            : "—"}
+                        </Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">Mã đơn: </Text>
+                        <Text code>#{id?.slice(-8).toUpperCase()}</Text>
+                      </div>
+                    </div>
+
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message="Lưu ý: Hành động này không thể hoàn tác sau khi xác nhận."
+                      style={{ marginBottom: 24, textAlign: "left" }}
+                    />
+
+                    <Space style={{ width: "100%", justifyContent: "center" }}>
+                      <Button
+                        size="large"
+                        onClick={() => setCancelModalOpen(false)}
+                        disabled={cancelLoading}
+                        style={{ minWidth: 120 }}
+                      >
+                        Không, giữ đơn
+                      </Button>
+                      <Button
+                        danger
+                        type="primary"
+                        size="large"
+                        icon={<CloseCircleOutlined />}
+                        loading={cancelLoading}
+                        onClick={handleCancelBooking}
+                        style={{ minWidth: 140 }}
+                      >
+                        Xác nhận hủy
+                      </Button>
+                    </Space>
+                  </div>
+                </Modal>
+              </Space>
+            </div>
           </div>
         )}
 
-        {booking.status === "EXPIRED" && (
+        {isPendingExpired && (
           <div
             style={{
               marginTop: 30,
-              textAlign: "center",
               background: "#fff1f0",
               padding: "20px",
               borderRadius: "8px",
               border: "1px solid #ffa39e",
             }}
           >
-            <p style={{ color: "#cf1322", fontWeight: 600, marginBottom: 0 }}>
-              Đơn này đã quá hạn thanh toán. Vui lòng đặt lịch lại.
-            </p>
+            <Alert
+              type="error"
+              showIcon
+              message="Đơn hàng đã quá hạn thanh toán"
+              description="Đơn này đã quá hạn thanh toán nên không thể tiếp tục thanh toán. Vui lòng đặt lại nếu bạn vẫn muốn sử dụng dịch vụ."
+            />
           </div>
         )}
 
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/customer/my-bookings")}
-          style={{ marginTop: 20 }}
-        >
-          Quay lại danh sách
-        </Button>
+        {displayOrderStatus === "CANCELED" && !isPendingExpired && (
+          <div
+            style={{
+              marginTop: 30,
+              background: "#fff1f0",
+              padding: "20px",
+              borderRadius: "8px",
+              border: "1px solid #ffa39e",
+            }}
+          >
+            <Alert
+              type="error"
+              showIcon
+              message="Đơn đã hủy"
+              description="Đơn này đã bị hủy do khách hủy thanh toán, hủy trên website hoặc quá hạn thanh toán."
+            />
+          </div>
+        )}
+
+
+
+        <Divider />
+
+        <Space>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/customer/my-bookings")}
+          >
+            Quay lại danh sách
+          </Button>
+
+          {(displayOrderStatus === "CANCELED" || displayOrderStatus === "COMPLETED") && (
+            <Button
+              icon={<CalendarOutlined />}
+              onClick={handleRebook}
+              style={{
+                background: PRIMARY_COLOR,
+                borderColor: PRIMARY_COLOR,
+                color: "#fff",
+              }}
+            >
+              Đặt lại
+            </Button>
+          )}
+        </Space>
       </Card>
     </div>
   );

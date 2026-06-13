@@ -9,17 +9,21 @@ import {
   Modal,
   Descriptions,
   Typography,
+  Alert,
+  Divider,
 } from "antd";
 import {
   EyeOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ExclamationCircleFilled,
+  CheckSquareOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
@@ -38,8 +42,8 @@ const statusConfig = {
   DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
   COMPLETED: { color: "green", text: "Hoàn thành" },
   CANCELED: { color: "red", text: "Đã hủy" },
-  EXPIRED: { color: "default", text: "Quá hạn" },
-  PAYMENT_FAILED: { color: "volcano", text: "Thanh toán thất bại" },
+  EXPIRED: { color: "red", text: "Đã hủy" },
+  PAYMENT_FAILED: { color: "red", text: "Đã hủy" },
 };
 
 export default function AdminOrders() {
@@ -50,6 +54,14 @@ export default function AdminOrders() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
+
+  // State cho modal xác nhận hủy
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null); // { id, record }
+
+  // State cho modal xác nhận hoàn thành
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+  const [completeTarget, setCompleteTarget] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -64,9 +76,7 @@ export default function AdminOrders() {
       const res = await axios.get(
         `${API_URL}/bookings/admin/all?status=${statusFilter}`,
         {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
+          headers: { Authorization: `Bearer ${getToken()}` },
         },
       );
 
@@ -94,43 +104,65 @@ export default function AdminOrders() {
     setDetailOpen(true);
   };
 
-  const handleUpdateStatus = async (bookingId, newStatus) => {
-    Modal.confirm({
-      title: "Xác nhận cập nhật trạng thái",
-      content: `Bạn có chắc muốn chuyển đơn này sang trạng thái ${newStatus}?`,
-      okText: "Xác nhận",
-      cancelText: "Hủy",
-      onOk: async () => {
-        setUpdatingId(bookingId);
+  // Mở modal xác nhận hủy
+  const openCancelModal = (record) => {
+    setCancelTarget(record);
+    setCancelModalOpen(true);
+  };
 
-        try {
-          await axios.put(
-            `${API_URL}/bookings/${bookingId}/status`,
-            { status: newStatus },
-            {
-              headers: {
-                Authorization: `Bearer ${getToken()}`,
-              },
-            },
-          );
+  // Mở modal xác nhận hoàn thành
+  const openCompleteModal = (record) => {
+    setCompleteTarget(record);
+    setCompleteModalOpen(true);
+  };
 
-          message.success("Cập nhật trạng thái thành công");
-          fetchBookings();
+  const executeUpdateStatus = async (bookingId, newStatus, onSuccess) => {
+    setUpdatingId(bookingId);
 
-          if (selectedBooking?._id === bookingId) {
-            setSelectedBooking((prev) => ({
-              ...prev,
-              status: newStatus,
-            }));
-          }
-        } catch (err) {
-          message.error(
-            err.response?.data?.message || "Không thể cập nhật trạng thái",
-          );
-        } finally {
-          setUpdatingId(null);
-        }
-      },
+    try {
+      await axios.put(
+        `${API_URL}/bookings/${bookingId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${getToken()}` } },
+      );
+
+      message.success("Cập nhật trạng thái thành công");
+      fetchBookings();
+
+      // Cập nhật luôn trong modal detail nếu đang mở
+      if (selectedBooking?._id === bookingId) {
+        setSelectedBooking((prev) => ({ ...prev, status: newStatus }));
+      }
+
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      message.error(
+        err.response?.data?.message || "Không thể cập nhật trạng thái",
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget) return;
+
+    await executeUpdateStatus(cancelTarget._id, "CANCELED", () => {
+      setCancelModalOpen(false);
+      setCancelTarget(null);
+      // Đóng modal detail nếu đơn đó đang được xem
+      if (detailOpen && selectedBooking?._id === cancelTarget._id) {
+        setDetailOpen(false);
+      }
+    });
+  };
+
+  const handleConfirmComplete = async () => {
+    if (!completeTarget) return;
+
+    await executeUpdateStatus(completeTarget._id, "COMPLETED", () => {
+      setCompleteModalOpen(false);
+      setCompleteTarget(null);
     });
   };
 
@@ -223,42 +255,19 @@ export default function AdminOrders() {
       key: "action",
       align: "right",
       render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
-            Xem
-          </Button>
-
-          {record.status === "DEPOSITED" && (
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              loading={updatingId === record._id}
-              onClick={() => handleUpdateStatus(record._id, "COMPLETED")}
-            >
-              Hoàn thành
-            </Button>
-          )}
-
-          {(record.status === "PENDING" || record.status === "DEPOSITED") && (
-            <Button
-              danger
-              icon={<CloseCircleOutlined />}
-              loading={updatingId === record._id}
-              onClick={() => handleUpdateStatus(record._id, "CANCELED")}
-            >
-              Hủy
-            </Button>
-          )}
-        </Space>
+        <Button
+          icon={<EyeOutlined />}
+          onClick={() => handleViewDetail(record)}
+        >
+          Chi tiết
+        </Button>
       ),
     },
   ];
 
   return (
     <div>
+      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -292,6 +301,7 @@ export default function AdminOrders() {
         </Space>
       </div>
 
+      {/* Bảng danh sách */}
       <Table
         columns={columns}
         dataSource={bookings}
@@ -302,8 +312,21 @@ export default function AdminOrders() {
         bordered
       />
 
+      {/* ===== MODAL XEM CHI TIẾT ===== */}
       <Modal
-        title="Chi tiết đơn đặt lịch"
+        title={
+          <span style={{ fontSize: 16, fontWeight: 700 }}>
+            Chi tiết đơn đặt lịch
+            {selectedBooking && (
+              <Text
+                code
+                style={{ marginLeft: 8, fontSize: 13, fontWeight: 400 }}
+              >
+                #{selectedBooking._id.slice(-6).toUpperCase()}
+              </Text>
+            )}
+          </span>
+        }
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         footer={[
@@ -314,9 +337,11 @@ export default function AdminOrders() {
             <Button
               key="complete"
               type="primary"
-              onClick={() =>
-                handleUpdateStatus(selectedBooking._id, "COMPLETED")
-              }
+              icon={<CheckSquareOutlined />}
+              onClick={() => {
+                setDetailOpen(false);
+                openCompleteModal(selectedBooking);
+              }}
             >
               Đánh dấu hoàn thành
             </Button>
@@ -326,9 +351,11 @@ export default function AdminOrders() {
             <Button
               key="cancel"
               danger
-              onClick={() =>
-                handleUpdateStatus(selectedBooking._id, "CANCELED")
-              }
+              icon={<CloseCircleOutlined />}
+              onClick={() => {
+                setDetailOpen(false);
+                openCancelModal(selectedBooking);
+              }}
             >
               Hủy đơn
             </Button>
@@ -337,7 +364,7 @@ export default function AdminOrders() {
         width={800}
       >
         {selectedBooking && (
-          <Descriptions bordered column={1}>
+          <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="Mã đơn">
               #{selectedBooking._id.slice(-6).toUpperCase()}
             </Descriptions.Item>
@@ -347,8 +374,12 @@ export default function AdminOrders() {
                 <strong>
                   {selectedBooking.customer_id?.full_name || "Khách hàng"}
                 </strong>
-                <div>{selectedBooking.customer_id?.phone}</div>
-                <div>{selectedBooking.customer_id?.email}</div>
+                <div style={{ fontSize: 12, color: "#666" }}>
+                  {selectedBooking.customer_id?.phone}
+                </div>
+                <div style={{ fontSize: 12, color: "#666" }}>
+                  {selectedBooking.customer_id?.email}
+                </div>
               </div>
             </Descriptions.Item>
 
@@ -359,8 +390,8 @@ export default function AdminOrders() {
             <Descriptions.Item label="Thợ chụp">
               {selectedBooking.photographer_ids?.length > 0
                 ? selectedBooking.photographer_ids
-                    .map((p) => p.full_name)
-                    .join(", ")
+                  .map((p) => p.full_name)
+                  .join(", ")
                 : "Chưa có"}
             </Descriptions.Item>
 
@@ -378,8 +409,37 @@ export default function AdminOrders() {
             </Descriptions.Item>
 
             <Descriptions.Item label="Tổng tiền">
-              <strong>
+              <strong style={{ fontSize: 15 }}>
                 {selectedBooking.total_amount?.toLocaleString("vi-VN")}đ
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Đã thanh toán">
+              <strong
+                style={{
+                  color:
+                    Number(selectedBooking.paid_amount) > 0
+                      ? "#389e0d"
+                      : "#000",
+                  fontSize: 15,
+                }}
+              >
+                {selectedBooking.paid_amount?.toLocaleString("vi-VN") || 0}đ
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Còn lại">
+              <strong
+                style={{
+                  color:
+                    Number(selectedBooking.remaining_amount) > 0
+                      ? "#cf1322"
+                      : "#000",
+                  fontSize: 15,
+                }}
+              >
+                {selectedBooking.remaining_amount?.toLocaleString("vi-VN") ||
+                  0}đ
               </strong>
             </Descriptions.Item>
 
@@ -394,6 +454,204 @@ export default function AdminOrders() {
             )}
           </Descriptions>
         )}
+      </Modal>
+
+      {/* ===== MODAL XÁC NHẬN HỦY ĐƠN ===== */}
+      <Modal
+        open={cancelModalOpen}
+        onCancel={() => {
+          if (!updatingId) {
+            setCancelModalOpen(false);
+            setCancelTarget(null);
+          }
+        }}
+        footer={null}
+        centered
+        width={440}
+        closable={!updatingId}
+        maskClosable={!updatingId}
+      >
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <ExclamationCircleFilled
+            style={{ fontSize: 56, color: "#ff4d4f", marginBottom: 16 }}
+          />
+
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1a1a1a",
+              marginBottom: 10,
+            }}
+          >
+            Xác nhận hủy đơn đặt lịch?
+          </div>
+
+          <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 6 }}>
+            Bạn đang hủy đơn của khách hàng:
+          </Paragraph>
+
+          <div
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 8,
+              padding: "12px 16px",
+              marginBottom: 20,
+              textAlign: "left",
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Khách hàng: </Text>
+              <Text strong>
+                {cancelTarget?.customer_id?.full_name || "Khách hàng"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Dịch vụ: </Text>
+              <Text strong>{cancelTarget?.service_id?.name || "Dịch vụ"}</Text>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Ngày chụp: </Text>
+              <Text strong>
+                {cancelTarget?.start_time
+                  ? dayjs(cancelTarget.start_time).format("DD/MM/YYYY")
+                  : "—"}
+              </Text>
+            </div>
+            <div>
+              <Text type="secondary">Mã đơn: </Text>
+              <Text code>
+                #{cancelTarget?._id?.slice(-8).toUpperCase()}
+              </Text>
+            </div>
+          </div>
+
+          <Alert
+            type="warning"
+            showIcon
+            message="Lưu ý: Hành động này không thể hoàn tác sau khi xác nhận."
+            style={{ marginBottom: 24, textAlign: "left" }}
+          />
+
+          <Space style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setCancelModalOpen(false);
+                setCancelTarget(null);
+              }}
+              disabled={!!updatingId}
+              style={{ minWidth: 130 }}
+            >
+              Không, giữ đơn
+            </Button>
+            <Button
+              danger
+              type="primary"
+              size="large"
+              icon={<CloseCircleOutlined />}
+              loading={!!updatingId}
+              onClick={handleConfirmCancel}
+              style={{ minWidth: 140 }}
+            >
+              Xác nhận hủy
+            </Button>
+          </Space>
+        </div>
+      </Modal>
+
+      {/* ===== MODAL XÁC NHẬN HOÀN THÀNH ===== */}
+      <Modal
+        open={completeModalOpen}
+        onCancel={() => {
+          if (!updatingId) {
+            setCompleteModalOpen(false);
+            setCompleteTarget(null);
+          }
+        }}
+        footer={null}
+        centered
+        width={440}
+        closable={!updatingId}
+        maskClosable={!updatingId}
+      >
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <CheckCircleOutlined
+            style={{ fontSize: 56, color: "#52c41a", marginBottom: 16 }}
+          />
+
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1a1a1a",
+              marginBottom: 10,
+            }}
+          >
+            Xác nhận hoàn thành đơn?
+          </div>
+
+          <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 6 }}>
+            Đánh dấu đơn sau đây là đã hoàn thành:
+          </Paragraph>
+
+          <div
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 8,
+              padding: "12px 16px",
+              marginBottom: 20,
+              textAlign: "left",
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Khách hàng: </Text>
+              <Text strong>
+                {completeTarget?.customer_id?.full_name || "Khách hàng"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Dịch vụ: </Text>
+              <Text strong>
+                {completeTarget?.service_id?.name || "Dịch vụ"}
+              </Text>
+            </div>
+            <div>
+              <Text type="secondary">Mã đơn: </Text>
+              <Text code>
+                #{completeTarget?._id?.slice(-8).toUpperCase()}
+              </Text>
+            </div>
+          </div>
+
+          <Divider style={{ margin: "0 0 20px" }} />
+
+          <Space style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setCompleteModalOpen(false);
+                setCompleteTarget(null);
+              }}
+              disabled={!!updatingId}
+              style={{ minWidth: 120 }}
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<CheckSquareOutlined />}
+              loading={!!updatingId}
+              onClick={handleConfirmComplete}
+              style={{ minWidth: 160, background: "#52c41a", borderColor: "#52c41a" }}
+            >
+              Xác nhận hoàn thành
+            </Button>
+          </Space>
+        </div>
       </Modal>
     </div>
   );

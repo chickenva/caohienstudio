@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Button, Space, Dropdown, Avatar } from "antd";
+import { Button, Space, Dropdown, Avatar, message } from "antd";
 import {
   ArrowRightOutlined,
   UserOutlined,
@@ -13,6 +13,7 @@ import {
   PhoneOutlined,
   MailOutlined,
   EnvironmentOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 
 // Design System đồng bộ (Light Luxury)
@@ -56,9 +57,18 @@ const CustomerLayout = () => {
     try {
       const userData = JSON.parse(savedUser);
 
+      // Admin được xem website (public pages), nhưng không được vào trang chức năng khách hàng
       if (userData.role === "ADMIN") {
-        navigate("/admin/dashboard", { replace: true });
-        return;
+        const blockedPaths = ["/booking", "/customer"];
+        const isBlocked = blockedPaths.some(
+          (p) => location.pathname === p || location.pathname.startsWith(p + "/")
+        );
+
+        if (isBlocked) {
+          message.warning("Admin không thể sử dụng chức năng này. Vui lòng dùng trang quản lý.");
+          navigate("/admin/dashboard", { replace: true });
+          return;
+        }
       }
 
       setUser(userData);
@@ -224,37 +234,58 @@ const CustomerLayout = () => {
           }}
         >
           {user ? (
-            /* TRƯỜNG HỢP: ĐÃ ĐĂNG NHẬP */
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              arrow
-            >
-              <div
+            user.role === "ADMIN" ? (
+              /* TRƯỜNG HỢP: ADMIN xem website */
+              <Button
+                icon={<DashboardOutlined />}
+                onClick={() => navigate("/admin/dashboard")}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                  gap: "10px",
+                  background: "#2f2f2f",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 0,
+                  height: 40,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "1px",
+                  padding: "0 20px",
                 }}
               >
-                <span
+                QUẢN LÝ WEBSITE
+              </Button>
+            ) : (
+              /* TRƯỜNG HỢP: ĐÃ ĐĂNG NHẬP (customer) */
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                arrow
+              >
+                <div
                   style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#2F2F2F",
-                    textTransform: "uppercase",
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    gap: "10px",
                   }}
                 >
-                  {user.full_name || "TÀI KHOẢN"}
-                </span>
-                <Avatar
-                  size="small"
-                  icon={<UserOutlined />}
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                />
-              </div>
-            </Dropdown>
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#2F2F2F",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {user.full_name || "TÀI KHOẢN"}
+                  </span>
+                  <Avatar
+                    size="small"
+                    icon={<UserOutlined />}
+                    style={{ backgroundColor: PRIMARY_COLOR }}
+                  />
+                </div>
+              </Dropdown>
+            )
           ) : (
             /* TRƯỜNG HỢP: KHÁCH VÃNG LAI */
             <Space size="middle">

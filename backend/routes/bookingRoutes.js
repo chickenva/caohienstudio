@@ -1,44 +1,69 @@
 const express = require("express");
 const router = express.Router();
+
 const bookingController = require("../controllers/bookingController");
 const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 // ==========================================
-// 1. PUBLIC ROUTES - Tuyệt đối không dùng verifyToken
+// PUBLIC ROUTES - VNPAY RETURN
 // ==========================================
+// VNPay có thể redirect GET về backend
 router.get("/vnpay-return", bookingController.vnpayReturn);
+
+// Frontend cũng có thể POST params về backend để xác thực chữ ký
 router.post("/vnpay-return", bookingController.vnpayReturn);
 
 // ==========================================
-// 2. CUSTOMER ROUTES - Khách hàng đăng nhập
+// CUSTOMER ROUTES
 // ==========================================
-router.post("/create-vnpay", verifyToken, bookingController.createVnpayPayment);
-router.get("/my-bookings", verifyToken, bookingController.getMyBookings);
 
-// ==========================================
-// 3. ADMIN ROUTES - Phải đặt trước /:id
-// ==========================================
-router.get("/admin/all", verifyAdmin, bookingController.getAllBookingsForAdmin);
-
+// Khách tạo đơn + tạo link thanh toán VNPay
 router.post(
-  "/admin/create",
-  verifyAdmin,
-  bookingController.createBookingForAdmin,
+  "/create-vnpay",
+  verifyToken,
+  bookingController.createVnpayPayment,
 );
 
-router.put("/:id/status", verifyAdmin, bookingController.updateBookingStatus);
+// Khách xem danh sách đơn của mình
+router.get("/my-bookings", verifyToken, bookingController.getMyBookings);
 
-// ==========================================
-// 4. CUSTOMER DETAIL ROUTES - Đặt sau /admin/...
-// ==========================================
-router.get("/:id", verifyToken, bookingController.getBookingDetail);
-
+// Khách kiểm tra trạng thái đơn/thanh toán
 router.get(
   "/:id/check-status",
   verifyToken,
   bookingController.checkPaymentStatus,
 );
 
+// Khách tạo lại link thanh toán nếu đơn còn PENDING và chưa quá hạn
 router.post("/:id/repay", verifyToken, bookingController.repayBooking);
+
+// Khách hủy đơn nếu đơn còn PENDING
+router.post("/:id/cancel", verifyToken, bookingController.cancelMyBooking);
+
+// Khách xem chi tiết đơn của mình
+router.get("/:id", verifyToken, bookingController.getBookingDetail);
+
+// ==========================================
+// ADMIN ROUTES
+// Lưu ý: các route admin nên để trước nếu có route dạng /:id dễ trùng.
+// Ở đây /admin/all và /admin/create không bị trùng vì đã khai báo rõ.
+// ==========================================
+
+// Admin lấy tất cả đơn
+router.get(
+  "/admin/all",
+  verifyAdmin,
+  bookingController.getAllBookingsForAdmin,
+);
+
+// Admin tạo đơn hộ khách hàng
+router.post(
+  "/admin/create",
+  verifyAdmin,
+  bookingController.createBookingForAdmin,
+);
+
+// Admin cập nhật trạng thái đơn
+router.put("/:id/status", verifyAdmin, bookingController.updateBookingStatus);
 
 module.exports = router;
