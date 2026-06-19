@@ -28,6 +28,8 @@ exports.getAdminOverview = async (req, res) => {
       totalBookings,
       pendingBookings,
       depositedBookings,
+      confirmedBookings,
+      inProgressBookings,
       completedBookings,
       canceledBookings,
       expiredBookings,
@@ -55,6 +57,8 @@ exports.getAdminOverview = async (req, res) => {
 
       Booking.countDocuments({ status: "PENDING" }),
       Booking.countDocuments({ status: "DEPOSITED" }),
+      Booking.countDocuments({ status: "CONFIRMED" }),
+      Booking.countDocuments({ status: "IN_PROGRESS" }),
       Booking.countDocuments({ status: "COMPLETED" }),
       Booking.countDocuments({ status: "CANCELED" }),
       Booking.countDocuments({ status: "EXPIRED" }),
@@ -86,7 +90,7 @@ exports.getAdminOverview = async (req, res) => {
       Booking.aggregate([
         {
           $match: {
-            status: { $in: ["DEPOSITED", "COMPLETED"] },
+            status: { $in: ["DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"] },
           },
         },
         {
@@ -128,7 +132,7 @@ exports.getAdminOverview = async (req, res) => {
       Booking.aggregate([
         {
           $match: {
-            status: { $in: ["DEPOSITED", "COMPLETED"] },
+            status: { $in: ["DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"] },
             createdAt: {
               $gte: startOfMonth,
               $lt: startOfNextMonth,
@@ -178,6 +182,8 @@ exports.getAdminOverview = async (req, res) => {
     const bookingStatus = {
       PENDING: 0,
       DEPOSITED: 0,
+      CONFIRMED: 0,
+      IN_PROGRESS: 0,
       COMPLETED: 0,
       CANCELED: 0,
       EXPIRED: 0,
@@ -193,6 +199,8 @@ exports.getAdminOverview = async (req, res) => {
         totalBookings,
         pendingBookings,
         depositedBookings,
+        confirmedBookings,
+        inProgressBookings,
         completedBookings,
         canceledBookings,
         expiredBookings,

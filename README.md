@@ -35,15 +35,18 @@ Hệ thống phục vụ **2 nhóm người dùng chính**:
 
 ### Tính năng nổi bật
 
-- ✅ **Đặt lịch & Thanh toán online** — VNPay + PayOS, cọc 30-50% giá dịch vụ
-- ✅ **Xác thực OTP qua email** — Đăng ký, đổi email, quên mật khẩu
-- ✅ **Quản lý dịch vụ** — Gói Cưới, Sự kiện, Gia đình; ẩn/hiện linh hoạt
-- ✅ **Quản lý nhân sự (Photographer)** — Thông tin, chuyên môn, trạng thái hoạt động
-- ✅ **Quản lý tài nguyên** — Thiết bị, Props, Địa điểm cho thuê
-- ✅ **Gallery công khai** — Trưng bày ảnh, phân loại, tìm kiếm
-- ✅ **Dashboard Admin** — Thống kê đơn hàng, doanh thu theo thời gian
-- ✅ **Real-time** — Socket.IO cập nhật trạng thái tức thì
-- ✅ **Google Drive Integration** — Upload và quản lý ảnh qua Google Drive API
+- ✅ **Giao diện Khách hàng Luxury & Premium** — Thiết kế lại toàn bộ giao diện khách hàng (Trang chủ, Giới thiệu, Dịch vụ, Album, Nhiếp ảnh gia, Cho thuê, Liên hệ) theo phong cách sang trọng, sử dụng panel kính mờ (glassmorphism), hiệu ứng ánh sáng (spotlight) và các hiệu ứng chuyển động mượt mà (scroll reveal).
+- ✅ **Đặt lịch & Thanh toán online** — Đặt lịch chụp tiện lợi kết hợp thanh toán cọc online VNPay + PayOS (30%, 50% hoặc 100% tuỳ thuộc vào thời gian đặt sớm hay gấp).
+- ✅ **Lịch thông minh & Dự báo thời tiết** — Chọn ngày chụp trên lưới lịch trực quan tích hợp API Open-Meteo. Hệ thống tự động lấy dự báo 14 ngày thực tế hoặc truy vấn dữ liệu lịch sử cùng kỳ năm ngoái để đưa ra lời khuyên chụp ảnh tối ưu nhất.
+- ✅ **Tự động gợi ý địa chỉ (Photon API)** — Tìm kiếm địa điểm chụp thông minh với tính năng tự động gợi ý địa chỉ Việt Nam qua API Photon (Komoot).
+- ✅ **Xác thực OTP qua email** — Đăng ký tài khoản, thay đổi email liên hệ và khôi phục mật khẩu thông qua mã OTP bảo mật.
+- ✅ **Quản lý dịch vụ** — Admin quản lý và cấu hình linh hoạt các gói dịch vụ (Wedding, Event, Family...) kèm theo hiển thị chi tiết các đặc điểm/tính năng dịch vụ.
+- ✅ **Quản lý nhân sự (Photographer)** — Quản lý thông tin thợ chụp, chuyên môn, mô tả bản thân và trạng thái hoạt động.
+- ✅ **Quản lý tài nguyên** — Theo dõi và quản lý thiết bị chụp, ống kính, thiết bị ánh sáng, props và các địa điểm/thiết bị cho thuê.
+- ✅ **Gallery công khai** — Trưng bày các album ảnh dự án nổi bật của studio, hỗ trợ tìm kiếm và phân loại danh mục.
+- ✅ **Dashboard Admin** — Thống kê trực quan đơn hàng, doanh thu, khách hàng mới theo thời gian thực.
+- ✅ **Google Drive Integration** — Tích hợp Google Drive API (Service Account) để tự động upload và đồng bộ kho ảnh của từng đơn hàng.
+- ✅ **Real-time** — Tích hợp Socket.IO giúp truyền tải dữ liệu và cập nhật trạng thái tức thì.
 
 ---
 
@@ -79,6 +82,8 @@ Hệ thống phục vụ **2 nhóm người dùng chính**:
 | Charts | Recharts | ^3.8.1 |
 | Date | Day.js | ^1.11.20 |
 | Real-time | Socket.IO Client | ^4.8.3 |
+| Address API | Photon (Komoot) API | REST (Tự động gợi ý địa chỉ Việt Nam) |
+| Weather API | Open-Meteo API | REST (Dự báo thời tiết 14 ngày & Lưu trữ lịch sử) |
 
 ---
 
@@ -601,7 +606,7 @@ Content-Type: application/json
 
 | Tính năng | URL | Ghi chú |
 |-----------|-----|---------|
-| Đặt lịch chụp | `/booking` | Chọn dịch vụ, ngày giờ, địa điểm |
+| Đặt lịch chụp | `/booking` | Lịch thông minh chọn ngày, chọn khung giờ chụp & dự báo thời tiết Open-Meteo |
 | Thanh toán cọc VNPay | `/customer/my-bookings/:id` | 30–50% giá dịch vụ |
 | Tạo lại link thanh toán | BookingDetail → Repay | Nếu đơn vẫn PENDING |
 | Huỷ lịch đặt | BookingDetail → Cancel | Chỉ khi status = PENDING |
@@ -672,7 +677,16 @@ Khách nhập form (họ tên, email, SĐT, password)
 ```
 Khách vào /services → Chọn dịch vụ → /booking
     │
-    ▼ Điền form: dịch vụ, ngày giờ, địa điểm, ghi chú
+    ▼ Chọn ngày trên Lịch thông minh & truy vấn thời tiết
+    │   - Ngày trong vòng 14 ngày tới: Gọi Open-Meteo Forecast API lấy dự báo thời gian thực
+    │   - Ngày ngoài 14 ngày/quá khứ: Gọi Open-Meteo Archive API lấy dữ liệu lịch sử cùng kỳ năm ngoái
+    │   - Hệ thống hiển thị nhiệt độ, khả năng mưa, gió, độ ẩm và đưa ra lời khuyên chụp ảnh phù hợp
+    │   - Chọn khung giờ chụp (Time Slots) phù hợp còn trống
+    │
+    ▼ Nhập thông tin đặt lịch & gợi ý địa điểm chụp
+    │   - Nhập thợ chụp (Photographer) mong muốn
+    │   - Nhập địa điểm chụp chi tiết: Tích hợp Photon (Komoot) API tự động gợi ý địa chỉ tại Việt Nam khi gõ tìm kiếm
+    │   - Nhập ghi chú thêm cho ê-kíp
     │
     ▼ POST /api/bookings/create-vnpay
     │   Backend:
@@ -1060,11 +1074,14 @@ Giải pháp (frontend):
 ## 📝 Changelog
 
 ### v1.0.2 (Tháng 6/2026) — Hiện tại
-- ✅ **Profile Update OTP Logic**: Chỉ yêu cầu OTP khi đổi email/mật khẩu; đổi tên/SĐT cập nhật trực tiếp
-- ✅ **Endpoint `/send-update-otp`**: Gửi OTP xác thực đến email mới trước khi thay đổi
-- ✅ **Endpoint `/reset-password-profile`**: Đổi mật khẩu khi đã đăng nhập (cần OTP)
-- ✅ **Google Drive Integration**: Upload ảnh gallery qua service account
-- ✅ **Contact Form**: Khách gửi liên hệ lưu vào MongoDB
+- ✅ **Luxury & Premium UI Redesign (Toàn bộ phía Khách hàng)**: Thiết kế lại toàn bộ giao diện khách hàng bao gồm Trang chủ, Giới thiệu (About), Dịch vụ (Services), Album (Galleries), Nhiếp ảnh gia (Photographers), Cho thuê thiết bị (Rentals), Liên hệ (Contact) và Đặt lịch (Booking). Giao diện mang ngôn ngữ thiết kế sang trọng, hiện đại với panel kính mờ (glassmorphism), hiệu ứng ánh sáng (spotlight), font chữ Outfit & Serif-Luxury quý phái, các hiệu ứng hover mượt mà và animation scroll reveal.
+- ✅ **Smart Calendar & Weather Integration**: Tích hợp lưới lịch trực quan chọn ngày chụp và khung giờ (Time Slots) trống. Hệ thống tự động kết nối API Open-Meteo Forecast (dự báo 14 ngày) và Open-Meteo Archive (truy vấn thời tiết lịch sử cùng kỳ năm ngoái) để đưa ra chỉ số thời tiết (nhiệt độ, gió, độ ẩm, khả năng mưa) cùng các lời khuyên chụp ảnh tương ứng cho khách hàng.
+- ✅ **Address Auto-Suggestion (Photon Komoot API)**: Tích hợp thành công thanh gợi ý địa chỉ tự động dựa trên Photon API, giới hạn phạm vi tìm kiếm trong bản đồ Việt Nam để nâng cao trải nghiệm điền thông tin địa điểm chụp.
+- ✅ **Profile Update OTP Logic**: Tối ưu hóa trải nghiệm đổi thông tin cá nhân. Chỉ yêu cầu mã OTP khi khách hàng thay đổi email hoặc mật khẩu; các thay đổi họ tên, số điện thoại được cập nhật trực tiếp không cần OTP.
+- ✅ **Endpoint `/send-update-otp`**: Gửi OTP xác thực đến địa chỉ email mới trước khi tiến hành cập nhật trong hệ thống.
+- ✅ **Endpoint `/reset-password-profile`**: Cho phép khách hàng đổi mật khẩu trực tiếp trong trang cá nhân (yêu cầu xác thực OTP).
+- ✅ **Google Drive Integration**: Hỗ trợ admin upload album ảnh hoàn thiện của đơn hàng lên Google Drive thông qua Service Account.
+- ✅ **Contact Form**: Khách hàng gửi biểu mẫu liên hệ trực tiếp từ giao diện mới, tự động lưu thông tin vào cơ sở dữ liệu MongoDB.
 
 ### v1.0.1 (Tháng 5/2026)
 - ✅ **Fix thanh toán VNPay**: Hỗ trợ cả GET/POST callback từ VNPay
@@ -1117,3 +1134,46 @@ Dự án này được phát triển cho mục đích học thuật (Tiểu lu�
 
 **Sinh viên**: Hồ Vũ Anh — MSSV: 22110097  
 **Phiên bản**: 1.0.2 | **Cập nhật**: Tháng 6 năm 2026
+
+---
+
+## 🤖 Hướng Dẫn Dành Cho AI Assistant (AI Context & Guidelines)
+
+Phần này được thiết kế đặc biệt dành cho các công cụ AI Coding Assistant (như Gemini, Copilot, Cursor) để dễ dàng đọc hiểu, nắm bắt ngữ cảnh dự án và đưa ra những đóng góp chính xác nhất.
+
+### 1. Style Guide & Quy Ước Code (Coding Conventions)
+
+**Backend (Node.js/Express):**
+- **Kiến trúc:** Bám sát mô hình MVC. Routes chỉ định nghĩa endpoint -> Controller xử lý business logic -> Models chứa schema MongoDB. KHÔNG viết logic xử lý dữ liệu phức tạp vào file Route.
+- **Module System:** Sử dụng CommonJS (`require` / `module.exports`).
+- **Error Handling:** Mọi async function trong Controller phải được bọc bởi `try/catch`. Response lỗi hoặc thành công phải tuân theo format JSON đồng nhất: `{ message: "...", data: ... }`.
+- **Bảo mật:** Tất cả các endpoint trả dữ liệu nhạy cảm hoặc thao tác admin đều phải đi qua middleware `verifyToken` và `verifyAdmin`. Mật khẩu lưu vào DB luôn phải được hash bằng `bcrypt`.
+
+**Frontend (React/Vite):**
+- **Component:** 100% sử dụng Functional Components và Hooks (`useState`, `useEffect`, `useMemo`).
+- **UI Framework:** Hệ thống sử dụng thư viện **Ant Design (antd)** làm chuẩn thiết kế. Sử dụng các component có sẵn của antd (Table, Form, Input, Button) trước khi quyết định viết custom CSS để giữ UI đồng nhất và chuyên nghiệp.
+- **Routing:** Quản lý tập trung trong `App.jsx`. Route bảo mật cần nằm trong layout phân quyền (`AdminLayout`, `CustomerLayout`).
+- **API Call:** Luôn sử dụng `axios`. Nên tận dụng interceptors để xử lý lỗi 401 (token hết hạn) và tự động đính kèm header `Authorization`.
+
+### 2. Trạng Thái Hiện Tại (Current Status) & Tiến Độ Cập Nhật
+
+Hệ thống đang ở giai đoạn **Phiên bản 1.0.2** (Đang phát triển & hoàn thiện). Dưới đây là bức tranh tổng thể:
+- **Đã hoàn thiện:** Khung giao diện UI cho Khách hàng & Admin; Luồng Auth (Đăng nhập, Đăng ký, OTP, Quên mật khẩu); Đặt lịch Booking & Thanh toán cọc qua cổng VNPay; Quản lý Services, Galleries, Resources cho Admin. Upload ảnh lưu trữ vào Google Drive.
+- **Điểm nóng (Hotspots):** Luồng xử lý thanh toán (VNPay IPN/Return) là luồng nhạy cảm nhất. Đã support cả GET/POST request do khác biệt giữa callback của các môi trường. TUYỆT ĐỐI CẨN THẬN khi refactor code trong `bookingController.js`.
+- **Mục tiêu tiếp theo (TODOs):**
+  1. Hoàn thiện module Real-time Chat bằng `Socket.IO` (đã setup server, cần build UI frontend).
+  2. Nâng cấp luồng Giao việc (Assign Photographer): Gửi thông báo real-time/email khi Admin gán đơn hàng (Order) cho Photographer.
+  3. Hoàn thiện tính năng Quản lý Nghỉ phép/Lịch bận của Photographer để tránh trùng lặp khi đặt lịch.
+  4. Trực quan hóa Dashboard: Bổ sung các biểu đồ Recharts sâu hơn về tỷ lệ chuyển đổi dịch vụ.
+
+### 3. Sơ Đồ Quan Hệ Cơ Sở Dữ Liệu (Database Relationships)
+
+Dưới đây là các quan hệ cốt lõi cần nhớ để populate (join) không bị lỗi:
+- `Booking` 1-n `User` (Ref tới userId - Khách đặt) và `Service` (Ref tới serviceId).
+- `Order` (Đơn hàng chính thức) được sinh ra từ `Booking` sau khi duyệt. `Order` có 3 Refs quan trọng: `bookingId`, `customerId` (Khách), và `photographerId` (Nhân sự chụp).
+- `Payment` 1-1 `Booking`. Khi webhook VNPay trả về trạng thái giao dịch SUCCESS, **phải** đồng thời cập nhật `status` của `Payment` và `status` + `depositAmount` của `Booking`.
+
+### 4. Quy Tắc "Cứng" Khi Viết Code Mới
+- **Biến môi trường:** Nếu yêu cầu logic sinh ra biến môi trường mới (vd: API Key mới), AI **phải** tự động bổ sung biến đó vào file `backend/.env.example` VÀ danh sách biến môi trường trong file `README.md` này.
+- **Database Schema:** Nếu tạo collection MongoDB mới, AI **phải** cập nhật cấu trúc bảng vào mục `Cơ Sở Dữ Liệu` trong file `README.md` để giữ tài liệu luôn sống (living documentation).
+- **Phá vỡ cấu trúc:** Tránh tối đa việc thay đổi luồng thanh toán hoặc cấu trúc Auth hiện có trừ khi có yêu cầu tái cấu trúc toàn diện từ User.

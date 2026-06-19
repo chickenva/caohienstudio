@@ -524,8 +524,8 @@ header {
 }
 
 /* Custom inputs */
-.home-page-container input,
-.home-page-container textarea {
+.home-page-container .ant-input,
+.home-page-container .ant-input-affix-wrapper {
   background-color: #FFFFFF !important;
   border: 1px solid #E8DED2 !important;
   color: #2F2F2F !important;
@@ -533,8 +533,16 @@ header {
   font-family: 'Outfit', sans-serif !important;
 }
 
-.home-page-container input:focus,
-.home-page-container textarea:focus {
+.home-page-container .ant-input-affix-wrapper > input.ant-input {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.home-page-container .ant-input:focus,
+.home-page-container .ant-input-affix-wrapper-focused,
+.home-page-container .ant-input:hover,
+.home-page-container .ant-input-affix-wrapper:hover {
   border-color: #BFA16A !important;
   box-shadow: 0 0 10px rgba(191, 161, 106, 0.15) !important;
 }

@@ -31,19 +31,19 @@ const statusOptions = [
   { value: "ALL", label: "Tất cả" },
   { value: "PENDING", label: "Chờ thanh toán" },
   { value: "DEPOSITED", label: "Đã đặt cọc" },
+  { value: "CONFIRMED", label: "Đã xác nhận" },
+  { value: "IN_PROGRESS", label: "Đang thực hiện" },
   { value: "COMPLETED", label: "Hoàn thành" },
   { value: "CANCELED", label: "Đã hủy" },
-  { value: "EXPIRED", label: "Quá hạn" },
-  { value: "PAYMENT_FAILED", label: "Thanh toán thất bại" },
 ];
 
 const statusConfig = {
   PENDING: { color: "gold", text: "Chờ thanh toán" },
   DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+  CONFIRMED: { color: "blue", text: "Đã xác nhận" },
+  IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
   COMPLETED: { color: "green", text: "Hoàn thành" },
   CANCELED: { color: "red", text: "Đã hủy" },
-  EXPIRED: { color: "red", text: "Đã hủy" },
-  PAYMENT_FAILED: { color: "red", text: "Đã hủy" },
 };
 
 export default function AdminOrders() {
@@ -62,6 +62,14 @@ export default function AdminOrders() {
   // State cho modal xác nhận hoàn thành
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [completeTarget, setCompleteTarget] = useState(null);
+
+  // State cho modal xác nhận đơn (DEPOSITED -> CONFIRMED)
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+
+  // State cho modal đang chụp (CONFIRMED -> IN_PROGRESS)
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [progressTarget, setProgressTarget] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -116,6 +124,18 @@ export default function AdminOrders() {
     setCompleteModalOpen(true);
   };
 
+  // Mở modal xác nhận đơn
+  const openConfirmModal = (record) => {
+    setConfirmTarget(record);
+    setConfirmModalOpen(true);
+  };
+
+  // Mở modal đang chụp
+  const openProgressModal = (record) => {
+    setProgressTarget(record);
+    setProgressModalOpen(true);
+  };
+
   const executeUpdateStatus = async (bookingId, newStatus, onSuccess) => {
     setUpdatingId(bookingId);
 
@@ -163,6 +183,24 @@ export default function AdminOrders() {
     await executeUpdateStatus(completeTarget._id, "COMPLETED", () => {
       setCompleteModalOpen(false);
       setCompleteTarget(null);
+    });
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!confirmTarget) return;
+
+    await executeUpdateStatus(confirmTarget._id, "CONFIRMED", () => {
+      setConfirmModalOpen(false);
+      setConfirmTarget(null);
+    });
+  };
+
+  const handleStartProgress = async () => {
+    if (!progressTarget) return;
+
+    await executeUpdateStatus(progressTarget._id, "IN_PROGRESS", () => {
+      setProgressModalOpen(false);
+      setProgressTarget(null);
     });
   };
 
@@ -335,6 +373,34 @@ export default function AdminOrders() {
           </Button>,
           selectedBooking?.status === "DEPOSITED" && (
             <Button
+              key="confirm"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => {
+                setDetailOpen(false);
+                openConfirmModal(selectedBooking);
+              }}
+              style={{ background: "#1677ff", borderColor: "#1677ff" }}
+            >
+              Xác nhận đơn
+            </Button>
+          ),
+          selectedBooking?.status === "CONFIRMED" && (
+            <Button
+              key="progress"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => {
+                setDetailOpen(false);
+                openProgressModal(selectedBooking);
+              }}
+              style={{ background: "#2f54eb", borderColor: "#2f54eb" }}
+            >
+              Đánh dấu đang chụp
+            </Button>
+          ),
+          selectedBooking?.status === "IN_PROGRESS" && (
+            <Button
               key="complete"
               type="primary"
               icon={<CheckSquareOutlined />}
@@ -347,7 +413,8 @@ export default function AdminOrders() {
             </Button>
           ),
           (selectedBooking?.status === "PENDING" ||
-            selectedBooking?.status === "DEPOSITED") && (
+            selectedBooking?.status === "DEPOSITED" ||
+            selectedBooking?.status === "CONFIRMED") && (
             <Button
               key="cancel"
               danger
@@ -556,6 +623,192 @@ export default function AdminOrders() {
               style={{ minWidth: 140 }}
             >
               Xác nhận hủy
+            </Button>
+          </Space>
+        </div>
+      </Modal>
+
+      {/* ===== MODAL XÁC NHẬN ĐƠN ===== */}
+      <Modal
+        open={confirmModalOpen}
+        onCancel={() => {
+          if (!updatingId) {
+            setConfirmModalOpen(false);
+            setConfirmTarget(null);
+          }
+        }}
+        footer={null}
+        centered
+        width={440}
+        closable={!updatingId}
+        maskClosable={!updatingId}
+      >
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <CheckCircleOutlined
+            style={{ fontSize: 56, color: "#1677ff", marginBottom: 16 }}
+          />
+
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1a1a1a",
+              marginBottom: 10,
+            }}
+          >
+            Xác nhận đơn đặt lịch?
+          </div>
+
+          <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 6 }}>
+            Xác nhận lịch chụp cho đơn hàng sau:
+          </Paragraph>
+
+          <div
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 8,
+              padding: "12px 16px",
+              marginBottom: 20,
+              textAlign: "left",
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Khách hàng: </Text>
+              <Text strong>
+                {confirmTarget?.customer_id?.full_name || "Khách hàng"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Dịch vụ: </Text>
+              <Text strong>
+                {confirmTarget?.service_id?.name || "Dịch vụ"}
+              </Text>
+            </div>
+            <div>
+              <Text type="secondary">Mã đơn: </Text>
+              <Text code>
+                #{confirmTarget?._id?.slice(-8).toUpperCase()}
+              </Text>
+            </div>
+          </div>
+
+          <Divider style={{ margin: "0 0 20px" }} />
+
+          <Space style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setConfirmModalOpen(false);
+                setConfirmTarget(null);
+              }}
+              disabled={!!updatingId}
+              style={{ minWidth: 120 }}
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<CheckCircleOutlined />}
+              loading={!!updatingId}
+              onClick={handleConfirmBooking}
+              style={{ minWidth: 160, background: "#1677ff", borderColor: "#1677ff" }}
+            >
+              Xác nhận đơn
+            </Button>
+          </Space>
+        </div>
+      </Modal>
+
+      {/* ===== MODAL ĐÁNH DẤU ĐANG CHỤP ===== */}
+      <Modal
+        open={progressModalOpen}
+        onCancel={() => {
+          if (!updatingId) {
+            setProgressModalOpen(false);
+            setProgressTarget(null);
+          }
+        }}
+        footer={null}
+        centered
+        width={440}
+        closable={!updatingId}
+        maskClosable={!updatingId}
+      >
+        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <CheckCircleOutlined
+            style={{ fontSize: 56, color: "#2f54eb", marginBottom: 16 }}
+          />
+
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#1a1a1a",
+              marginBottom: 10,
+            }}
+          >
+            Đánh dấu đang thực hiện?
+          </div>
+
+          <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 6 }}>
+            Bắt đầu buổi chụp cho đơn hàng sau:
+          </Paragraph>
+
+          <div
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 8,
+              padding: "12px 16px",
+              marginBottom: 20,
+              textAlign: "left",
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Khách hàng: </Text>
+              <Text strong>
+                {progressTarget?.customer_id?.full_name || "Khách hàng"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <Text type="secondary">Dịch vụ: </Text>
+              <Text strong>
+                {progressTarget?.service_id?.name || "Dịch vụ"}
+              </Text>
+            </div>
+            <div>
+              <Text type="secondary">Mã đơn: </Text>
+              <Text code>
+                #{progressTarget?._id?.slice(-8).toUpperCase()}
+              </Text>
+            </div>
+          </div>
+
+          <Divider style={{ margin: "0 0 20px" }} />
+
+          <Space style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setProgressModalOpen(false);
+                setProgressTarget(null);
+              }}
+              disabled={!!updatingId}
+              style={{ minWidth: 120 }}
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<CheckCircleOutlined />}
+              loading={!!updatingId}
+              onClick={handleStartProgress}
+              style={{ minWidth: 160, background: "#2f54eb", borderColor: "#2f54eb" }}
+            >
+              Đang thực hiện
             </Button>
           </Space>
         </div>

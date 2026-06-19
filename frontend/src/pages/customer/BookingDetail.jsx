@@ -81,6 +81,8 @@ const renderOrderStatus = (status) => {
   const map = {
     PENDING: { color: "gold", text: "Chờ thanh toán" },
     DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+    CONFIRMED: { color: "blue", text: "Đã xác nhận" },
+    IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
     COMPLETED: { color: "green", text: "Hoàn thành" },
     CANCELED: { color: "red", text: "Đã hủy" },
 
@@ -560,7 +562,43 @@ const BookingDetail = () => {
           </div>
         )}
 
+        {displayOrderStatus === "CONFIRMED" && (
+          <div
+            style={{
+              marginTop: 30,
+              background: "#e6f4ff",
+              padding: "20px",
+              borderRadius: "8px",
+              border: "1px solid #91caff",
+            }}
+          >
+            <Alert
+              type="info"
+              showIcon
+              message="Lịch hẹn đã được xác nhận"
+              description="Cao Hien Studio đã nhận và xác nhận lịch hẹn của bạn. Vui lòng đến đúng giờ để buổi chụp diễn ra tốt đẹp."
+            />
+          </div>
+        )}
 
+        {displayOrderStatus === "IN_PROGRESS" && (
+          <div
+            style={{
+              marginTop: 30,
+              background: "#f6ffed",
+              padding: "20px",
+              borderRadius: "8px",
+              border: "1px solid #b7eb8f",
+            }}
+          >
+            <Alert
+              type="success"
+              showIcon
+              message="Đang thực hiện buổi chụp"
+              description="Buổi chụp của bạn đang được tiến hành. Cảm ơn bạn đã lựa chọn Cao Hien Studio!"
+            />
+          </div>
+        )}
 
         <Divider />
 

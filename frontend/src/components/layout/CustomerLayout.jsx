@@ -203,8 +203,8 @@ const CustomerLayout = () => {
                 cursor: "default",
                 color:
                   location.pathname.includes("/services") ||
-                  location.pathname.includes("/booking") ||
-                  location.pathname.includes("/rentals")
+                    location.pathname.includes("/booking") ||
+                    location.pathname.includes("/rentals")
                     ? PRIMARY_COLOR
                     : "#2F2F2F",
                 fontSize: "11px",

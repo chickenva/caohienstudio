@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Row, Col, Button, Tag, Spin, message, Divider } from "antd";
+import { Row, Col, Spin, message } from "antd";
 import {
   ArrowLeftOutlined,
   ShoppingCartOutlined,
@@ -8,9 +8,10 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import "../../Home.css";
 
-const PRIMARY_COLOR = "#9a8a78";
-const FONT_SERIF = '"Playfair Display", serif';
+const PRIMARY_COLOR = "#BFA16A";
+const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
 const ServiceDetail = () => {
   const { id } = useParams();
@@ -19,6 +20,8 @@ const ServiceDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.body.style.backgroundColor = "#FAF7F2";
+
     const fetchDetail = async () => {
       try {
         const res = await axios.get(`http://localhost:5000/api/services/${id}`);
@@ -30,151 +33,229 @@ const ServiceDetail = () => {
       }
     };
     fetchDetail();
+
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
   }, [id]);
 
-  if (loading)
+  // Scroll reveals trigger
+  useEffect(() => {
+    if (loading) return;
+
+    const revealElements = document.querySelectorAll(".scroll-reveal");
+    const observerOptions = {
+      root: null,
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px"
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
+  }, [loading, service]);
+
+  if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: "100px" }}>
+      <div style={{ textAlign: "center", padding: "150px 0", background: "#FAF7F2" }}>
         <Spin size="large" />
       </div>
     );
+  }
+
+  if (!service) {
+    return (
+      <div style={{ textAlign: "center", padding: "100px 20px", background: "#FAF7F2", color: "#777777" }}>
+        Không tìm thấy thông tin gói dịch vụ. Vui lòng quay lại bảng giá.
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "40px auto", padding: "0 20px" }}>
-      <Button
-        icon={<ArrowLeftOutlined />}
-        onClick={() => navigate("/services")}
-        type="text"
-        style={{ marginBottom: "20px" }}
-      >
-        Quay lại bảng giá
-      </Button>
+    <div className="home-page-container" style={{ background: "#FAF7F2", minHeight: "100vh", width: "100%" }}>
+      {/* Ambient spotlights */}
+      <div className="glow-spotlight-light" style={{ top: "8%", left: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ top: "50%", right: "5%" }}></div>
 
-      <Row gutter={[50, 50]}>
-        <Col xs={24} md={12}>
-          <img
-            src={
-              service.thumbnail ||
-              "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop"
-            }
-            alt={service.name}
-            style={{
-              width: "100%",
-              height: "600px",
-              objectFit: "cover",
-              boxShadow: "20px 20px 0 #f5f5f5",
-            }}
-          />
-        </Col>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px 100px 20px" }}>
+        {/* Back Button */}
+        <button
+          onClick={() => navigate("/services")}
+          className="btn-premium-outline scroll-reveal"
+          style={{ marginBottom: 40, height: "42px", padding: "0 22px", fontSize: "11px" }}
+        >
+          <ArrowLeftOutlined style={{ marginRight: "6px" }} /> QUAY LẠI BẢNG GIÁ
+        </button>
 
-        <Col xs={24} md={12}>
-          <Tag color={PRIMARY_COLOR}>
-            {service.category?.toUpperCase() || "CAO HIỀN STUDIO"}
-          </Tag>
-          <h1
-            style={{
-              fontFamily: FONT_SERIF,
-              fontSize: "48px",
-              margin: "20px 0",
-              fontWeight: "normal",
-            }}
-          >
-            {service.name}
-          </h1>
-
-          {/* Đã cập nhật lấy giá từ trường base_price */}
-          <div
-            style={{
-              fontSize: "28px",
-              color: PRIMARY_COLOR,
-              fontWeight: 600,
-              marginBottom: "15px",
-            }}
-          >
-            {service.base_price?.toLocaleString()}đ
-          </div>
-
-          <div
-            style={{
-              fontSize: "14px",
-              color: "#555",
-              marginBottom: "30px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <ClockCircleOutlined style={{ marginRight: "8px" }} /> Thời lượng
-            chụp ước tính:{" "}
-            <strong>&nbsp;{service.duration_hours || 4} giờ</strong>
-          </div>
-
-          <p style={{ color: "#666", lineHeight: "2", fontSize: "15px" }}>
-            {service.details ||
-              service.description ||
-              "Gói chụp ảnh cao cấp giúp bạn lưu giữ lại những khoảnh khắc tuyệt vời nhất."}
-          </p>
-
-          <Divider />
-
-          <h4 style={{ marginBottom: "20px", letterSpacing: "1px" }}>
-            GÓI DỊCH VỤ BAO GỒM:
-          </h4>
-          <Row>
-            {/* Fallback an toàn */}
-            {(
-              service.features || [
-                "Chụp ảnh không giới hạn file",
-                "Hỗ trợ concept chụp",
-                "Chỉnh sửa 30 file retouch",
-                "Giao toàn bộ file gốc",
-              ]
-            ).map((feat, idx) => (
-              <Col
-                span={24}
-                key={idx}
+        <Row gutter={[60, 50]} className="scroll-reveal stagger-1">
+          {/* Left Column: Image wrapper */}
+          <Col xs={24} md={12}>
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E8DED2",
+                borderRadius: "0px",
+                padding: "16px",
+                boxShadow: "0 5px 15px rgba(154, 138, 120, 0.02)"
+              }}
+            >
+              <img
+                src={
+                  service.thumbnail ||
+                  "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800"
+                }
+                alt={service.name}
                 style={{
-                  marginBottom: "12px",
-                  display: "flex",
-                  alignItems: "center",
+                  width: "100%",
+                  height: "550px",
+                  objectFit: "cover",
+                  display: "block",
+                  border: "1px solid #E8DED2"
                 }}
-              >
-                <CheckCircleOutlined
-                  style={{ color: PRIMARY_COLOR, marginRight: "10px" }}
-                />
-                <span>{feat}</span>
-              </Col>
-            ))}
-          </Row>
+              />
+            </div>
+          </Col>
 
-          <Button
-            type="primary"
-            size="large"
-            icon={<ShoppingCartOutlined />}
-            style={{
-              background: "#333",
-              border: "none",
-              borderRadius: 0,
-              height: "55px",
-              padding: "0 50px",
-              marginTop: "40px",
-              fontSize: "14px",
-              letterSpacing: "2px",
-            }}
-            onClick={() =>
-              // CỰC KỲ QUAN TRỌNG: Phải truyền thêm service_id sang trang Đặt Lịch để lưu vào Database mới
-              navigate("/booking", {
-                state: {
-                  service_id: service._id,
-                  serviceName: service.name,
-                  base_price: service.base_price,
-                },
-              })
-            }
-          >
-            ĐẶT LỊCH NGAY
-          </Button>
-        </Col>
-      </Row>
+          {/* Right Column: Info detail metadata */}
+          <Col xs={24} md={12}>
+            {/* Category tag */}
+            <span
+              style={{
+                fontSize: "10px",
+                letterSpacing: "1.5px",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                padding: "4px 12px",
+                border: "1px solid rgba(191, 161, 106, 0.3)",
+                background: "rgba(191, 161, 106, 0.05)",
+                color: "#BFA16A",
+                display: "inline-block"
+              }}
+            >
+              {service.category?.toUpperCase() || "CAO HIỀN STUDIO"}
+            </span>
+
+            {/* Title */}
+            <h1
+              className="font-serif-luxury"
+              style={{
+                fontSize: "clamp(32px, 5vw, 44px)",
+                margin: "20px 0",
+                fontWeight: "300",
+                color: "#1F1F1F",
+                lineHeight: "1.2"
+              }}
+            >
+              {service.name}
+            </h1>
+
+            {/* Pricing */}
+            <div
+              style={{
+                fontSize: "28px",
+                color: PRIMARY_COLOR,
+                fontWeight: "600",
+                marginBottom: "20px",
+              }}
+            >
+              {service.base_price?.toLocaleString("vi-VN")}đ
+            </div>
+
+            {/* Estimated shoot hours duration */}
+            <div
+              style={{
+                fontSize: "14px",
+                color: "#555555",
+                marginBottom: "30px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "300"
+              }}
+            >
+              <ClockCircleOutlined style={{ color: "#BFA16A" }} /> 
+              <span>Thời lượng chụp ước tính: <strong style={{ fontWeight: "500" }}>{service.duration_hours || 4} giờ</strong></span>
+            </div>
+
+            {/* Description */}
+            <p style={{ color: "#555555", lineHeight: "2.1", fontSize: "14.5px", fontWeight: "300", marginBottom: "35px" }}>
+              {service.details ||
+                service.description ||
+                "Gói chụp ảnh cao cấp được thiết kế tinh tế nhằm ghi lại từng khoảnh khắc ý nghĩa nhất của bạn."}
+            </p>
+
+            {/* Features check list divider */}
+            <div style={{ height: "1px", background: "#E8DED2", width: "100%", margin: "30px 0" }}></div>
+
+            <h4 style={{ marginBottom: "20px", letterSpacing: "1.5px", fontSize: "12px", fontWeight: "600", color: "#2F2F2F" }}>
+              GÓI DỊCH VỤ BAO GỒM:
+            </h4>
+            <Row>
+              {(
+                service.features || [
+                  "Chụp ảnh không giới hạn file",
+                  "Hỗ trợ concept chụp",
+                  "Chỉnh sửa 30 file retouch",
+                  "Giao toàn bộ file gốc",
+                ]
+              ).map((feat, idx) => (
+                <Col
+                  span={24}
+                  key={idx}
+                  style={{
+                    marginBottom: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    fontSize: "14.5px",
+                    color: "#555555",
+                    fontWeight: "300"
+                  }}
+                >
+                  <CheckCircleOutlined
+                    style={{ color: PRIMARY_COLOR }}
+                  />
+                  <span>{feat}</span>
+                </Col>
+              ))}
+            </Row>
+
+            {/* Booking Action */}
+            <button
+              onClick={() =>
+                navigate("/booking", {
+                  state: {
+                    service_id: service._id,
+                    serviceName: service.name,
+                    base_price: service.base_price,
+                  },
+                })
+              }
+              className="btn-premium-gold"
+              style={{
+                height: "52px",
+                padding: "0 50px",
+                marginTop: "40px",
+                fontSize: "12px",
+                display: "inline-flex"
+              }}
+            >
+              ĐẶT LỊCH HẸN NGAY <ShoppingCartOutlined />
+            </button>
+          </Col>
+        </Row>
+      </div>
     </div>
   );
 };

@@ -35,6 +35,8 @@ const API_URL = "http://localhost:5000/api";
 const statusConfig = {
   PENDING: { color: "gold", text: "Chờ thanh toán" },
   DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+  CONFIRMED: { color: "blue", text: "Đã xác nhận" },
+  IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
   COMPLETED: { color: "green", text: "Hoàn thành" },
   CANCELED: { color: "red", text: "Đã hủy" },
   CANCELLED: { color: "red", text: "Đã hủy" },
@@ -219,9 +221,33 @@ const AdminDashboard = () => {
               title="Đã đặt cọc"
               value={cards.depositedBookings || 0}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#08979c" }}
+              valueStyle={{ color: "#13c2c2" }}
+            />
+            <Text type="secondary">Đơn đã đặt cọc chờ xác nhận</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Đã xác nhận"
+              value={cards.confirmedBookings || 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#1677ff" }}
             />
             <Text type="secondary">Đơn đã xác nhận lịch hẹn</Text>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Đang thực hiện"
+              value={cards.inProgressBookings || 0}
+              prefix={<CameraOutlined />}
+              valueStyle={{ color: "#2f54eb" }}
+            />
+            <Text type="secondary">Đơn đang trong quá trình chụp</Text>
           </Card>
         </Col>
 

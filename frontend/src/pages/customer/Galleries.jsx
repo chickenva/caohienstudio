@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Spin, message, Empty } from "antd";
+import { Spin, message, Empty, Row, Col } from "antd";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowRightOutlined,
   CameraOutlined,
-  PictureOutlined,
+  EnvironmentOutlined,
+  StarFilled,
 } from "@ant-design/icons";
 import axios from "axios";
+import "../../Home.css";
 
-const PRIMARY_COLOR = "#9a8a78";
-const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
+const PRIMARY_COLOR = "#BFA16A";
+const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
 const categoryLabels = {
   ALL: "Tất cả",
@@ -29,14 +31,14 @@ const Galleries = () => {
   const currentCategory = searchParams.get("cat") || "ALL";
 
   useEffect(() => {
+    document.body.style.backgroundColor = "#FAF7F2";
+
     const fetchGalleries = async () => {
       setLoading(true);
-
       try {
         const res = await axios.get(
           `http://localhost:5000/api/galleries?category=${currentCategory}`,
         );
-
         setGalleries(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         message.error("Không thể tải thư viện ảnh");
@@ -46,523 +48,606 @@ const Galleries = () => {
     };
 
     fetchGalleries();
+
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
   }, [currentCategory]);
 
-  const handleTabChange = (key) => {
+  // Intersection Observer for scroll animations
+  useEffect(() => {
+    if (loading) return;
+
+    const revealElements = document.querySelectorAll(".scroll-reveal");
+    const observerOptions = {
+      root: null,
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px"
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
+  }, [loading, galleries]);
+
+  const handleCategoryClick = (key) => {
     setSearchParams({ cat: key });
   };
 
-  const tabItems = [
-    { key: "ALL", label: "TẤT CẢ" },
-    { key: "WEDDING", label: "ẢNH CƯỚI" },
-    { key: "PORTRAIT", label: "CHÂN DUNG" },
-    { key: "EVENT", label: "SỰ KIỆN" },
-    { key: "GRADUATION", label: "KỶ YẾU" },
+  const categories = [
+    { key: "ALL", index: "01", label: "TẤT CẢ" },
+    { key: "WEDDING", index: "02", label: "ẢNH CƯỚI" },
+    { key: "PORTRAIT", index: "03", label: "CHÂN DUNG" },
+    { key: "EVENT", index: "04", label: "SỰ KIỆN" },
+    { key: "GRADUATION", index: "05", label: "KỶ YẾU" },
   ];
 
+  // Pre-curated high-end demo fallbacks to keep the page visually stunning if API is empty
+  const demoGalleries = [
+    {
+      _id: "demo-gal-1",
+      title: "Eternal Romance in Da Lat",
+      category: "WEDDING",
+      coverImage: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1200",
+      location: "Đà Lạt, Lâm Đồng",
+      description: "Album phóng sự cưới Fine-Art ngập tràn ánh hoàng hôn ấm áp giữa đồi thông thơ mộng tại Đà Lạt."
+    },
+    {
+      _id: "demo-gal-2",
+      title: "Sài Gòn Sunrise Stories",
+      category: "PORTRAIT",
+      coverImage: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=1200",
+      location: "Quận 1, TP. HCM",
+      description: "Chân dung nghệ thuật đường phố ngập tràn ánh nắng ban mai rực rỡ và những khoảnh khắc đời thường tinh tế."
+    },
+    {
+      _id: "demo-gal-3",
+      title: "Sweet Dreamer Studio",
+      category: "WEDDING",
+      coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200",
+      location: "Cao Hien Studio",
+      description: "Bộ ảnh concept cưới tối giản trong studio tập trung trọn vẹn vào nụ cười ngọt ngào và ánh mắt hạnh phúc."
+    },
+    {
+      _id: "demo-gal-4",
+      title: "Luxury Fashion Editorial",
+      category: "EVENT",
+      coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200",
+      location: "TP. HCM",
+      description: "Phóng sự sự kiện thời trang xa xỉ với góc máy điện ảnh, bắt trọn từng bộ sưu tập sắc nét và dàn khách mời đẳng cấp."
+    },
+    {
+      _id: "demo-gal-5",
+      title: "Youthful Days in HCMC",
+      category: "GRADUATION",
+      coverImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200",
+      location: "TP. HCM",
+      description: "Kỷ yếu thanh xuân trong veo của nhóm bạn thân dưới mái trường cổ kính, mang màu sắc hoài niệm đầy cảm xúc."
+    }
+  ];
+
+  const displayGalleries = galleries.length > 0 
+    ? galleries 
+    : (currentCategory === "ALL" 
+        ? demoGalleries 
+        : demoGalleries.filter(item => item.category === currentCategory));
+
   return (
-    <div style={{ width: "100%", background: "#fff", minHeight: "100vh" }}>
-      {/* HERO */}
-      <section className="gallery-hero">
-        <div className="hero-overlay" />
+    <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", minHeight: "100vh" }}>
+      {/* Glow spotlight backgrounds */}
+      <div className="glow-spotlight-light" style={{ top: "8%", left: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ top: "45%", right: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ bottom: "10%", left: "10%" }}></div>
 
-        <div className="hero-content">
-          <div className="eyebrow">
-            <CameraOutlined />
-            CAO HIEN STUDIO
-          </div>
+      {/* LUXURY FINE ART HERO */}
+      <section style={{ padding: "80px 20px 60px 20px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <Row gutter={[40, 40]} align="middle">
+            {/* Left Column: Heading and curation values */}
+            <Col xs={24} lg={11} className="scroll-reveal">
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "8px 16px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: "25px" }}>
+                <CameraOutlined style={{ color: "#BFA16A" }} />
+                <span style={{ fontSize: "11px", letterSpacing: "3px", textTransform: "uppercase", color: "#BFA16A", fontWeight: "600" }}>
+                  Fine Art Curations
+                </span>
+              </div>
 
-          <h1>Thư Viện Ảnh</h1>
+              <h1 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "clamp(42px, 5.5vw, 76px)", fontWeight: "300", lineHeight: "1.15", margin: "0 0 25px 0", letterSpacing: "-1px" }}>
+                Nghệ Thuật <br/>
+                <span className="text-gold" style={{ fontStyle: "italic", fontWeight: "400" }}>Lưu Giữ</span> Ánh Sáng
+              </h1>
 
-          <p>
-            Mỗi khung hình là một câu chuyện được kể bằng ánh sáng, cảm xúc và
-            những khoảnh khắc không thể lặp lại.
-          </p>
+              <p style={{ color: "#555555", fontSize: "16.5px", lineHeight: "1.8", marginBottom: "40px", fontWeight: "300" }}>
+                Mỗi album ảnh là một tác phẩm nghệ thuật, được biên tập tỉ mỉ để giữ trọn vẹn những câu chuyện lãng mạn, cảm xúc chân thực và thần thái tự nhiên.
+              </p>
 
-          <div className="hero-stats">
-            <div>
-              <strong>{galleries.length || 0}</strong>
-              <span>Album hiển thị</span>
-            </div>
-            <div>
-              <strong>{categoryLabels[currentCategory]}</strong>
-              <span>Danh mục hiện tại</span>
-            </div>
-          </div>
+              {/* Grid Curation Stats */}
+              <div style={{ display: "flex", gap: "35px", borderTop: "1px solid #E8DED2", paddingTop: "30px" }}>
+                <div>
+                  <div className="font-serif-luxury text-gold" style={{ fontSize: "36px", fontWeight: "300" }}>{displayGalleries.length || 24}+</div>
+                  <div style={{ fontSize: "11px", color: "#777777", letterSpacing: "2px", textTransform: "uppercase", marginTop: "5px" }}>Tác Phẩm Trưng Bày</div>
+                </div>
+                <div>
+                  <div className="font-serif-luxury text-gold" style={{ fontSize: "36px", fontWeight: "300" }}>100%</div>
+                  <div style={{ fontSize: "11px", color: "#777777", letterSpacing: "2px", textTransform: "uppercase", marginTop: "5px" }}>Cảm Xúc Nguyên Bản</div>
+                </div>
+              </div>
+            </Col>
+
+            {/* Right Column: Layered 3D Floating Collage Exhibit */}
+            <Col xs={24} lg={13} className="scroll-reveal stagger-1">
+              <div className="museum-collage-container">
+                <div className="museum-collage-item collage-1">
+                  <img src="https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop" alt="stacked-1" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+                <div className="museum-collage-item collage-2">
+                  <img src="https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop" alt="stacked-2" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+                <div className="museum-collage-item collage-3">
+                  <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop" alt="stacked-3" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              </div>
+            </Col>
+          </Row>
         </div>
       </section>
 
-      {/* CONTENT */}
-      <section className="gallery-section">
-        <div className="section-heading">
-          <div>
-            <span className="section-kicker">SELECTED WORKS</span>
-            <h2>Bộ sưu tập nổi bật</h2>
-          </div>
-
-          <p>
-            Khám phá những album được chọn lọc từ các buổi chụp cưới, chân dung,
-            sự kiện và kỷ yếu của studio.
-          </p>
+      {/* CATALOG-STYLE CATEGORY NAVIGATOR */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
+        <div className="catalog-selector scroll-reveal">
+          {categories.map((cat) => (
+            <div
+              key={cat.key}
+              className={`catalog-link ${currentCategory === cat.key ? "active" : ""}`}
+              onClick={() => handleCategoryClick(cat.key)}
+            >
+              <span className="catalog-num">{cat.index}</span>
+              <span>{cat.label}</span>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <div className="gallery-tabs">
-          <Tabs
-            activeKey={currentCategory}
-            onChange={handleTabChange}
-            items={tabItems}
-            size="large"
-            tabBarStyle={{ borderBottom: "none", marginBottom: 0 }}
-          />
-        </div>
-
+      {/* MUSEUM GALLERY GRID */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px 100px 20px" }}>
         {loading ? (
-          <div className="loading-box">
+          <div style={{ textAlign: "center", padding: "120px 0" }}>
             <Spin size="large" />
-            <p>Đang tải thư viện ảnh...</p>
+            <p style={{ marginTop: "15px", color: "#777777", letterSpacing: "1px" }}>Đang giám tuyển trưng bày...</p>
           </div>
-        ) : galleries.length === 0 ? (
-          <div className="empty-box">
-            <Empty description="Chưa có album nào trong danh mục này" />
+        ) : displayGalleries.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "80px 20px" }} className="glass-panel">
+            <Empty description="Không có tác phẩm nào hiển thị cho mục này." />
           </div>
         ) : (
-          <div className="gallery-grid">
-            {galleries.map((item, index) => (
-              <article
-                key={item._id}
-                className={`gallery-card ${
-                  index % 7 === 0 ? "gallery-card-large" : ""
-                }`}
-                onClick={() => navigate(`/galleries/${item._id}`)}
-              >
-                <img
-                  src={
-                    item.coverImage ||
-                    item.thumbnailLink ||
-                    "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop"
-                  }
-                  alt={item.title}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop";
-                  }}
-                />
-
-                <div className="card-shade" />
-
-                <div className="card-top">
-                  <span>
-                    <PictureOutlined />
-                    {categoryLabels[item.category] || item.category}
-                  </span>
-                </div>
-
-                <div className="card-content">
-                  <div>
-                    <span className="card-category">
-                      {categoryLabels[item.category] || item.category}
-                    </span>
-
-                    <h3>{item.title}</h3>
-
-                    {item.description && <p>{item.description}</p>}
+          <div className="museum-grid">
+            {displayGalleries.map((item, index) => {
+              // 1. Featured Editorial Layout for index 0
+              if (index === 0) {
+                return (
+                  <div
+                    key={item._id}
+                    className="museum-col-12 scroll-reveal"
+                    onClick={() => navigate(`/galleries/${item._id}`)}
+                  >
+                    <div className="museum-card featured-editorial-card">
+                      <Row gutter={[40, 20]} align="middle">
+                        <Col xs={24} md={14}>
+                          <div className="museum-image-wrapper" style={{ height: "420px" }}>
+                            <img src={item.coverImage || item.thumbnailLink || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200"} alt={item.title} />
+                          </div>
+                        </Col>
+                        <Col xs={24} md={10}>
+                          <div className="museum-card-info" style={{ padding: "10px 15px 10px 15px" }}>
+                            <span className="museum-card-category" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <StarFilled style={{ color: "#BFA16A" }} /> FEATURED CURATION
+                            </span>
+                            <h3 className="museum-card-title font-serif-luxury" style={{ fontSize: "34px", fontWeight: "300", margin: "10px 0 20px 0", lineHeight: "1.25" }}>
+                              {item.title}
+                            </h3>
+                            <p className="museum-card-desc" style={{ fontSize: "14px", lineHeight: "1.8", color: "#666666", marginBottom: "30px", WebkitLineClamp: 4 }}>
+                              {item.description || "Bộ tác phẩm đặc tuyển biểu trưng cho nét đẹp tinh khôi, sự lãng mạn và kỹ thuật ánh sáng xuất sắc độc quyền của studio."}
+                            </p>
+                            <div className="museum-card-footer">
+                              <span style={{ fontSize: "12px", color: "#777777" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Việt Nam"}</span>
+                              <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    </div>
                   </div>
+                );
+              }
 
-                  <button className="view-button">
-                    Xem album <ArrowRightOutlined />
-                  </button>
-                </div>
-              </article>
-            ))}
+              // 2. Artistic Quote banner in the middle of grid
+              const showQuote = index === 3;
+              
+              // Grid columns layout logic
+              let colSize = "museum-col-6";
+              if (index === 1 || index === 2) colSize = "museum-col-6";
+              else if (index % 3 === 0) colSize = "museum-col-4";
+              else colSize = "museum-col-4"; // 4-column cards for details grid rhythm
+
+              return (
+                <React.Fragment key={item._id}>
+                  {showQuote && (
+                    <div className="museum-col-12 scroll-reveal">
+                      <div className="museum-quote-banner">
+                        <p className="museum-quote-text">
+                          "Ánh sáng vẽ nên hình hài, cảm xúc vẽ nên linh hồn. <br/>
+                          Chúng tôi không chỉ chụp lại khoảnh khắc, chúng tôi ghi lại câu chuyện cuộc đời bạn."
+                        </p>
+                        <div className="museum-quote-author">⚜ CAO HIEN STUDIO PHILOSOPHY ⚜</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={`${colSize} scroll-reveal stagger-${(index % 3) + 1}`}
+                    onClick={() => navigate(`/galleries/${item._id}`)}
+                  >
+                    <div className="museum-card">
+                      <div className="museum-image-wrapper">
+                        <img
+                          src={
+                            item.coverImage ||
+                            item.thumbnailLink ||
+                            "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200"
+                          }
+                          alt={item.title}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200";
+                          }}
+                        />
+                      </div>
+
+                      <div className="museum-card-info">
+                        <span className="museum-card-category">
+                          {categoryLabels[item.category] || item.category}
+                        </span>
+
+                        <h3 className="museum-card-title">{item.title}</h3>
+
+                        {item.description && <p className="museum-card-desc">{item.description}</p>}
+
+                        <div className="museum-card-footer">
+                          <span style={{ fontSize: "12px", color: "#888888" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Cao Hien Studio"}</span>
+                          <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
       </section>
 
       <style>{`
-        .gallery-hero {
+        /* 3D Collage Exhibit Styles */
+        .museum-collage-container {
           position: relative;
-          min-height: 72vh;
-          background-image:
-            linear-gradient(120deg, rgba(0,0,0,0.78), rgba(0,0,0,0.28)),
-            url("https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=2070&auto=format&fit=crop");
-          background-size: cover;
-          background-position: center;
-          background-attachment: fixed;
-          display: flex;
-          align-items: center;
-          overflow: hidden;
-        }
-
-        .hero-overlay {
-          position: absolute;
-          inset: 0;
-          background:
-            radial-gradient(circle at 75% 25%, rgba(154,138,120,0.25), transparent 34%),
-            linear-gradient(to bottom, transparent 65%, #fff 100%);
-          pointer-events: none;
-        }
-
-        .hero-content {
-          position: relative;
-          z-index: 1;
-          max-width: 920px;
-          padding: 110px 8vw 90px;
-          color: #fff;
-        }
-
-        .eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          color: #e8ded2;
-          font-size: 12px;
-          letter-spacing: 4px;
-          font-weight: 700;
-          margin-bottom: 22px;
-        }
-
-        .hero-content h1 {
-          font-family: ${FONT_SERIF};
-          font-size: clamp(58px, 8vw, 112px);
-          line-height: 0.95;
-          font-weight: 400;
-          margin: 0 0 24px;
-          letter-spacing: -2px;
-        }
-
-        .hero-content p {
-          max-width: 660px;
-          font-size: 17px;
-          line-height: 1.9;
-          color: rgba(255,255,255,0.82);
-          margin: 0;
-        }
-
-        .hero-stats {
-          display: flex;
-          gap: 18px;
-          margin-top: 38px;
-          flex-wrap: wrap;
-        }
-
-        .hero-stats div {
-          min-width: 170px;
-          padding: 18px 22px;
-          border: 1px solid rgba(255,255,255,0.24);
-          background: rgba(255,255,255,0.08);
-          backdrop-filter: blur(12px);
-        }
-
-        .hero-stats strong {
-          display: block;
-          font-family: ${FONT_SERIF};
-          font-size: 28px;
-          font-weight: 400;
-          margin-bottom: 4px;
-        }
-
-        .hero-stats span {
-          font-size: 11px;
-          color: rgba(255,255,255,0.68);
-          letter-spacing: 2px;
-          text-transform: uppercase;
-        }
-
-        .gallery-section {
-          max-width: 1480px;
+          height: 420px;
+          width: 100%;
+          max-width: 500px;
           margin: 0 auto;
-          padding: 76px 28px 95px;
         }
 
-        .section-heading {
-          display: grid;
-          grid-template-columns: 1fr minmax(280px, 520px);
-          gap: 34px;
-          align-items: end;
-          margin-bottom: 36px;
+        .museum-collage-item {
+          position: absolute;
+          width: 250px;
+          height: 330px;
+          border: 10px solid #FFFFFF;
+          box-shadow: 0 15px 35px rgba(154, 138, 120, 0.12);
+          overflow: hidden;
+          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .section-kicker {
-          display: block;
-          color: ${PRIMARY_COLOR};
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 3px;
-          margin-bottom: 10px;
+        .collage-1 {
+          top: 10px;
+          left: 10px;
+          transform: rotate(-6deg);
+          z-index: 1;
         }
 
-        .section-heading h2 {
-          font-family: ${FONT_SERIF};
-          font-size: clamp(36px, 4.5vw, 62px);
-          font-weight: 400;
-          margin: 0;
-          color: #222;
+        .collage-2 {
+          top: 40px;
+          right: 10px;
+          transform: rotate(5deg);
+          z-index: 2;
         }
 
-        .section-heading p {
-          color: #777;
-          line-height: 1.8;
-          margin: 0;
-          font-size: 15px;
+        .collage-3 {
+          bottom: 10px;
+          left: 120px;
+          transform: rotate(-2deg);
+          z-index: 3;
         }
 
-        .gallery-tabs {
+        .museum-collage-container:hover .collage-1 {
+          transform: translate(-30px, -15px) rotate(-10deg);
+        }
+
+        .museum-collage-container:hover .collage-2 {
+          transform: translate(30px, -20px) rotate(9deg);
+        }
+
+        .museum-collage-container:hover .collage-3 {
+          transform: translate(0px, 20px) rotate(1deg) scale(1.05);
+          z-index: 4;
+          box-shadow: 0 20px 45px rgba(154, 138, 120, 0.2);
+        }
+
+        /* Catalog index navigation */
+        .catalog-selector {
           display: flex;
           justify-content: center;
-          margin: 24px 0 44px;
-          padding: 12px;
-          background: #f8f5f1;
-          border: 1px solid #eee6dc;
+          gap: 30px;
+          flex-wrap: wrap;
+          margin: 40px 0 60px 0;
+          padding: 15px 20px;
+          border-top: 1px solid #E8DED2;
+          border-bottom: 1px solid #E8DED2;
         }
 
-        .gallery-tabs .ant-tabs-tab {
-          font-size: 12px;
-          letter-spacing: 2px;
-          color: #777;
-          padding: 12px 20px;
-          transition: all 0.3s;
+        .catalog-link {
+          font-family: 'Outfit', sans-serif;
+          font-size: 12.5px;
+          letter-spacing: 2.5px;
+          color: #777777;
+          cursor: pointer;
+          transition: all 0.4s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          text-transform: uppercase;
+          position: relative;
+          padding: 8px 12px;
         }
 
-        .gallery-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: ${PRIMARY_COLOR} !important;
-          font-weight: 700;
+        .catalog-link::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          width: 0;
+          height: 1px;
+          background-color: #BFA16A;
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .gallery-tabs .ant-tabs-ink-bar {
-          background: ${PRIMARY_COLOR};
-          height: 2px;
+        .catalog-link:hover::after,
+        .catalog-link.active::after {
+          width: 80%;
+          left: 10%;
         }
 
-        .loading-box,
-        .empty-box {
-          min-height: 320px;
+        .catalog-link:hover,
+        .catalog-link.active {
+          color: #BFA16A;
+        }
+
+        .catalog-num {
+          font-size: 9px;
+          color: #BFA16A;
+          font-weight: 600;
+          position: relative;
+          top: -4px;
+        }
+
+        /* Museum Fine Art Card */
+        .museum-card {
+          background: #FFFFFF;
+          border: 1px solid #E8DED2;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #888;
-        }
-
-        .loading-box p {
-          margin-top: 18px;
-          color: #777;
-          letter-spacing: 1px;
-        }
-
-        .gallery-grid {
-          display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          grid-auto-rows: 90px;
-          gap: 18px;
-        }
-
-        .gallery-card {
-          grid-column: span 4;
-          grid-row: span 5;
-          position: relative;
-          overflow: hidden;
+          height: 100%;
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           cursor: pointer;
-          background: #eee;
-          border-radius: 18px;
-          box-shadow: 0 18px 45px rgba(0,0,0,0.08);
-          isolation: isolate;
+          border-radius: 0px;
         }
 
-        .gallery-card-large {
-          grid-column: span 6;
-          grid-row: span 6;
+        .museum-card:hover {
+          border-color: ${PRIMARY_COLOR};
+          transform: translateY(-8px);
+          box-shadow: 0 15px 35px rgba(154, 138, 120, 0.08);
         }
 
-        .gallery-card img {
+        .featured-editorial-card {
+          padding: 24px;
+        }
+
+        .museum-image-wrapper {
+          position: relative;
+          width: 100%;
+          height: 290px;
+          overflow: hidden;
+          background: #FAF7F2;
+          border: 1px solid #E8DED2;
+        }
+
+        .museum-image-wrapper img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
-          transform: scale(1.02);
-          transition: transform 1.1s cubic-bezier(.2,.8,.2,1), filter 0.6s ease;
+          transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .card-shade {
-          position: absolute;
-          inset: 0;
-          background:
-            linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.2) 48%, rgba(0,0,0,0.04)),
-            radial-gradient(circle at 50% 20%, transparent, rgba(0,0,0,0.18));
-          opacity: 0.82;
-          transition: opacity 0.5s ease;
+        .museum-card:hover .museum-image-wrapper img {
+          transform: scale(1.08);
         }
 
-        .card-top {
-          position: absolute;
-          top: 18px;
-          left: 18px;
-          right: 18px;
+        .museum-card-info {
+          padding-top: 22px;
+          position: relative;
+          flex: 1;
           display: flex;
-          justify-content: flex-start;
-          z-index: 2;
+          flex-direction: column;
         }
 
-        .card-top span {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          border-radius: 999px;
-          color: #fff;
-          font-size: 11px;
-          letter-spacing: 1.6px;
+        .museum-card-category {
+          font-size: 10.5px;
+          color: #BFA16A;
+          letter-spacing: 2px;
           text-transform: uppercase;
-          background: rgba(255,255,255,0.16);
-          border: 1px solid rgba(255,255,255,0.22);
-          backdrop-filter: blur(10px);
-        }
-
-        .card-content {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 2;
-          padding: 30px;
-          color: #fff;
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 18px;
-          transform: translateY(8px);
-          transition: transform 0.5s ease;
-        }
-
-        .card-category {
-          display: block;
-          color: #e5d7c6;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 2.8px;
-          text-transform: uppercase;
+          font-weight: 600;
           margin-bottom: 8px;
+          display: block;
         }
 
-        .card-content h3 {
-          font-family: ${FONT_SERIF};
-          font-size: clamp(25px, 2.1vw, 38px);
-          line-height: 1.05;
-          font-weight: 400;
-          margin: 0;
+        .museum-card-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 21px;
+          font-weight: 300;
+          color: #2F2F2F;
+          margin: 0 0 12px 0;
+          line-height: 1.35;
         }
 
-        .card-content p {
-          max-width: 440px;
-          margin: 10px 0 0;
-          color: rgba(255,255,255,0.75);
-          line-height: 1.6;
-          font-size: 13px;
+        .museum-card-desc {
+          font-size: 13.5px;
+          color: #666666;
+          line-height: 1.7;
+          margin: 0 0 20px 0;
+          font-weight: 300;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
 
-        .view-button {
-          flex: 0 0 auto;
-          display: inline-flex;
+        .museum-card-footer {
+          display: flex;
+          justify-content: space-between;
           align-items: center;
-          gap: 10px;
-          border: 1px solid rgba(255,255,255,0.35);
-          background: rgba(255,255,255,0.12);
-          color: #fff;
-          padding: 12px 16px;
-          border-radius: 999px;
-          font-size: 12px;
-          letter-spacing: 1px;
-          cursor: pointer;
-          backdrop-filter: blur(10px);
-          transform: translateX(8px);
-          opacity: 0;
-          transition: all 0.45s ease;
+          margin-top: auto;
+          padding-top: 16px;
+          border-top: 1px dashed #E8DED2;
         }
 
-        .gallery-card:hover img {
-          transform: scale(1.1);
-          filter: saturate(1.08) contrast(1.05);
+        .museum-card-action {
+          font-size: 11px;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-weight: 500;
+          color: #2F2F2F;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: color 0.3s;
         }
 
-        .gallery-card:hover .card-shade {
-          opacity: 1;
+        .museum-card:hover .museum-card-action {
+          color: #BFA16A;
         }
 
-        .gallery-card:hover .card-content {
-          transform: translateY(0);
+        /* Asymmetric grid sizes */
+        .museum-grid {
+          display: grid;
+          grid-template-columns: repeat(12, 1fr);
+          gap: 30px;
         }
 
-        .gallery-card:hover .view-button {
-          opacity: 1;
-          transform: translateX(0);
+        .museum-col-12 {
+          grid-column: span 12;
         }
 
-        @media (max-width: 1180px) {
-          .gallery-card,
-          .gallery-card-large {
+        .museum-col-6 {
+          grid-column: span 6;
+        }
+
+        .museum-col-4 {
+          grid-column: span 4;
+        }
+
+        /* Double border philosophy banner */
+        .museum-quote-banner {
+          border: 1px solid #E8DED2;
+          padding: 60px 40px;
+          position: relative;
+          text-align: center;
+          background: rgba(255, 255, 255, 0.4);
+          margin: 30px 0;
+        }
+
+        .museum-quote-banner::before {
+          content: '';
+          position: absolute;
+          inset: 6px;
+          border: 1px solid #E8DED2;
+          pointer-events: none;
+        }
+
+        .museum-quote-text {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 24px;
+          font-style: italic;
+          color: #2F2F2F;
+          line-height: 1.7;
+          font-weight: 300;
+          margin: 0;
+        }
+
+        .museum-quote-author {
+          font-size: 10.5px;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          color: #BFA16A;
+          margin-top: 20px;
+          font-weight: 600;
+        }
+
+        @media (max-width: 991px) {
+          .museum-col-6 {
+            grid-column: span 12;
+          }
+          .museum-col-4 {
             grid-column: span 6;
-            grid-row: span 5;
+          }
+          .featured-editorial-card {
+            padding: 16px;
+          }
+          .museum-collage-container {
+            height: 380px;
+          }
+          .museum-collage-item {
+            width: 220px;
+            height: 290px;
+          }
+          .collage-3 {
+            left: 100px;
           }
         }
 
-        @media (max-width: 768px) {
-          .gallery-hero {
-            min-height: 62vh;
-            background-attachment: scroll;
+        @media (max-width: 767px) {
+          .museum-col-4 {
+            grid-column: span 12;
           }
-
-          .hero-content {
-            padding: 90px 24px 70px;
-          }
-
-          .hero-content h1 {
-            font-size: 58px;
-          }
-
-          .section-heading {
-            grid-template-columns: 1fr;
-          }
-
-          .gallery-tabs {
+          .catalog-selector {
             justify-content: flex-start;
             overflow-x: auto;
+            white-space: nowrap;
+            gap: 15px;
           }
-
-          .gallery-grid {
-            display: block;
-          }
-
-          .gallery-card,
-          .gallery-card-large {
-            height: 420px;
-            margin-bottom: 18px;
-          }
-
-          .card-content {
-            padding: 24px;
-            display: block;
-          }
-
-          .view-button {
-            opacity: 1;
-            transform: none;
-            margin-top: 18px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .gallery-card,
-          .gallery-card-large {
-            height: 360px;
-            border-radius: 14px;
-          }
-
-          .card-content h3 {
-            font-size: 28px;
+          .museum-quote-text {
+            font-size: 19px;
           }
         }
       `}</style>

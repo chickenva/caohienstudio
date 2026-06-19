@@ -13,6 +13,8 @@ const STATUS_OPTIONS = [
   { label: "Tất cả", value: "ALL" },
   { label: "Chờ thanh toán", value: "PENDING" },
   { label: "Đã đặt cọc", value: "DEPOSITED" },
+  { label: "Đã xác nhận", value: "CONFIRMED" },
+  { label: "Đang thực hiện", value: "IN_PROGRESS" },
   { label: "Hoàn thành", value: "COMPLETED" },
   { label: "Đã hủy", value: "CANCELED" },
 ];
@@ -65,6 +67,8 @@ const renderOrderStatus = (status) => {
   const map = {
     PENDING: { color: "gold", text: "Chờ thanh toán" },
     DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+    CONFIRMED: { color: "blue", text: "Đã xác nhận" },
+    IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
     COMPLETED: { color: "green", text: "Hoàn thành" },
     CANCELED: { color: "red", text: "Đã hủy" },
 

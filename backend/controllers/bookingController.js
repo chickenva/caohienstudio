@@ -8,7 +8,17 @@ const moment = require("moment");
 const bcrypt = require("bcryptjs");
 
 const BOOKING_HOLD_MINUTES = 15;
-const BOOKING_STATUSES = ["PENDING", "DEPOSITED", "COMPLETED", "CANCELED"];
+const BOOKING_STATUSES = ["PENDING", "DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELED"];
+
+// Quy tắc chuyển trạng thái hợp lệ
+const VALID_TRANSITIONS = {
+  PENDING: ["DEPOSITED", "CANCELED"],
+  DEPOSITED: ["CONFIRMED", "CANCELED"],
+  CONFIRMED: ["IN_PROGRESS", "CANCELED"],
+  IN_PROGRESS: ["COMPLETED"],
+  COMPLETED: [],
+  CANCELED: [],
+};
 const DEPOSIT_PERCENTS = [30, 50, 100];
 
 // ==========================================
@@ -166,6 +176,8 @@ const findPhotographerConflict = async ({
     end_time: { $gt: startDate },
     $or: [
       { status: "DEPOSITED" },
+      { status: "CONFIRMED" },
+      { status: "IN_PROGRESS" },
       { status: "COMPLETED" },
       {
         status: "PENDING",
@@ -303,6 +315,7 @@ exports.createVnpayPayment = async (req, res) => {
       service_id,
       photographer_ids,
       start_time,
+      end_time,
       location,
       note,
       deposit_percent,
@@ -386,9 +399,11 @@ exports.createVnpayPayment = async (req, res) => {
       });
     }
 
-    const endDate = moment(startDate)
-      .add(service.duration_hours || 4, "hours")
-      .toDate();
+    const endDate = end_time
+      ? new Date(end_time)
+      : moment(startDate)
+        .add(service.duration_hours || 4, "hours")
+        .toDate();
 
     const conflictBooking = await findPhotographerConflict({
       photographerIds: photographer_ids,
@@ -893,7 +908,7 @@ exports.createBookingForAdmin = async (req, res) => {
     }
 
     const bookingStatus = status || "DEPOSITED";
-    const allowedAdminStatuses = ["PENDING", "DEPOSITED", "COMPLETED"];
+    const allowedAdminStatuses = ["PENDING", "DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"];
 
     if (!allowedAdminStatuses.includes(bookingStatus)) {
       return res.status(400).json({
@@ -1160,6 +1175,15 @@ exports.updateBookingStatus = async (req, res) => {
       });
     }
 
+    // Validate transition rules
+    const allowedNextStatuses = VALID_TRANSITIONS[booking.status] || [];
+    if (!allowedNextStatuses.includes(status)) {
+      return res.status(400).json({
+        message: `Không thể chuyển trạng thái từ "${booking.status}" sang "${status}". Chuyển trạng thái hợp lệ: ${allowedNextStatuses.join(", ") || "Không có"}.`,
+        code: "INVALID_TRANSITION",
+      });
+    }
+
     booking.status = status;
 
     if (status === "PENDING" && !booking.expires_at) {
@@ -1208,6 +1232,50 @@ exports.updateBookingStatus = async (req, res) => {
 
     return res.status(500).json({
       message: "Lỗi cập nhật trạng thái đơn",
+      error: error.message,
+    });
+  }
+};
+
+// API Lấy danh sách khung giờ bận của thợ chụp
+exports.getPhotographerBusySlots = async (req, res) => {
+  try {
+    const { photographer_id, date, start_date, end_date } = req.query;
+    if (!photographer_id) {
+      return res.status(400).json({ message: "Thiếu id thợ chụp" });
+    }
+
+    let queryStart, queryEnd;
+    if (start_date && end_date) {
+      queryStart = moment(start_date).startOf("day").toDate();
+      queryEnd = moment(end_date).endOf("day").toDate();
+    } else if (date) {
+      queryStart = moment(date).startOf("day").toDate();
+      queryEnd = moment(date).endOf("day").toDate();
+    } else {
+      return res.status(400).json({ message: "Thiếu ngày cần kiểm tra" });
+    }
+
+    const bookings = await Booking.find({
+      photographer_ids: photographer_id,
+      start_time: { $gte: queryStart, $lte: queryEnd },
+      $or: [
+        { status: "DEPOSITED" },
+        { status: "CONFIRMED" },
+        { status: "IN_PROGRESS" },
+        { status: "COMPLETED" },
+        {
+          status: "PENDING",
+          expires_at: { $gt: new Date() },
+        },
+      ],
+    }).select("start_time end_time");
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Get photographer busy slots error:", error);
+    return res.status(500).json({
+      message: "Lỗi lấy thông tin lịch bận của thợ chụp",
       error: error.message,
     });
   }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Spin, message, Image, Button, Tag, Empty, Row, Col, Card } from "antd";
+import { Spin, message, Image, Empty, Row, Col } from "antd";
 import {
   ArrowLeftOutlined,
   EnvironmentOutlined,
@@ -9,9 +9,10 @@ import {
   PictureOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import "../../Home.css";
 
-const PRIMARY_COLOR = "#9a8a78";
-const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
+const PRIMARY_COLOR = "#BFA16A";
+const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop";
@@ -32,34 +33,64 @@ const GalleryDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGalleryDetail = async () => {
-      setLoading(true);
+    document.body.style.backgroundColor = "#FAF7F2";
+    fetchGalleryDetail();
 
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/galleries/${id}`,
-        );
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
+  }, [id]);
 
-        setGallery(res.data.gallery);
-        setImages(res.data.images || []);
-      } catch (err) {
-        message.error(
-          err.response?.data?.message || "Không tìm thấy album ảnh",
-        );
-      } finally {
-        setLoading(false);
-      }
+  // Scroll reveals trigger
+  useEffect(() => {
+    if (loading) return;
+
+    const revealElements = document.querySelectorAll(".scroll-reveal");
+    const observerOptions = {
+      root: null,
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px"
     };
 
-    fetchGalleryDetail();
-  }, [id]);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
+  }, [loading, gallery, images]);
+
+  const fetchGalleryDetail = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/galleries/${id}`,
+      );
+      setGallery(res.data.gallery);
+      setImages(res.data.images || []);
+    } catch (err) {
+      message.error(
+        err.response?.data?.message || "Không tìm thấy album ảnh",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: "150px" }}>
+      <div style={{ textAlign: "center", padding: "150px 0", background: "#FAF7F2" }}>
         <Spin size="large" />
-        <div style={{ marginTop: 16, color: "#777" }}>
-          Đang tải album từ Google Drive...
+        <div style={{ marginTop: 16, color: "#777777", fontFamily: "Outfit", letterSpacing: "0.5px" }}>
+          Đang kết nối thư viện ảnh...
         </div>
       </div>
     );
@@ -71,13 +102,18 @@ const GalleryDetail = () => {
     gallery.coverImage || images?.[0]?.imageUrl || FALLBACK_IMAGE;
 
   return (
-    <div style={{ width: "100%", background: "#fff", minHeight: "100vh" }}>
-      {/* HEADER ALBUM */}
+    <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", minHeight: "100vh" }}>
+      {/* Ambient spotlights */}
+      <div className="glow-spotlight-light" style={{ top: "8%", left: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ top: "45%", right: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ bottom: "10%", left: "10%" }}></div>
+
+      {/* HEADER ALBUM (Light luxury fine-art background banner) */}
       <div
         style={{
           position: "relative",
-          minHeight: "62vh",
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.58), rgba(0,0,0,0.76)), url(${coverImage})`,
+          minHeight: "55vh",
+          backgroundImage: `linear-gradient(to bottom, rgba(250, 247, 242, 0.4) 0%, rgba(250, 247, 242, 0.98) 100%), url(${coverImage})`,
           backgroundAttachment: "fixed",
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -85,61 +121,67 @@ const GalleryDetail = () => {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "#fff",
-          padding: "90px 20px",
+          color: "#2F2F2F",
+          padding: "80px 20px 40px 20px",
           textAlign: "center",
+          borderBottom: "1px solid #E8DED2"
         }}
+        className="scroll-reveal"
       >
-        <Button
-          type="link"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/galleries")}
-          style={{
-            position: "absolute",
-            top: "40px",
-            left: "40px",
-            color: "#fff",
-            fontSize: "12px",
-            letterSpacing: "2px",
-          }}
-        >
-          QUAY LẠI THƯ VIỆN
-        </Button>
+        {/* Back Button */}
+        <div style={{ maxWidth: "1200px", margin: "0 auto 30px auto", width: "100%", textAlign: "left", padding: "0 20px" }}>
+          <button
+            onClick={() => navigate("/galleries")}
+            className="btn-premium-outline"
+            style={{ height: "40px", padding: "0 20px", fontSize: "11px" }}
+          >
+            <ArrowLeftOutlined style={{ marginRight: "6px" }} /> QUAY LẠI THƯ VIỆN
+          </button>
+        </div>
 
-        <Tag
-          color={PRIMARY_COLOR}
+        {/* Category tag label */}
+        <span
           style={{
-            letterSpacing: "2px",
-            marginBottom: "20px",
-            padding: "6px 16px",
-            border: "none",
-            borderRadius: "999px",
+            fontSize: "10px",
+            letterSpacing: "2.5px",
+            fontWeight: "600",
+            textTransform: "uppercase",
+            padding: "4px 12px",
+            border: "1px solid rgba(191, 161, 106, 0.3)",
+            background: "rgba(191, 161, 106, 0.05)",
+            color: "#BFA16A",
+            display: "inline-block",
+            marginBottom: "20px"
           }}
         >
           {categoryLabels[gallery.category] || gallery.category}
-        </Tag>
+        </span>
 
+        {/* Title */}
         <h1
+          className="font-serif-luxury"
           style={{
-            fontFamily: FONT_SERIF,
-            fontSize: "clamp(44px, 7vw, 86px)",
-            lineHeight: 1,
-            fontWeight: "normal",
-            margin: "0 0 22px 0",
+            fontSize: "clamp(36px, 5.5vw, 68px)",
+            lineHeight: 1.15,
+            fontWeight: "300",
+            margin: "0 0 20px 0",
             maxWidth: "1000px",
+            color: "#1F1F1F"
           }}
         >
           {gallery.title}
         </h1>
 
+        {/* Description */}
         {gallery.description && (
           <p
             style={{
-              fontSize: "16px",
+              fontSize: "15.5px",
               maxWidth: "720px",
-              color: "#eee",
+              color: "#555555",
               lineHeight: "1.8",
               margin: 0,
+              fontWeight: "300"
             }}
           >
             {gallery.description}
@@ -147,111 +189,163 @@ const GalleryDetail = () => {
         )}
       </div>
 
-      {/* THÔNG TIN ALBUM */}
+      {/* THÔNG TIN CHI TIẾT ALBUM */}
       <div
-        style={{ maxWidth: "1200px", margin: "0 auto", padding: "55px 20px 0" }}
+        style={{ maxWidth: "1200px", margin: "0 auto", padding: "50px 20px 0 20px" }}
+        className="scroll-reveal stagger-1"
       >
         <Row gutter={[20, 20]}>
+          {/* Photos count */}
           <Col xs={24} md={8}>
-            <Card bordered={false} style={{ background: "#f8f5f1" }}>
-              <div style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
-                <PictureOutlined style={{ marginRight: 8 }} />
-                Số lượng ảnh
+            <div 
+              className="glass-panel" 
+              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+            >
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <PictureOutlined />
+                <span>Số lượng ảnh</span>
               </div>
               <div
+                className="font-serif-luxury text-gold"
                 style={{
-                  fontFamily: FONT_SERIF,
-                  fontSize: 34,
+                  fontSize: "36px",
+                  fontWeight: "300",
                   marginTop: 8,
                 }}
               >
                 {images.length}
               </div>
-            </Card>
+            </div>
           </Col>
 
+          {/* Location */}
           <Col xs={24} md={8}>
-            <Card bordered={false} style={{ background: "#f8f5f1" }}>
-              <div style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
-                <EnvironmentOutlined style={{ marginRight: 8 }} />
-                Địa điểm
+            <div 
+              className="glass-panel" 
+              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+            >
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <EnvironmentOutlined />
+                <span>Địa điểm chụp</span>
               </div>
-              <div style={{ marginTop: 12, color: "#444" }}>
-                {gallery.location || "Chưa cập nhật"}
+              <div
+                className="font-serif-luxury"
+                style={{
+                  fontSize: "22px",
+                  fontWeight: "300",
+                  color: "#2F2F2F",
+                  marginTop: 18,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+              >
+                {gallery.location || "Cao Hien Studio"}
               </div>
-            </Card>
+            </div>
           </Col>
 
+          {/* Photographer */}
           <Col xs={24} md={8}>
-            <Card bordered={false} style={{ background: "#f8f5f1" }}>
-              <div style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
-                <CameraOutlined style={{ marginRight: 8 }} />
-                Nhiếp ảnh gia
+            <div 
+              className="glass-panel" 
+              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+            >
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <CameraOutlined />
+                <span>Nhiếp ảnh gia</span>
               </div>
-              <div style={{ marginTop: 12, color: "#444" }}>
+              <div
+                className="font-serif-luxury"
+                style={{
+                  fontSize: "22px",
+                  fontWeight: "300",
+                  color: "#2F2F2F",
+                  marginTop: 18,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+              >
                 {gallery.photographer_id?.full_name || "Cao Hien Studio"}
               </div>
-            </Card>
+            </div>
           </Col>
 
+          {/* Related service package */}
           {gallery.service_id && (
             <Col xs={24}>
-              <Card bordered={false} style={{ background: "#fff" }}>
-                <div style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
-                  <AppstoreOutlined style={{ marginRight: 8 }} />
-                  Gói chụp liên quan
+              <div 
+                style={{ 
+                  padding: "30px", 
+                  border: "1px solid #E8DED2", 
+                  background: "#FFFFFF", 
+                  borderRadius: "0px", 
+                  marginTop: "10px",
+                  position: "relative"
+                }}
+              >
+                <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", marginBottom: "15px" }}>
+                  <AppstoreOutlined />
+                  <span>Gói dịch vụ liên quan</span>
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 18, fontWeight: 700 }}>
+                <div className="font-serif-luxury" style={{ fontSize: "24px", color: "#2F2F2F", fontWeight: "300", marginBottom: "10px" }}>
                   {gallery.service_id.name}
                 </div>
 
                 {gallery.service_id.description && (
-                  <div style={{ marginTop: 8, color: "#666", lineHeight: 1.7 }}>
+                  <p style={{ color: "#555555", lineHeight: "1.8", fontSize: "14px", fontWeight: "300", margin: 0 }}>
                     {gallery.service_id.description}
-                  </div>
+                  </p>
                 )}
-              </Card>
+              </div>
             </Col>
           )}
         </Row>
       </div>
 
-      {/* LƯỚI ẢNH CHI TIẾT */}
+      {/* MASONRY PICTURES EXHIBIT GRID */}
       <div
         style={{
           maxWidth: "1400px",
           margin: "0 auto",
-          padding: "70px 20px 90px",
+          padding: "70px 20px 90px 20px",
         }}
+        className="scroll-reveal stagger-2"
       >
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: "35px" }}>
           <div
             style={{
               color: PRIMARY_COLOR,
-              fontSize: 12,
-              fontWeight: 700,
+              fontSize: 11,
+              fontWeight: "600",
               letterSpacing: 3,
               marginBottom: 8,
+              textTransform: "uppercase"
             }}
           >
-            ALBUM PHOTOS
+            Curated Exhibits
           </div>
 
           <h2
+            className="font-serif-luxury"
             style={{
-              fontFamily: FONT_SERIF,
-              fontSize: 42,
-              fontWeight: "normal",
+              fontSize: "36px",
+              fontWeight: "300",
               margin: 0,
+              color: "#1F1F1F"
             }}
           >
-            Khoảnh khắc trong album
+            Khoảnh Khắc Trong Album
           </h2>
+          <div style={{ width: "40px", height: "1px", background: "#BFA16A", marginTop: "20px" }}></div>
         </div>
 
         {images.length === 0 ? (
-          <Empty description="Folder Google Drive này chưa có ảnh hoặc ảnh chưa được chia sẻ quyền xem" />
+          <div style={{ padding: "80px 20px", textAlign: "center", background: "#FFFFFF", border: "1px solid #E8DED2" }}>
+            <Empty description="Tác phẩm đang được đồng bộ từ lưu trữ đám mây. Vui lòng quay lại sau." />
+          </div>
         ) : (
           <Image.PreviewGroup>
             <div className="masonry-detail-container">
@@ -278,7 +372,7 @@ const GalleryDetail = () => {
       <style>{`
         .masonry-detail-container {
           column-count: 1;
-          column-gap: 20px;
+          column-gap: 24px;
         }
 
         @media (min-width: 576px) {
@@ -301,29 +395,38 @@ const GalleryDetail = () => {
 
         .masonry-detail-item {
           break-inside: avoid;
-          margin-bottom: 20px;
-          border-radius: 12px;
+          margin-bottom: 24px;
+          border-radius: 0px;
+          border: 1px solid #E8DED2;
+          padding: 10px;
           overflow: hidden;
           cursor: pointer;
-          background: #f2f2f2;
-          box-shadow: 0 14px 34px rgba(0,0,0,0.06);
+          background: #FFFFFF;
+          box-shadow: 0 5px 15px rgba(154, 138, 120, 0.02);
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .masonry-detail-item:hover {
+          border-color: ${PRIMARY_COLOR};
+          transform: translateY(-5px);
+          box-shadow: 0 15px 30px rgba(154, 138, 120, 0.08);
         }
 
         .masonry-detail-item .ant-image {
           display: block;
           width: 100%;
+          border: 1px solid #E8DED2;
         }
 
         .masonry-detail-image {
           width: 100%;
           height: auto !important;
           display: block;
-          transition: filter 0.3s ease, transform 0.5s ease !important;
+          transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
         .masonry-detail-item:hover .masonry-detail-image {
-          transform: scale(1.03) !important;
-          filter: brightness(0.88);
+          transform: scale(1.04) !important;
         }
 
         @media (max-width: 768px) {

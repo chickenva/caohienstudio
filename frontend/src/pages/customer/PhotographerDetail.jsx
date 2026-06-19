@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Row, Col, Button, Spin, message, Tag, Card } from "antd";
+import { Row, Col, Spin, message } from "antd";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -7,9 +7,10 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import "../../Home.css";
 
-const PRIMARY_COLOR = "#9a8a78";
-const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
+const PRIMARY_COLOR = "#BFA16A";
+const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
 const PhotographerDetail = () => {
   const { id } = useParams();
@@ -19,17 +20,47 @@ const PhotographerDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.body.style.backgroundColor = "#FAF7F2";
     fetchPhotographerDetail();
+
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
   }, [id]);
+
+  // Scroll reveals trigger
+  useEffect(() => {
+    if (loading) return;
+
+    const revealElements = document.querySelectorAll(".scroll-reveal");
+    const observerOptions = {
+      root: null,
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px"
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
+  }, [loading, photographer]);
 
   const fetchPhotographerDetail = async () => {
     setLoading(true);
-
     try {
       const res = await axios.get(
         `http://localhost:5000/api/users/photographers/${id}`,
       );
-
       setPhotographer(res.data.photographer);
     } catch (err) {
       message.error(
@@ -51,7 +82,7 @@ const PhotographerDetail = () => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: "120px" }}>
+      <div style={{ textAlign: "center", padding: "150px 0", background: "#FAF7F2" }}>
         <Spin size="large" />
       </div>
     );
@@ -59,8 +90,8 @@ const PhotographerDetail = () => {
 
   if (!photographer) {
     return (
-      <div style={{ textAlign: "center", padding: "80px" }}>
-        Không tìm thấy nhiếp ảnh gia
+      <div style={{ textAlign: "center", padding: "100px 20px", background: "#FAF7F2", color: "#777777" }}>
+        Không tìm thấy nhiếp ảnh gia. Vui lòng quay lại danh sách.
       </div>
     );
   }
@@ -68,26 +99,34 @@ const PhotographerDetail = () => {
   const portfolio = photographer.portfolio || {};
 
   return (
-    <div style={{ background: "#fff", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "50px 20px" }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/photographers")}
-          style={{ marginBottom: 30, borderRadius: 0 }}
-        >
-          Quay lại danh sách
-        </Button>
+    <div className="home-page-container" style={{ background: "#FAF7F2", minHeight: "100vh", width: "100%" }}>
+      {/* Ambient spotlights */}
+      <div className="glow-spotlight-light" style={{ top: "8%", left: "5%" }}></div>
+      <div className="glow-spotlight-light" style={{ top: "50%", right: "5%" }}></div>
 
-        <Row gutter={[50, 40]} align="middle">
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 20px 100px 20px" }}>
+        {/* Back Button */}
+        <button
+          onClick={() => navigate("/photographers")}
+          className="btn-premium-outline scroll-reveal"
+          style={{ marginBottom: 40, height: "42px", padding: "0 22px", fontSize: "11px" }}
+        >
+          <ArrowLeftOutlined style={{ marginRight: "6px" }} /> QUAY LẠI DANH SÁCH
+        </button>
+
+        {/* Info detail */}
+        <Row gutter={[60, 40]} align="middle" className="scroll-reveal stagger-1">
+          {/* Avatar frame */}
           <Col xs={24} md={10}>
-            <Card
-              bordered={false}
+            <div
               style={{
-                background: "#f8f6f3",
-                borderRadius: 8,
+                background: "#FFFFFF",
+                border: "1px solid #E8DED2",
+                borderRadius: "0px",
                 overflow: "hidden",
+                padding: "16px",
+                boxShadow: "0 5px 15px rgba(154, 138, 120, 0.02)"
               }}
-              bodyStyle={{ padding: 0 }}
             >
               <img
                 src={
@@ -100,124 +139,144 @@ const PhotographerDetail = () => {
                   height: 520,
                   objectFit: "cover",
                   display: "block",
+                  border: "1px solid #E8DED2"
                 }}
               />
-            </Card>
+            </div>
           </Col>
 
+          {/* Details metadata */}
           <Col xs={24} md={14}>
-            <div
+            <span
               style={{
                 color: PRIMARY_COLOR,
                 letterSpacing: 3,
-                fontSize: 12,
-                fontWeight: "bold",
-                marginBottom: 10,
+                fontSize: 11,
+                fontWeight: "600",
+                textTransform: "uppercase",
+                display: "block",
+                marginBottom: 15
               }}
             >
-              {portfolio.years_of_experience || 1}+ NĂM KINH NGHIỆM
-            </div>
+              {portfolio.years_of_experience || 3}+ NĂM KINH NGHIỆM
+            </span>
 
             <h1
+              className="font-serif-luxury"
               style={{
-                fontFamily: FONT_SERIF,
-                fontSize: 56,
-                fontWeight: "normal",
-                margin: "0 0 20px",
+                fontSize: "clamp(38px, 5vw, 56px)",
+                fontWeight: "300",
+                margin: "0 0 25px 0",
+                color: "#1F1F1F",
+                lineHeight: "1.15"
               }}
             >
               {photographer.full_name}
             </h1>
 
-            <div style={{ marginBottom: 28 }}>
+            <div style={{ marginBottom: 30, display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {(portfolio.specialties || ["Wedding", "Portrait"]).map(
                 (item) => (
-                  <Tag
+                  <span
                     key={item}
+                    className="photographer-tag"
                     style={{
-                      borderRadius: 30,
-                      padding: "5px 14px",
-                      marginBottom: 8,
-                      letterSpacing: 1,
+                      background: "rgba(191, 161, 106, 0.05)",
+                      border: "1px solid rgba(191, 161, 106, 0.15)",
+                      padding: "4px 12px",
+                      fontSize: "11px",
+                      letterSpacing: "1px",
+                      color: "#BFA16A",
+                      borderRadius: "0px",
+                      textTransform: "uppercase",
+                      display: "inline-block"
                     }}
                   >
-                    {item.toUpperCase()}
-                  </Tag>
+                    {item}
+                  </span>
                 ),
               )}
             </div>
 
             <p
               style={{
-                color: "#666",
-                fontSize: 16,
-                lineHeight: 2,
-                marginBottom: 35,
+                color: "#555555",
+                fontSize: "15px",
+                lineHeight: "2",
+                marginBottom: "40px",
+                fontWeight: "300"
               }}
             >
               {portfolio.bio ||
-                "Một nhiếp ảnh gia đam mê việc bắt trọn những khoảnh khắc chân thực nhất."}
+                "Một nhiếp ảnh gia đam mê việc bắt trọn những khoảnh khắc chân thực nhất, mang lại góc nhìn điện ảnh đầy tính tự sự và màu sắc lãng mạn."}
             </p>
 
-            <Button
-              type="primary"
-              size="large"
-              icon={<CalendarOutlined />}
+            <button
               onClick={handleBooking}
-              style={{
-                background: "#333",
-                border: "none",
-                borderRadius: 0,
-                height: 50,
-                padding: "0 36px",
-                letterSpacing: 1,
-                fontWeight: 600,
-              }}
+              className="btn-premium-gold"
+              style={{ height: "50px", padding: "0 40px", fontSize: "12px", display: "inline-flex" }}
             >
-              ĐẶT LỊCH
-            </Button>
+              ĐẶT LỊCH HẸN NGAY <CalendarOutlined />
+            </button>
           </Col>
         </Row>
 
-        <div style={{ marginTop: 70 }}>
-          <h2
-            style={{
-              fontFamily: FONT_SERIF,
-              fontSize: 34,
-              fontWeight: "normal",
-              marginBottom: 28,
-            }}
-          >
-            <CameraOutlined style={{ marginRight: 10 }} />
-            Portfolio nổi bật
-          </h2>
+        {/* Portfolio Showcase Grid */}
+        {(portfolio.featured_images || []).length > 0 && (
+          <div style={{ marginTop: 85 }} className="scroll-reveal stagger-2">
+            <h2
+              className="font-serif-luxury"
+              style={{
+                fontSize: "32px",
+                fontWeight: "300",
+                marginBottom: "35px",
+                color: "#1F1F1F"
+              }}
+            >
+              <CameraOutlined style={{ marginRight: 10, color: "#BFA16A" }} />
+              Tác Phẩm Trưng Bày
+            </h2>
 
-          <Row gutter={[24, 24]}>
-            {(portfolio.featured_images || []).map((img, index) => (
-              <Col xs={24} md={8} key={index}>
-                <div
-                  style={{
-                    height: 320,
-                    overflow: "hidden",
-                    borderRadius: 6,
-                    background: "#f5f5f5",
-                  }}
-                >
-                  <img
-                    src={img}
-                    alt={`portfolio-${index + 1}`}
+            <Row gutter={[30, 30]}>
+              {portfolio.featured_images.map((img, index) => (
+                <Col xs={24} md={8} key={index}>
+                  <div
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
+                      height: 320,
+                      overflow: "hidden",
+                      borderRadius: "0px",
+                      border: "1px solid #E8DED2",
+                      padding: "8px",
+                      background: "#FFFFFF",
+                      cursor: "pointer",
+                      boxShadow: "0 5px 15px rgba(154, 138, 120, 0.02)"
                     }}
-                  />
-                </div>
-              </Col>
-            ))}
-          </Row>
-        </div>
+                    className="portfolio-image-item"
+                  >
+                    <img
+                      src={img}
+                      alt={`portfolio-${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        border: "1px solid #E8DED2",
+                        transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+                      }}
+                    />
+                  </div>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        .portfolio-image-item:hover img {
+          transform: scale(1.06);
+        }
+      `}</style>
     </div>
   );
 };

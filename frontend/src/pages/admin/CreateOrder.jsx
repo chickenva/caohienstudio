@@ -35,6 +35,8 @@ const API_URL = "http://localhost:5000/api";
 const statusOptions = [
   { value: "PENDING", label: "Chờ thanh toán (sẽ tạo link VNPay)" },
   { value: "DEPOSITED", label: "Đã đặt cọc / đã xác nhận" },
+  { value: "CONFIRMED", label: "Đã xác nhận (sẵn sàng chụp)" },
+  { value: "IN_PROGRESS", label: "Đang thực hiện" },
   { value: "COMPLETED", label: "Hoàn thành" },
 ];
 
