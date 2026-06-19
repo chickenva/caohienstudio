@@ -186,7 +186,7 @@ const PhotographerForm = () => {
         </Title>
         <Text type="secondary">
           Quản lý thông tin tài khoản và portfolio của nhiếp ảnh gia trong đội
-          ngũ Cao Hien Studio.
+          ngũ Cao Hiển Studio.
         </Text>
       </div>
 

@@ -166,7 +166,7 @@ const AdminGalleries = () => {
       width: 180,
       render: (photographer) =>
         photographer?.full_name || (
-          <span style={{ color: "#999" }}>Cao Hien Studio</span>
+          <span style={{ color: "#999" }}>Cao Hiển Studio</span>
         ),
     },
     {

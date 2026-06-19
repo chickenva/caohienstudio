@@ -143,7 +143,7 @@ const ServiceDetail = () => {
                 display: "inline-block"
               }}
             >
-              {service.category?.toUpperCase() || "CAO HIỀN STUDIO"}
+              {service.category?.toUpperCase() || "CAO HIỂN STUDIO"}
             </span>
 
             {/* Title */}

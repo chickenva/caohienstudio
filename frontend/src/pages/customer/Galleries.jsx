@@ -116,7 +116,7 @@ const Galleries = () => {
       title: "Sweet Dreamer Studio",
       category: "WEDDING",
       coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200",
-      location: "Cao Hien Studio",
+      location: "Cao Hiển Studio",
       description: "Bộ ảnh concept cưới tối giản trong studio tập trung trọn vẹn vào nụ cười ngọt ngào và ánh mắt hạnh phúc."
     },
     {
@@ -289,7 +289,7 @@ const Galleries = () => {
                           "Ánh sáng vẽ nên hình hài, cảm xúc vẽ nên linh hồn. <br/>
                           Chúng tôi không chỉ chụp lại khoảnh khắc, chúng tôi ghi lại câu chuyện cuộc đời bạn."
                         </p>
-                        <div className="museum-quote-author">⚜ CAO HIEN STUDIO PHILOSOPHY ⚜</div>
+                        <div className="museum-quote-author">⚜ CAO HIỂN STUDIO PHILOSOPHY ⚜</div>
                       </div>
                     </div>
                   )}
@@ -325,7 +325,7 @@ const Galleries = () => {
                         {item.description && <p className="museum-card-desc">{item.description}</p>}
 
                         <div className="museum-card-footer">
-                          <span style={{ fontSize: "12px", color: "#888888" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Cao Hien Studio"}</span>
+                          <span style={{ fontSize: "12px", color: "#888888" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Cao Hiển Studio"}</span>
                           <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
                         </div>
                       </div>

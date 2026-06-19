@@ -174,7 +174,7 @@ const AdminDashboard = () => {
           </Title>
           <Text type="secondary">
             Theo dõi tình hình đơn đặt lịch, doanh thu, khách hàng và tài nguyên
-            của Cao Hien Studio.
+            của Cao Hiển Studio.
           </Text>
         </div>
 

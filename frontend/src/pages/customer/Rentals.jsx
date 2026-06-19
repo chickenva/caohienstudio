@@ -167,9 +167,11 @@ const Rentals = () => {
                   display: "flex",
                   flexDirection: "column",
                   height: "100%",
-                  transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+                  transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                  cursor: "pointer"
                 }}
                 className="gear-item-card-wrapper"
+                onClick={() => navigate(`/rentals/${item._id}`)}
               >
                 <div
                   style={{

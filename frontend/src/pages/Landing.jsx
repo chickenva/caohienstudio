@@ -3,6 +3,8 @@ import { Button } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
+import Logo from "../components/Logo";
+
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
@@ -28,15 +30,7 @@ const Landing = () => {
         }}
       >
         <div style={{ textAlign: "center", color: "#fff" }}>
-          <p
-            style={{
-              letterSpacing: "4px",
-              fontSize: "13px",
-              marginBottom: "20px",
-            }}
-          >
-            CAOHIENPHOTOGRAPHY
-          </p>
+          <Logo size={48} textColor="#ffffff" style={{ marginBottom: "24px", justifyContent: "center" }} />
           <h1
             style={{
               fontSize: "72px",
@@ -125,13 +119,13 @@ const Landing = () => {
               fontSize: "32px",
             }}
           >
-            Xin chào, tôi là Cao Hiền – Nhiếp ảnh gia Cưới & Production
+            Xin chào, tôi là Cao Hiển – Nhiếp ảnh gia Cưới & Production
           </h2>
           <div
             style={{ fontSize: "14px", color: "#444444", lineHeight: "2.4" }}
           >
             <p style={{ marginBottom: "20px" }}>
-              Xin chào, tôi là Hiền, một nhiếp ảnh gia chuyên chụp ảnh cưới và
+              Xin chào, tôi là Hiển, một nhiếp ảnh gia chuyên chụp ảnh cưới và
               production.
             </p>
             <p style={{ marginBottom: "20px" }}>
@@ -311,16 +305,7 @@ const Landing = () => {
         }}
       >
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div
-            style={{
-              fontFamily: FONT_SERIF,
-              fontSize: "20px",
-              letterSpacing: "1px",
-              marginBottom: "20px",
-            }}
-          >
-            CAOHIENPHOTOGRAPHY
-          </div>
+          <Logo size={40} textColor="#ffffff" style={{ marginBottom: "20px", justifyContent: "center" }} />
           <p style={{ color: "#aaa", fontSize: "13px", marginBottom: "30px" }}>
             Ghi lại những khoảnh khắc yêu thương thoáng qua để tạo nên những
             bức ảnh đẹp, chân thật và có giá trị theo thời gian.

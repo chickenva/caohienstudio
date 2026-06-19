@@ -21,6 +21,8 @@ import {
   EditOutlined,
 } from "@ant-design/icons";
 
+import Logo from "../Logo";
+
 // Design System đồng bộ
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
@@ -263,18 +265,7 @@ const SharedLayout = () => {
         }}
       >
         {/* Logo */}
-        <div
-          onClick={() => navigate(isAdminPage ? "/admin/dashboard" : "/customer")}
-          style={{
-            fontSize: "20px",
-            fontFamily: FONT_SERIF,
-            letterSpacing: "1px",
-            cursor: "pointer",
-            color: "#333",
-          }}
-        >
-          CAOHIENPHOTOGRAPHY
-        </div>
+        <Logo size={40} textColor="#333" onClick={() => navigate(isAdminPage ? "/admin/dashboard" : "/customer")} />
 
         {/* Menu giữa - Chỉ hiển thị cho Customer */}
         {!isAdminPage && (
@@ -437,16 +428,7 @@ const SharedLayout = () => {
             >
               {/* Cột 1: Giới thiệu */}
               <div>
-                <div
-                  style={{
-                    fontFamily: FONT_SERIF,
-                    fontSize: "20px",
-                    letterSpacing: "1px",
-                    marginBottom: "25px",
-                  }}
-                >
-                  CAOHIENPHOTOGRAPHY
-                </div>
+                <Logo size={40} textColor="#ffffff" onClick={() => navigate(isAdminPage ? "/admin/dashboard" : "/customer")} style={{ marginBottom: "25px" }} />
                 <p
                   style={{
                     color: "#aaa",
@@ -505,7 +487,7 @@ const SharedLayout = () => {
                     onClick={() => navigate("/customer/about")}
                     style={{ cursor: "pointer" }}
                   >
-                    Về Cao Hiền
+                    Về Cao Hiển
                   </li>
                   <li
                     onClick={() => navigate("/customer/services")}

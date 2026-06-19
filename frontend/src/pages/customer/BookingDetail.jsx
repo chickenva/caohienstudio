@@ -576,7 +576,7 @@ const BookingDetail = () => {
               type="info"
               showIcon
               message="Lịch hẹn đã được xác nhận"
-              description="Cao Hien Studio đã nhận và xác nhận lịch hẹn của bạn. Vui lòng đến đúng giờ để buổi chụp diễn ra tốt đẹp."
+              description="Cao Hiển Studio đã nhận và xác nhận lịch hẹn của bạn. Vui lòng đến đúng giờ để buổi chụp diễn ra tốt đẹp."
             />
           </div>
         )}
@@ -595,7 +595,7 @@ const BookingDetail = () => {
               type="success"
               showIcon
               message="Đang thực hiện buổi chụp"
-              description="Buổi chụp của bạn đang được tiến hành. Cảm ơn bạn đã lựa chọn Cao Hien Studio!"
+              description="Buổi chụp của bạn đang được tiến hành. Cảm ơn bạn đã lựa chọn Cao Hiển Studio!"
             />
           </div>
         )}

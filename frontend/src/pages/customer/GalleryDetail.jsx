@@ -240,7 +240,7 @@ const GalleryDetail = () => {
                   textOverflow: "ellipsis"
                 }}
               >
-                {gallery.location || "Cao Hien Studio"}
+                {gallery.location || "Cao Hiển Studio"}
               </div>
             </div>
           </Col>
@@ -267,7 +267,7 @@ const GalleryDetail = () => {
                   textOverflow: "ellipsis"
                 }}
               >
-                {gallery.photographer_id?.full_name || "Cao Hien Studio"}
+                {gallery.photographer_id?.full_name || "Cao Hiển Studio"}
               </div>
             </div>
           </Col>

@@ -12,6 +12,8 @@ import {
   YoutubeOutlined,
 } from "@ant-design/icons";
 
+import Logo from "../Logo";
+
 // Design System đồng bộ
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
@@ -86,18 +88,7 @@ const PublicLayout = () => {
         }}
       >
         {/* Logo */}
-        <div
-          onClick={() => navigate("/")}
-          style={{
-            fontSize: "20px",
-            fontFamily: FONT_SERIF,
-            letterSpacing: "1px",
-            cursor: "pointer",
-            color: "#333",
-          }}
-        >
-          CAOHIENPHOTOGRAPHY
-        </div>
+        <Logo size={40} textColor="#333" onClick={() => navigate("/")} />
 
         {/* Menu giữa */}
         <div style={{ display: "flex", gap: "30px" }}>
@@ -178,16 +169,7 @@ const PublicLayout = () => {
           >
             {/* Cột 1: Giới thiệu */}
             <div>
-              <div
-                style={{
-                  fontFamily: FONT_SERIF,
-                  fontSize: "20px",
-                  letterSpacing: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                CAOHIENPHOTOGRAPHY
-              </div>
+              <Logo size={40} textColor="#ffffff" onClick={() => navigate("/")} style={{ marginBottom: "25px" }} />
               <p style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.8" }}>
                 Ghi lại những khoảnh khắc yêu thương thoáng qua để tạo nên những
                 bức ảnh đẹp, chân thật và có giá trị theo thời gian.
@@ -235,7 +217,7 @@ const PublicLayout = () => {
                   onClick={() => navigate("/about")}
                   style={{ cursor: "pointer" }}
                 >
-                  Về Cao Hiền
+                  Về Cao Hiển
                 </li>
                 <li
                   onClick={() => navigate("/services")}

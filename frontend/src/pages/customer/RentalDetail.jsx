@@ -288,7 +288,7 @@ const RentalDetail = () => {
               <SafetyCertificateOutlined
                 style={{ marginRight: 8, color: PRIMARY_COLOR, fontSize: "16px" }}
               />
-              Khi thuê thiết bị, khách hàng vui lòng mang theo căn cước công dân bản gốc, chuẩn bị tiền cọc hoặc tài sản thế chấp tương ứng theo yêu cầu và tiến hành ký hợp đồng thuê trực tiếp tại Cao Hien Studio. Các phát sinh như trễ hạn, hao mòn hư hỏng sẽ được đối chiếu nghiệm thu khi trả thiết bị.
+              Khi thuê thiết bị, khách hàng vui lòng mang theo căn cước công dân bản gốc, chuẩn bị tiền cọc hoặc tài sản thế chấp tương ứng theo yêu cầu và tiến hành ký hợp đồng thuê trực tiếp tại Cao Hiển Studio. Các phát sinh như trễ hạn, hao mòn hư hỏng sẽ được đối chiếu nghiệm thu khi trả thiết bị.
             </div>
 
             {/* Action CTA */}

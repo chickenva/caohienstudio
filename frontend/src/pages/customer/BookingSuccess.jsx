@@ -26,7 +26,7 @@ const BookingSuccess = () => {
       <Result
         status="success"
         title="ĐẶT LỊCH THÀNH CÔNG!"
-        subTitle={`Mã đơn hàng: #${id.slice(-6).toUpperCase()}. Cảm ơn bạn đã tin tưởng Cao Hien Studio.`}
+        subTitle={`Mã đơn hàng: #${id.slice(-6).toUpperCase()}. Cảm ơn bạn đã tin tưởng Cao Hiển Studio.`}
         extra={[
           <Button key="home" onClick={() => navigate("/")}>
             VỀ TRANG CHỦ

@@ -62,7 +62,7 @@ const Contact = () => {
     setLoading(true);
     try {
       await axios.post("http://localhost:5000/api/contacts", values);
-      message.success("Cảm ơn bạn! CaoHien Studio đã nhận được lời nhắn.");
+      message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được lời nhắn.");
       form.resetFields();
     } catch (err) {
       console.error("Contact submit error:", err);
@@ -261,7 +261,7 @@ const Contact = () => {
                   >
                     Giờ Làm Việc
                   </strong>
-                  Thứ 2 - Chủ Nhật: 08:00 AM - 09:00 PM
+                  Thứ 2 - Chủ Nhật: 09:00 AM - 05:00 PM
                 </div>
               </div>
             </div>

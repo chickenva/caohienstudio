@@ -354,7 +354,7 @@ const Booking = () => {
       case 61:
       case 63:
       case 65:
-        return { label: "Mưa vừa / Mưa to", icon: "🌧️", color: "#096dd9", advice: "Mưa to! Khuyến nghị đặt lịch chụp hoàn toàn trong Studio Cao Hien để bảo vệ sức khỏe và máy ảnh, hoặc dời lịch chụp ngoại cảnh." };
+        return { label: "Mưa vừa / Mưa to", icon: "🌧️", color: "#096dd9", advice: "Mưa to! Khuyến nghị đặt lịch chụp hoàn toàn trong Studio Cao Hiển để bảo vệ sức khỏe và máy ảnh, hoặc dời lịch chụp ngoại cảnh." };
       case 80:
       case 81:
       case 82:
@@ -835,7 +835,7 @@ const Booking = () => {
                         <Input
                           size="large"
                           prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                          placeholder="Ví dụ: Studio Cao Hien"
+                          placeholder="Ví dụ: Studio Cao Hiển"
                         />
                       </AutoComplete>
                     </Form.Item>

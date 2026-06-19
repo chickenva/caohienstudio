@@ -263,7 +263,7 @@ const AdminLayout = () => {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Cao Hien
+                  Cao Hiển
                 </div>
                 <div
                   style={{

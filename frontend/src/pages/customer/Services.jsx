@@ -105,7 +105,11 @@ const Services = () => {
         <Row gutter={[30, 40]}>
           {services.map((item, index) => (
             <Col xs={24} md={8} key={item._id} className={`scroll-reveal stagger-${(index % 3) + 1}`}>
-              <div className="service-card-luxury">
+              <div
+                className="service-card-luxury"
+                onClick={() => navigate(`/services/${item._id}`)}
+                style={{ cursor: "pointer" }}
+              >
                 <div className="service-image-container">
                   <img
                     alt={item.name}

@@ -39,7 +39,7 @@ const Home = () => {
   const [contactLoading, setContactLoading] = useState(false);
 
   // Marquee string
-  const marqueeText = "CAO HIEN STUDIO ✦ TIMELESS ROMANCE ✦ ELEGANT PORTRAIT ✦ FINE ART WEDDING ✦ CINEMATIC WEDDING DOCUMENTARY ✦ CREATIVE SPACE ✦ ".repeat(8);
+  const marqueeText = "CAO HIỂN STUDIO ✦ TIMELESS ROMANCE ✦ ELEGANT PORTRAIT ✦ FINE ART WEDDING ✦ CINEMATIC WEDDING DOCUMENTARY ✦ CREATIVE SPACE ✦ ".repeat(8);
 
   // 1. Dynamic Body Background & API Fetching
   useEffect(() => {
@@ -119,7 +119,7 @@ const Home = () => {
     setContactLoading(true);
     try {
       await axios.post("http://localhost:5000/api/contacts", values);
-      message.success("Cảm ơn bạn! CaoHien Studio đã nhận được yêu cầu tư vấn và sẽ phản hồi sớm nhất.");
+      message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được yêu cầu tư vấn và sẽ phản hồi sớm nhất.");
       contactForm.resetFields();
     } catch (err) {
       console.error("Submit contact error:", err);
@@ -245,7 +245,7 @@ const Home = () => {
               <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "8px 16px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: "30px" }}>
                 <CameraOutlined style={{ color: "#BFA16A" }} />
                 <span style={{ fontSize: "12px", letterSpacing: "3px", textTransform: "uppercase", color: "#BFA16A", fontWeight: "600" }}>
-                  Cao Hien Studio — Elegant & Cinematic
+                  Cao Hiển Studio — Elegant & Cinematic
                 </span>
               </div>
 
@@ -293,14 +293,14 @@ const Home = () => {
           <Row gutter={[60, 40]} align="middle">
             <Col xs={24} md={12} className="scroll-reveal">
               <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
-                Về Cao Hien Studio
+                Về Cao Hiển Studio
               </span>
               <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "40px", fontWeight: "300", lineHeight: "1.25", marginBottom: "30px", textTransform: "none" }}>
                 Tinh Tế Trong Từng <br/>
                 Thước Phim, Khung Hình
               </h2>
               <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "20px", fontWeight: "300" }}>
-                Cao Hien Studio được tạo dựng dựa trên tình yêu nghệ thuật nhiếp ảnh cưới và mong muốn lưu giữ trọn vẹn những ký ức hạnh phúc ngọt ngào của các đôi uyên ương.
+                Cao Hiển Studio được tạo dựng dựa trên tình yêu nghệ thuật nhiếp ảnh cưới và mong muốn lưu giữ trọn vẹn những ký ức hạnh phúc ngọt ngào của các đôi uyên ương.
               </p>
               <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "40px", fontWeight: "300" }}>
                 Với đội ngũ photographer nội bộ đầy nhiệt huyết, trang thiết bị chuyên nghiệp và gu thẩm mỹ thanh lịch mộc mạc, chúng tôi tự hào đồng hành cùng hàng nghìn khách hàng trên hành trình hạnh phúc.
@@ -358,7 +358,11 @@ const Home = () => {
               <Row gutter={[30, 40]}>
                 {displayServices.map((item, index) => (
                   <Col xs={24} md={8} key={item._id} className={`scroll-reveal stagger-${index + 1}`}>
-                    <div className="service-card-luxury">
+                    <div 
+                      className="service-card-luxury"
+                      onClick={() => navigate(`/services/${item._id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
                       <div className="service-image-container">
                         <img 
                           src={item.thumbnail || FALLBACK_WEDDING} 
@@ -598,7 +602,18 @@ const Home = () => {
             <Col xs={24} lg={14} className="scroll-reveal stagger-1">
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 {displayRentals.map((item, idx) => (
-                  <div key={idx} className="gear-card-luxury">
+                  <div 
+                    key={idx} 
+                    className="gear-card-luxury"
+                    onClick={() => {
+                      if (item._id) {
+                        navigate(`/rentals/${item._id}`);
+                      } else {
+                        navigate("/rentals");
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
                     <img 
                       className="gear-image"
                       src={item.thumbnail || FALLBACK_GEAR} 

@@ -103,7 +103,7 @@ const About = () => {
               marginBottom: "35px",
             }}
           >
-            Xin chào, tôi là Cao Hiền – <br/>
+            Xin chào, tôi là Cao Hiển – <br/>
             <span className="text-gold" style={{ fontStyle: "italic", fontWeight: "400" }}>Nhiếp ảnh gia Cưới & Production</span>
           </h1>
           <div style={{ fontSize: "14px", color: "#555555", lineHeight: "2.2", fontWeight: "300" }}>

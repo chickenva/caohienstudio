@@ -57,7 +57,7 @@ const Register = () => {
       Modal.success({
         title: "Đăng ký thành công!",
         content:
-          "Chào mừng bạn đến với CaoHien Studio. Vui lòng đăng nhập để tiếp tục.",
+          "Chào mừng bạn đến với Cao Hiển Studio. Vui lòng đăng nhập để tiếp tục.",
         onOk: () => navigate("/login"),
         centered: true,
       });

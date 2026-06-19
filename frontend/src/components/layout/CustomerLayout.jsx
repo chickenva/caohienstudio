@@ -14,7 +14,11 @@ import {
   MailOutlined,
   EnvironmentOutlined,
   DashboardOutlined,
+  ArrowUpOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
+import AIChatWidget from "../AIChatWidget";
+import Logo from "../Logo";
 
 // Design System đồng bộ (Light Luxury)
 const PRIMARY_COLOR = "#BFA16A";
@@ -25,23 +29,63 @@ const CustomerLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Tự động cuộn lên đầu trang khi chuyển trang
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  // Cưỡng bức cuộn lên đầu trang và tắt khôi phục cuộn tự động của trình duyệt khi tải lại trang
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Lắng nghe sự kiện scroll để hiển thị nút cuộn lên đầu trang
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleMenuClick = (path) => {
+    if (location.pathname === path) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      navigate(path);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Menu Dropdown cho Dịch vụ
   const serviceMenuItems = [
     {
       key: "1",
       label: "Gói chụp",
-      onClick: () => navigate("/services"),
+      onClick: () => handleMenuClick("/services"),
     },
     {
       key: "2",
       label: "Đặt lịch",
-      onClick: () => navigate("/booking"),
+      onClick: () => handleMenuClick("/booking"),
     },
     {
       key: "3",
       label: "Thuê máy ảnh",
-      onClick: () => navigate("/rentals"),
+      onClick: () => handleMenuClick("/rentals"),
     },
   ];
 
@@ -105,13 +149,13 @@ const CustomerLayout = () => {
       key: "1",
       label: "Thông tin tài khoản",
       icon: <InfoCircleOutlined />,
-      onClick: () => navigate("/customer/profile"),
+      onClick: () => handleMenuClick("/customer/profile"),
     },
     {
       key: "2",
       label: "Quản lý đơn đặt lịch",
       icon: <CalendarOutlined />,
-      onClick: () => navigate("/customer/my-bookings"),
+      onClick: () => handleMenuClick("/customer/my-bookings"),
     },
     {
       type: "divider",
@@ -158,40 +202,27 @@ const CustomerLayout = () => {
         }}
       >
         {/* Logo */}
-        <div
-          onClick={() => navigate("/")}
-          style={{
-            fontSize: "20px",
-            fontFamily: FONT_SERIF,
-            letterSpacing: "1px",
-            cursor: "pointer",
-            color: "#2F2F2F",
-            fontWeight: 500,
-          }}
-          className="nav-logo"
-        >
-          CAOHIENPHOTOGRAPHY
-        </div>
+        <Logo size={40} textColor="#2F2F2F" onClick={() => handleMenuClick("/")} />
 
         {/* Menu giữa */}
         <div style={{ display: "flex", gap: "30px" }}>
-          <span onClick={() => navigate("/")} style={menuStyle("/")}>
+          <span onClick={() => handleMenuClick("/")} style={menuStyle("/")}>
             TRANG CHỦ
           </span>
 
-          <span onClick={() => navigate("/about")} style={menuStyle("/about")}>
+          <span onClick={() => handleMenuClick("/about")} style={menuStyle("/about")}>
             GIỚI THIỆU
           </span>
 
           <span
-            onClick={() => navigate("/galleries")}
+            onClick={() => handleMenuClick("/galleries")}
             style={menuStyle("/galleries")}
           >
             THƯ VIỆN ẢNH
           </span>
 
           <span
-            onClick={() => navigate("/photographers")}
+            onClick={() => handleMenuClick("/photographers")}
             style={menuStyle("/photographers")}
           >
             THỢ CHỤP
@@ -342,42 +373,61 @@ const CustomerLayout = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
               gap: "40px",
             }}
           >
             {/* Cột 1: Giới thiệu */}
             <div>
-              <div
-                style={{
-                  fontFamily: FONT_SERIF,
-                  fontSize: "20px",
-                  letterSpacing: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                CAOHIENPHOTOGRAPHY
-              </div>
+              <Logo
+                size={40}
+                textColor="#ffffff"
+                onClick={() => handleMenuClick("/")}
+                style={{ marginBottom: "25px" }}
+              />
               <p style={{ color: "#aaa", fontSize: "13px", lineHeight: "1.8" }}>
                 Ghi lại những khoảnh khắc yêu thương thoáng qua để tạo nên những
                 bức ảnh đẹp, chân thật và có giá trị theo thời gian.
               </p>
               <Space
                 size="large"
-                style={{ marginTop: "20px", fontSize: "18px" }}
+                style={{ marginTop: "20px" }}
               >
-                <FacebookOutlined
-                  style={{ cursor: "pointer", color: "#aaa" }}
-                />
-                <InstagramOutlined
-                  style={{ cursor: "pointer", color: "#aaa" }}
-                />
-                <YoutubeOutlined style={{ cursor: "pointer", color: "#aaa" }} />
+                <a
+                  href="https://www.facebook.com/caohienstudio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FacebookOutlined className="social-icon" />
+                </a>
+                <a
+                  href="https://www.instagram.com/caohien.photojournalism?fbclid=IwZXh0bgNhZW0CMTAAYnJpZBExV2hXeDB5MlphNGRqbVdnb3NydGMGYXBwX2lkEDIyMjAzOTE3ODgyMDA4OTIAAR6j7Ao7qddfGHDVWOSBmzP8AYhCufZxW8wpKJXJqje025RitDWkjA_ffvz8Nw_aem_gxz1Be5biS62oTyCPezTJw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <InstagramOutlined className="social-icon" />
+                </a>
+                <a
+                  href="https://www.threads.com/@caohien.photojournalism?xmt=AQG0CjZ69R1g7-PJAn8cgcxx33tbxLdKqMxwRKf1xbjuiBo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center" }}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                    className="social-icon"
+                  >
+                    <path d="M6.321 6.016c-.27-.18-1.166-.802-1.166-.802.756-1.081 1.753-1.502 3.132-1.502.975 0 1.803.327 2.394.948s.928 1.509 1.005 2.644q.492.207.905.484c1.109.745 1.719 1.86 1.719 3.137 0 2.716-2.226 5.075-6.256 5.075C4.594 16 1 13.987 1 7.994 1 2.034 4.482 0 8.044 0 9.69 0 13.55.243 15 5.036l-1.36.353C12.516 1.974 10.163 1.43 8.006 1.43c-3.565 0-5.582 2.171-5.582 6.79 0 4.143 2.254 6.343 5.63 6.343 2.777 0 4.847-1.443 4.847-3.556 0-1.438-1.208-2.127-1.27-2.127-.236 1.234-.868 3.31-3.644 3.31-1.618 0-3.013-1.118-3.013-2.582 0-2.09 1.984-2.847 3.55-2.847.586 0 1.294.04 1.663.114 0-.637-.54-1.728-1.9-1.728-1.25 0-1.566.405-1.967.868ZM8.716 8.19c-2.04 0-2.304.87-2.304 1.416 0 .878 1.043 1.168 1.6 1.168 1.02 0 2.067-.282 2.232-2.423a6.2 6.2 0 0 0-1.528-.161" />
+                  </svg>
+                </a>
               </Space>
             </div>
 
             {/* Cột 2: Khám phá */}
-            <div>
+            <div className="footer-column-discover">
               <div
                 style={{
                   fontSize: "12px",
@@ -393,26 +443,118 @@ const CustomerLayout = () => {
                 style={{
                   listStyle: "none",
                   padding: 0,
+                  margin: 0,
                   fontSize: "13px",
-                  lineHeight: "2.5",
+                  lineHeight: "2.2",
                   color: "#aaa",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                <li onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+                <li
+                  onClick={() => handleMenuClick("/")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
                   Trang chủ
                 </li>
                 <li
-                  onClick={() => navigate("/about")}
+                  onClick={() => handleMenuClick("/about")}
                   style={{ cursor: "pointer" }}
+                  className="footer-link"
                 >
-                  Về Cao Hiền
+                  Giới thiệu
                 </li>
-                <li>Thư viện ảnh</li>
-                {/* <li>Blog chia sẻ</li> */}
+                <li
+                  onClick={() => handleMenuClick("/galleries")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Thư viện ảnh
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/services")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Gói dịch vụ
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/rentals")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Thuê thiết bị
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/contact")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Liên hệ
+                </li>
               </ul>
             </div>
 
-            {/* Cột 3: Liên hệ */}
+            {/* Cột 3: Hỗ trợ & Chính sách */}
+            <div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  letterSpacing: "2px",
+                  marginBottom: "25px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Hỗ trợ & Chính sách
+              </div>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  fontSize: "13px",
+                  lineHeight: "2.2",
+                  color: "#aaa",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <li
+                  onClick={() => handleMenuClick("/contact")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Hướng dẫn đặt lịch
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/contact")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Chính sách hủy & hoàn cọc
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/about")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Quy trình làm việc
+                </li>
+                <li
+                  onClick={() => handleMenuClick("/contact")}
+                  style={{ cursor: "pointer" }}
+                  className="footer-link"
+                >
+                  Câu hỏi thường gặp (FAQ)
+                </li>
+              </ul>
+            </div>
+
+            {/* Cột 4: Liên hệ */}
             <div>
               <div
                 style={{
@@ -426,22 +568,30 @@ const CustomerLayout = () => {
                 Liên hệ
               </div>
               <div
-                style={{ color: "#aaa", fontSize: "13px", lineHeight: "2.5" }}
+                style={{
+                  color: "#aaa",
+                  fontSize: "13px",
+                  lineHeight: "2.2",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
               >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  <EnvironmentOutlined /> TP. Hồ Chí Minh, Việt Nam
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <EnvironmentOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
+                  <span>34B4 TL 887, phường An Hội, Vĩnh Long</span>
                 </div>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  <PhoneOutlined /> 0979 7676 02
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <PhoneOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
+                  <span>(+84) 979 7676 02</span>
                 </div>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  <MailOutlined /> caohienstudio@gmail.com
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <MailOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
+                  <span>caohienstudio@gmail.com</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <ClockCircleOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
+                  <span>Giờ mở cửa: 09:00 AM - 05:00 PM (Hàng ngày)</span>
                 </div>
               </div>
             </div>
@@ -460,6 +610,84 @@ const CustomerLayout = () => {
           </div>
         </div>
       </footer>
+
+      {/* AI Chat Widget */}
+      <AIChatWidget />
+
+      {/* Nút Cuộn Lên Đầu Trang (Back to Top) */}
+      <button
+        className={`scroll-to-top-btn ${showScrollTop ? "visible" : ""}`}
+        onClick={scrollToTop}
+        aria-label="Cuộn lên đầu trang"
+      >
+        <ArrowUpOutlined />
+      </button>
+
+      {/* Style CSS cho nút cuộn lên */}
+      <style>{`
+        .scroll-to-top-btn {
+          position: fixed;
+          bottom: 104px;
+          right: 36px;
+          z-index: 999;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          border: 1px solid rgba(191, 161, 106, 0.3);
+          background-color: #ffffff;
+          color: #BFA16A;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          opacity: 0;
+          transform: translateY(10px) scale(0.9);
+          pointer-events: none;
+        }
+
+        .scroll-to-top-btn.visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          pointer-events: auto;
+        }
+
+        .scroll-to-top-btn:hover {
+          background-color: #BFA16A;
+          color: #ffffff;
+          border-color: #BFA16A;
+          box-shadow: 0 6px 16px rgba(191, 161, 106, 0.25);
+          transform: translateY(-2px);
+        }
+
+        .scroll-to-top-btn:active {
+          transform: translateY(0);
+        }
+
+        .social-icon {
+          font-size: 20px;
+          color: #aaa;
+          transition: color 0.3s ease;
+        }
+        .social-icon:hover {
+          color: #BFA16A !important;
+        }
+
+        .footer-link {
+          transition: color 0.2s ease;
+        }
+        .footer-link:hover {
+          color: #BFA16A !important;
+        }
+
+        @media (min-width: 768px) {
+          .footer-column-discover {
+            padding-left: 50px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -506,7 +506,7 @@ const OrdersCreate = () => {
                       },
                     ]}
                   >
-                    <Input placeholder="VD: Cao Hien Studio, Đà Lạt, TP.HCM..." />
+                    <Input placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..." />
                   </Form.Item>
                 </Col>
 
