@@ -70,6 +70,62 @@ const GalleryDetail = () => {
 
   const fetchGalleryDetail = async () => {
     setLoading(true);
+    
+    // Xử lý dữ liệu mẫu cho demo galleries
+    if (id && id.startsWith("demo-gal-")) {
+      const demoGalleries = {
+        "demo-gal-1": {
+          title: "Eternal Romance in Da Lat",
+          category: "WEDDING",
+          coverImage: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1200",
+          location: "Đà Lạt, Lâm Đồng",
+          description: "Album phóng sự cưới Fine-Art ngập tràn ánh hoàng hôn ấm áp giữa đồi thông thơ mộng tại Đà Lạt."
+        },
+        "demo-gal-2": {
+          title: "Sài Gòn Sunrise Stories",
+          category: "PORTRAIT",
+          coverImage: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=1200",
+          location: "Quận 1, TP. HCM",
+          description: "Chân dung nghệ thuật đường phố ngập tràn ánh nắng ban mai rực rỡ và những khoảnh khắc đời thường tinh tế."
+        },
+        "demo-gal-3": {
+          title: "Sweet Dreamer Studio",
+          category: "WEDDING",
+          coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200",
+          location: "Cao Hiển Studio",
+          description: "Bộ ảnh concept cưới tối giản trong studio tập trung trọn vẹn vào nụ cười ngọt ngào và ánh mắt hạnh phúc."
+        },
+        "demo-gal-4": {
+          title: "Luxury Fashion Editorial",
+          category: "EVENT",
+          coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200",
+          location: "TP. HCM",
+          description: "Phóng sự sự kiện thời trang xa xỉ với góc máy điện ảnh, bắt trọn từng bộ sưu tập sắc nét và dàn khách mời đẳng cấp."
+        },
+        "demo-gal-5": {
+          title: "Youthful Days in HCMC",
+          category: "GRADUATION",
+          coverImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200",
+          location: "TP. HCM",
+          description: "Kỷ yếu thanh xuân trong veo của nhóm bạn thân dưới mái trường cổ kính, mang màu sắc hoài niệm đầy cảm xúc."
+        }
+      };
+
+      const demoImages = [
+        { id: 1, imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200" },
+        { id: 2, imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1200" },
+        { id: 3, imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=1200" },
+        { id: 4, imageUrl: "https://images.unsplash.com/photo-1494774157365-9e04c6720e47?q=80&w=1200" },
+        { id: 5, imageUrl: "https://images.unsplash.com/photo-1522673607200-1648832cee98?q=80&w=1200" },
+        { id: 6, imageUrl: "https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=1200" },
+      ];
+
+      setGallery(demoGalleries[id] || demoGalleries["demo-gal-1"]);
+      setImages(demoImages);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await axios.get(
         `http://localhost:5000/api/galleries/${id}`,

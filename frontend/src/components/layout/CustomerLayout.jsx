@@ -73,17 +73,27 @@ const CustomerLayout = () => {
   // Menu Dropdown cho Dịch vụ
   const serviceMenuItems = [
     {
-      key: "1",
-      label: "Gói chụp",
-      onClick: () => handleMenuClick("/services"),
+      key: "traditional",
+      label: "Truyền thống",
+      onClick: () => handleMenuClick("/services?category=TRADITIONAL"),
     },
     {
-      key: "2",
-      label: "Đặt lịch",
-      onClick: () => handleMenuClick("/booking"),
+      key: "photojournalism",
+      label: "Phóng sự",
+      onClick: () => handleMenuClick("/services?category=PHOTOJOURNALISM"),
     },
     {
-      key: "3",
+      key: "combo",
+      label: "Kết hợp",
+      onClick: () => handleMenuClick("/services?category=COMBO"),
+    },
+    {
+      key: "print",
+      label: "Ảnh / Photobook",
+      onClick: () => handleMenuClick("/services?category=PRINT"),
+    },
+    {
+      key: "rentals",
       label: "Thuê máy ảnh",
       onClick: () => handleMenuClick("/rentals"),
     },
@@ -221,21 +231,19 @@ const CustomerLayout = () => {
             THƯ VIỆN ẢNH
           </span>
 
-          <span
-            onClick={() => handleMenuClick("/photographers")}
-            style={menuStyle("/photographers")}
-          >
-            THỢ CHỤP
-          </span>
-
           <Dropdown menu={{ items: serviceMenuItems }} placement="bottom" arrow>
             <span
               style={{
                 cursor: "default",
+                borderBottom:
+                  location.pathname.includes("/services") ||
+                  location.pathname.includes("/rentals")
+                    ? `1.5px solid ${PRIMARY_COLOR}`
+                    : "none",
+                paddingBottom: "3px",
                 color:
                   location.pathname.includes("/services") ||
-                    location.pathname.includes("/booking") ||
-                    location.pathname.includes("/rentals")
+                  location.pathname.includes("/rentals")
                     ? PRIMARY_COLOR
                     : "#2F2F2F",
                 fontSize: "11px",
@@ -247,6 +255,14 @@ const CustomerLayout = () => {
               DỊCH VỤ
             </span>
           </Dropdown>
+
+          <span
+            onClick={() => handleMenuClick("/booking")}
+            style={menuStyle("/booking")}
+          >
+            ĐẶT LỊCH
+          </span>
+
 
           <span
             onClick={() => navigate("/contact")}
@@ -545,7 +561,7 @@ const CustomerLayout = () => {
                   Quy trình làm việc
                 </li>
                 <li
-                  onClick={() => handleMenuClick("/contact")}
+                  onClick={() => handleMenuClick("/faq")}
                   style={{ cursor: "pointer" }}
                   className="footer-link"
                 >

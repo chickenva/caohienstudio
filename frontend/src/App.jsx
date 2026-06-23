@@ -11,8 +11,8 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 // Common Pages
 import Home from "./pages/customer/Home";
 import About from "./pages/customer/About";
+import FAQ from "./pages/customer/FAQ";
 import Galleries from "./pages/customer/Galleries";
-import Photographers from "./pages/customer/Photographers";
 import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
 import Rentals from "./pages/customer/Rentals";
@@ -22,7 +22,6 @@ import GalleryDetail from "./pages/customer/GalleryDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
 import BookingDetail from "./pages/customer/BookingDetail";
 import RentalDetail from "./pages/customer/RentalDetail";
-import PhotographerDetail from "./pages/customer/PhotographerDetail";
 
 // Customer Pages
 import Profile from "./pages/customer/Profile";
@@ -60,10 +59,11 @@ function App() {
 
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/galleries" element={<Galleries />} />
           <Route path="/galleries/:id" element={<GalleryDetail />} />
-          <Route path="/photographers" element={<Photographers />} />
-          <Route path="/photographers/:id" element={<PhotographerDetail />} />
+          <Route path="/photographers" element={<Navigate to="/services" replace />} />
+          <Route path="/photographers/:id" element={<Navigate to="/services" replace />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/booking" element={<Booking />} />

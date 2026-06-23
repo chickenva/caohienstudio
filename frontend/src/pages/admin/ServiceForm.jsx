@@ -12,6 +12,7 @@ import {
   Col,
   Space,
   Image,
+  Select,
 } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
@@ -21,6 +22,14 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const API_URL = "http://localhost:5000/api";
+
+const serviceCategoryOptions = [
+  { value: "TRADITIONAL", label: "Chụp / Quay truyền thống" },
+  { value: "PHOTOJOURNALISM", label: "Chụp / Quay phóng sự" },
+  { value: "COMBO", label: "Chụp kết hợp" },
+  { value: "PRINT", label: "In ảnh / Photobook" },
+  { value: "OTHER", label: "Khác" },
+];
 
 const ServiceForm = () => {
   const [form] = Form.useForm();
@@ -38,6 +47,10 @@ const ServiceForm = () => {
   useEffect(() => {
     if (isEdit) {
       fetchServiceDetail();
+    } else {
+      form.resetFields();
+      setThumbnailPreview("");
+      setInitialLoading(false);
     }
   }, [id]);
 
@@ -56,6 +69,8 @@ const ServiceForm = () => {
       form.setFieldsValue({
         name: service.name,
         description: service.description,
+        category: service.category || "OTHER",
+        features: Array.isArray(service.features) ? service.features.join("\n") : "",
         base_price: service.base_price,
         duration_hours: service.duration_hours,
         thumbnail: service.thumbnail,
@@ -78,6 +93,9 @@ const ServiceForm = () => {
     try {
       const payload = {
         ...values,
+        features: values.features
+          ? values.features.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+          : [],
         base_price: Number(values.base_price),
         duration_hours: Number(values.duration_hours),
       };
@@ -128,8 +146,7 @@ const ServiceForm = () => {
           {isEdit ? "Chỉnh sửa gói dịch vụ" : "Thêm gói dịch vụ mới"}
         </Title>
         <Text type="secondary">
-          Quản lý thông tin gói dịch vụ hiển thị trên website và dùng trong quy
-          trình đặt lịch.
+          Quản lý thông tin gói dịch vụ hiển thị trên website và dùng trong quy trình đặt lịch.
         </Text>
       </div>
 
@@ -139,6 +156,7 @@ const ServiceForm = () => {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
+            category: "TRADITIONAL",
             is_active: true,
           }}
         >
@@ -147,14 +165,17 @@ const ServiceForm = () => {
               <Form.Item
                 label="Tên gói dịch vụ"
                 name="name"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập tên gói dịch vụ",
-                  },
-                ]}
+                rules={[{ required: true, message: "Vui lòng nhập tên gói dịch vụ" }]}
               >
-                <Input placeholder="VD: Gói chụp cưới Premium" />
+                <Input placeholder="VD: Chụp truyền thống 01" />
+              </Form.Item>
+
+              <Form.Item
+                label="Danh mục dịch vụ"
+                name="category"
+                rules={[{ required: true, message: "Vui lòng chọn danh mục dịch vụ" }]}
+              >
+                <Select options={serviceCategoryOptions} />
               </Form.Item>
 
               <Row gutter={16}>
@@ -162,20 +183,13 @@ const ServiceForm = () => {
                   <Form.Item
                     label="Giá gói dịch vụ"
                     name="base_price"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập giá gói dịch vụ",
-                      },
-                    ]}
+                    rules={[{ required: true, message: "Vui lòng nhập giá gói dịch vụ" }]}
                   >
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
-                      placeholder="VD: 12000000"
-                      formatter={(value) =>
-                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
+                      placeholder="VD: 4000000"
+                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       addonAfter="VNĐ"
                     />
@@ -184,64 +198,43 @@ const ServiceForm = () => {
 
                 <Col xs={24} md={12}>
                   <Form.Item
-                    label="Thời lượng chụp"
+                    label="Thời lượng"
                     name="duration_hours"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập thời lượng chụp",
-                      },
-                    ]}
+                    rules={[{ required: true, message: "Vui lòng nhập thời lượng" }]}
                   >
-                    <InputNumber
-                      min={1}
-                      style={{ width: "100%" }}
-                      placeholder="VD: 8"
-                      addonAfter="giờ"
-                    />
+                    <InputNumber min={1} style={{ width: "100%" }} placeholder="VD: 8" addonAfter="giờ" />
                   </Form.Item>
                 </Col>
               </Row>
 
               <Form.Item label="Ảnh đại diện / Thumbnail" name="thumbnail">
-                <Input
-                  placeholder="Dán link ảnh thumbnail"
-                  onChange={handleThumbnailChange}
-                />
+                <Input placeholder="Dán link ảnh thumbnail" onChange={handleThumbnailChange} />
               </Form.Item>
 
               <Form.Item label="Mô tả gói dịch vụ" name="description">
                 <TextArea
-                  rows={7}
-                  placeholder="Mô tả chi tiết gói dịch vụ, quyền lợi, phong cách chụp, số lượng ảnh, thời gian..."
+                  rows={5}
+                  placeholder="Mô tả chi tiết gói dịch vụ, quyền lợi, phong cách chụp/quay, thời gian, ghi chú..."
                 />
               </Form.Item>
 
-              <Form.Item
-                label="Hiển thị trên website"
-                name="is_active"
-                valuePropName="checked"
-              >
+              <Form.Item label="Quyền lợi / Nội dung gói" name="features">
+                <TextArea rows={6} placeholder="Mỗi dòng là một quyền lợi hoặc nội dung gói" />
+              </Form.Item>
+
+              <Form.Item label="Hiển thị trên website" name="is_active" valuePropName="checked">
                 <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
               </Form.Item>
             </Col>
 
             <Col xs={24} lg={9}>
-              <Card
-                title="Xem trước ảnh đại diện"
-                bordered
-                style={{ height: "100%" }}
-              >
+              <Card title="Xem trước ảnh đại diện" bordered style={{ height: "100%" }}>
                 {thumbnailPreview ? (
                   <Image
                     src={thumbnailPreview}
                     width="100%"
                     height={260}
-                    style={{
-                      objectFit: "cover",
-                      borderRadius: 8,
-                      background: "#f5f5f5",
-                    }}
+                    style={{ objectFit: "cover", borderRadius: 8, background: "#f5f5f5" }}
                     onError={() => {
                       message.warning("Link ảnh xem trước không hợp lệ");
                     }}
@@ -264,17 +257,8 @@ const ServiceForm = () => {
                   </div>
                 )}
 
-                <div
-                  style={{
-                    marginTop: 16,
-                    color: "#777",
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Ảnh này sẽ hiển thị ở trang danh sách dịch vụ và chi tiết gói
-                  chụp. Có thể dùng link ảnh từ Google Drive, Cloudinary hoặc
-                  link ảnh public.
+                <div style={{ marginTop: 16, color: "#777", fontSize: 13, lineHeight: 1.7 }}>
+                  Ảnh này sẽ hiển thị ở trang danh sách dịch vụ và chi tiết gói. Có thể dùng link ảnh public từ Google Drive, Cloudinary hoặc ảnh có sẵn.
                 </div>
               </Card>
             </Col>
@@ -282,13 +266,7 @@ const ServiceForm = () => {
 
           <Space style={{ marginTop: 20 }}>
             <Button onClick={() => navigate("/admin/services")}>Hủy</Button>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SaveOutlined />}
-              loading={loading}
-            >
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading}>
               {isEdit ? "Lưu thay đổi" : "Tạo dịch vụ"}
             </Button>
           </Space>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Row, Col, Spin, message } from "antd";
 import {
   ArrowLeftOutlined,
   ShoppingCartOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
@@ -13,11 +14,22 @@ import "../../Home.css";
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
+const CATEGORY_LABELS = {
+  TRADITIONAL: "TRUYỀN THỐNG",
+  PHOTOJOURNALISM: "PHÓNG SỰ",
+  COMBO: "KẾT HỢP",
+  PRINT: "ẢNH / PHOTOBOOK",
+  OTHER: "DỊCH VỤ KHÁC",
+};
+
 const ServiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fromCategory = location.state?.fromCategory;
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
@@ -91,7 +103,13 @@ const ServiceDetail = () => {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px 100px 20px" }}>
         {/* Back Button */}
         <button
-          onClick={() => navigate("/services")}
+          onClick={() => {
+            if (fromCategory && fromCategory !== "ALL") {
+              navigate(`/services?category=${fromCategory}`);
+            } else {
+              navigate("/services");
+            }
+          }}
           className="btn-premium-outline scroll-reveal"
           style={{ marginBottom: 40, height: "42px", padding: "0 22px", fontSize: "11px" }}
         >
@@ -143,7 +161,7 @@ const ServiceDetail = () => {
                 display: "inline-block"
               }}
             >
-              {service.category?.toUpperCase() || "CAO HIỂN STUDIO"}
+              {service.category ? CATEGORY_LABELS[service.category] || service.category.toUpperCase() : "CAO HIỂN STUDIO"}
             </span>
 
             {/* Title */}
@@ -253,6 +271,64 @@ const ServiceDetail = () => {
             >
               ĐẶT LỊCH HẸN NGAY <ShoppingCartOutlined />
             </button>
+
+            {/* FAQ Minimalist Links */}
+            <div style={{ marginTop: "50px", paddingTop: "25px", borderTop: "1px solid #E8DED2" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 16px", fontSize: "13.5px", color: "#666666", fontWeight: "300" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <InfoCircleOutlined style={{ color: PRIMARY_COLOR, fontSize: "14px" }} />
+                  Bạn có thắc mắc?
+                </span>
+                
+                {(() => {
+                  const serviceNameLower = service.name?.toLowerCase() || "";
+                  const categoryLower = service.category?.toLowerCase() || "";
+                  
+                  const hasPhoto = serviceNameLower.includes("chụp") || serviceNameLower.includes("ảnh") || serviceNameLower.includes("photo") || categoryLower === "combo" || (!serviceNameLower.includes("quay") && !serviceNameLower.includes("phim") && !serviceNameLower.includes("video"));
+                  const hasVideo = serviceNameLower.includes("quay") || serviceNameLower.includes("phim") || serviceNameLower.includes("video") || categoryLower === "combo";
+                  
+                  const links = [];
+                  
+                  if (hasPhoto && (service.category === "TRADITIONAL" || service.category === "PHOTOJOURNALISM" || service.category === "COMBO")) {
+                    links.push(
+                      <a href="/faq#photo-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                        Phong cách chụp
+                      </a>
+                    );
+                  }
+                  
+                  if (hasVideo && (service.category === "TRADITIONAL" || service.category === "PHOTOJOURNALISM" || service.category === "COMBO")) {
+                    links.push(
+                      <a href="/faq#video-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                        Phong cách quay
+                      </a>
+                    );
+                  }
+                  
+                  if (links.length === 0) return null;
+                  
+                  return links.map((link, index) => (
+                    <React.Fragment key={index}>
+                      {link}
+                      <span style={{ color: "#E8DED2" }}>•</span>
+                    </React.Fragment>
+                  ));
+                })()}
+
+                <a href="/faq#delivery-time" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                  Thời gian nhận sản phẩm
+                </a>
+
+                <span style={{ color: "#E8DED2" }}>•</span>
+
+                <a href="/faq#printing" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                  Quy định in ảnh
+                </a>
+
+
+              </div>
+            </div>
+
           </Col>
         </Row>
       </div>

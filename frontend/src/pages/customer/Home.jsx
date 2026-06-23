@@ -31,7 +31,6 @@ const Home = () => {
   // States for API Data
   const [services, setServices] = useState([]);
   const [galleries, setGalleries] = useState([]);
-  const [photographers, setPhotographers] = useState([]);
   const [rentals, setRentals] = useState([]);
   
   // Loading & Action states
@@ -52,21 +51,16 @@ const Home = () => {
         const endpoints = [
           axios.get("http://localhost:5000/api/services"),
           axios.get("http://localhost:5000/api/galleries"),
-          axios.get("http://localhost:5000/api/users/photographers"),
           axios.get("http://localhost:5000/api/resources/rentals?type=ALL")
         ];
 
-        const [servicesRes, galleriesRes, photographersRes, rentalsRes] = await Promise.allSettled(endpoints);
+        const [servicesRes, galleriesRes, rentalsRes] = await Promise.allSettled(endpoints);
 
         if (servicesRes.status === "fulfilled") {
           setServices(servicesRes.value.data || []);
         }
         if (galleriesRes.status === "fulfilled") {
           setGalleries(galleriesRes.value.data || []);
-        }
-        if (photographersRes.status === "fulfilled") {
-          const phData = photographersRes.value.data;
-          setPhotographers(phData.photographers || (Array.isArray(phData) ? phData : []));
         }
         if (rentalsRes.status === "fulfilled") {
           setRentals(rentalsRes.value.data || []);
@@ -112,7 +106,7 @@ const Home = () => {
     return () => {
       revealElements.forEach((el) => observer.unobserve(el));
     };
-  }, [loading, services, galleries, photographers, rentals]);
+  }, [loading, services, galleries, rentals]);
 
   // 3. Handle Contact Submission
   const handleContactSubmit = async (values) => {
@@ -140,7 +134,6 @@ const Home = () => {
     experience: 8,
     services: services.length || 6,
     galleries: galleries.length || 28,
-    photographers: photographers.length || 5,
     rentals: rentals.length || 18,
   };
 
@@ -171,7 +164,7 @@ const Home = () => {
       duration_hours: 5,
       thumbnail: FALLBACK_EVENT,
       description: "Ghi lại những khoảnh khắc lễ đính hôn, sự kiện doanh nghiệp với phong cách chân thực, tinh tế và ấm áp.",
-      features: ["1 Photographer & 1 Videographer", "Quay phim độ phân giải 4K sắc nét", "Dựng phim highlight cảm xúc 3-5 phút", "Giao file nhanh chóng trong vòng 3 ngày"]
+      features: ["1 thành viên chụp & 1 thành viên quay", "Quay phim độ phân giải 4K sắc nét", "Dựng phim highlight cảm xúc 3-5 phút", "Giao file nhanh chóng trong vòng 3 ngày"]
     }
   ];
 
@@ -182,29 +175,6 @@ const Home = () => {
     { _id: "demo-gal-4", title: "Luxury Fashion Editorial", category: "EVENT", coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800&auto=format&fit=crop", location: "TP. HCM" }
   ];
 
-  const demoPhotographers = [
-    {
-      _id: "demo-p-1",
-      full_name: "Cao Thế Hiển",
-      portfolio: {
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop",
-        bio: "Sáng lập viên & Nhiếp ảnh gia chính. Hơn 8 năm kinh nghiệm ghi lại khoảnh khắc lãng mạn tinh tế của các cặp đôi.",
-        specialties: ["Wedding", "Portrait", "Art Concept"],
-        years_of_experience: 8
-      }
-    },
-    {
-      _id: "demo-p-2",
-      full_name: "Minh Trang",
-      portfolio: {
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
-        bio: "Nhiếp ảnh gia chuyên về chân dung nghệ thuật và phong cách thời trang tối giản thanh lịch.",
-        specialties: ["Portrait", "Fashion", "Beauty"],
-        years_of_experience: 5
-      }
-    }
-  ];
-
   const demoRentals = [
     { name: "Sony FX3 Cinema Line Camera", type: "Camera", rental_price_per_day: 1200000, thumbnail: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=300" },
     { name: "Canon RF 50mm f/1.2L USM", type: "Lens", rental_price_per_day: 700000, thumbnail: "https://images.unsplash.com/photo-1617005082133-548c4dd27f35?q=80&w=300" },
@@ -213,7 +183,6 @@ const Home = () => {
 
   const displayServices = services.length > 0 ? services.slice(0, 3) : demoServices;
   const displayGalleries = galleries.length > 0 ? galleries.slice(0, 4) : demoGalleries;
-  const displayPhotographers = photographers.length > 0 ? photographers.slice(0, 3) : demoPhotographers;
   const displayRentals = rentals.length > 0 ? rentals.slice(0, 3) : demoRentals;
 
   return (
@@ -303,7 +272,7 @@ const Home = () => {
                 Cao Hiển Studio được tạo dựng dựa trên tình yêu nghệ thuật nhiếp ảnh cưới và mong muốn lưu giữ trọn vẹn những ký ức hạnh phúc ngọt ngào của các đôi uyên ương.
               </p>
               <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "40px", fontWeight: "300" }}>
-                Với đội ngũ photographer nội bộ đầy nhiệt huyết, trang thiết bị chuyên nghiệp và gu thẩm mỹ thanh lịch mộc mạc, chúng tôi tự hào đồng hành cùng hàng nghìn khách hàng trên hành trình hạnh phúc.
+                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho ekip quay chụp và khách hàng có nhu cầu sáng tạo riêng.
               </p>
               <button className="btn-premium-outline" onClick={() => navigate("/about")}>
                 TÌM HIỂU THÊM
@@ -326,8 +295,8 @@ const Home = () => {
                     <div className="stat-label">Album Hoàn Thành</div>
                   </Col>
                   <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.photographers}</div>
-                    <div className="stat-label">Nhiếp Ảnh Gia</div>
+                    <div className="stat-number">{stats.rentals}</div>
+                    <div className="stat-label">Thiết Bị Cho Thuê</div>
                   </Col>
                 </Row>
               </div>
@@ -406,7 +375,8 @@ const Home = () => {
                             height: "45px",
                             fontFamily: "Outfit",
                             fontSize: "12px",
-                            letterSpacing: "1px"
+                            letterSpacing: "1px",
+                            marginTop: "auto"
                           }}
                           onClick={() => navigate(`/services/${item._id}`)}
                         >
@@ -485,97 +455,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          6. PHOTOGRAPHERS
-      ========================================== */}
-      <section style={{ padding: "80px 20px", background: "#FAF7F2" }} className="full-bleed">
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "60px" }} className="scroll-reveal">
-            <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" }}>
-              Our Storytellers
-            </span>
-            <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "42px", fontWeight: "300", marginTop: "10px", textTransform: "none" }}>
-              Đội Ngũ Nhiếp Ảnh Gia
-            </h2>
-            <div style={{ width: "40px", height: "1px", background: "#BFA16A", margin: "20px auto 0 auto" }}></div>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: "center", padding: "60px 0" }}><Spin size="large" /></div>
-          ) : (
-            <>
-              <Row gutter={[30, 40]} justify="center">
-                {displayPhotographers.map((staff, index) => {
-                  const portfolio = staff.portfolio || {};
-                  return (
-                    <Col xs={24} md={8} key={staff._id} className={`scroll-reveal stagger-${index + 1}`}>
-                      <div className="photographer-card-luxury">
-                        <div className="photographer-avatar-wrapper">
-                          <img 
-                            className="photographer-avatar"
-                            src={portfolio.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300"} 
-                            alt={staff.full_name} 
-                            onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300"; }}
-                          />
-                        </div>
-                        <div className="photographer-info">
-                          <h3 className="photographer-name">{staff.full_name}</h3>
-                          <span className="photographer-role">{portfolio.years_of_experience || 3}+ Năm kinh nghiệm</span>
-                          
-                          <p className="photographer-bio">
-                            {portfolio.bio || "Nhiếp ảnh gia chuyên nghiệp tận tâm, luôn tạo không khí thoải mái tự nhiên cho mỗi cặp đôi."}
-                          </p>
-
-                          <div className="photographer-tags">
-                            {(portfolio.specialties || ["Wedding", "Portrait"]).map((spec, idx) => (
-                              <span key={idx} className="photographer-tag">{spec}</span>
-                            ))}
-                          </div>
-
-                          <div style={{ display: "flex", gap: "10px" }}>
-                            <Button 
-                              onClick={() => navigate(`/photographers/${staff._id}`)}
-                              style={{ 
-                                flex: 1, 
-                                background: "transparent", 
-                                color: "#2F2F2F", 
-                                border: "1px solid #E8DED2",
-                                borderRadius: 0
-                              }}
-                            >
-                              Hồ Sơ
-                            </Button>
-                            <Button 
-                              onClick={() => navigate("/booking", { state: { photographer_id: staff._id, photographer_name: staff.full_name } })}
-                              style={{ 
-                                flex: 1, 
-                                background: "#BFA16A", 
-                                color: "#FFFFFF", 
-                                border: "none",
-                                borderRadius: 0,
-                                fontWeight: "500"
-                              }}
-                            >
-                              Đặt Lịch
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-                  );
-                })}
-              </Row>
-              <div style={{ textAlign: "center", marginTop: "50px" }} className="scroll-reveal">
-                <button className="btn-premium-outline" onClick={() => navigate("/photographers")}>
-                  XEM TOÀN BỘ ĐỘI NGŨ <ArrowRightOutlined />
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* ==========================================
-          7. STUDIO EQUIPMENT & CREATIVE SPACE
+          6. STUDIO EQUIPMENT & CREATIVE SPACE
       ========================================== */}
       <section style={{ padding: "100px 20px" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -592,7 +472,7 @@ const Home = () => {
                 Studio sở hữu hệ thống thiết bị quay chụp hiện đại hàng đầu cùng hệ thống phòng studio đa dạng concept, đầy đủ thiết bị chiếu sáng tối tân.
               </p>
               <p style={{ color: "#555555", fontSize: "15px", lineHeight: "1.8", marginBottom: "40px", fontWeight: "300" }}>
-                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho các photographer chuyên nghiệp.
+                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho ekip quay chụp và khách hàng có nhu cầu sáng tạo riêng.
               </p>
               <button className="btn-premium-outline" onClick={() => navigate("/rentals")}>
                 XEM THIẾT BỊ CHO THUÊ <ArrowRightOutlined />
@@ -639,7 +519,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          8. CUSTOMER TESTIMONIALS
+          7. CUSTOMER TESTIMONIALS
       ========================================== */}
       <section style={{ padding: "80px 20px", background: "#FAF7F2" }} className="full-bleed">
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -686,7 +566,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          9. BOOKING CTA SECTION (Light warm gradient overlay)
+          8. BOOKING CTA SECTION (Light warm gradient overlay)
       ========================================== */}
       <section className="full-bleed" style={{ position: "relative", padding: "130px 20px", textAlign: "center" }}>
         <div 
@@ -720,7 +600,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          10. CONTACT SECTION (Form & Info)
+          9. CONTACT SECTION (Form & Info)
       ========================================== */}
       <section style={{ padding: "100px 20px" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>

@@ -43,7 +43,6 @@ function renderMarkdown(text) {
 const QUICK_ACTIONS = [
   { label: "📸 Gói chụp", message: "Studio có những gói chụp ảnh nào? Giá cả thế nào?" },
   { label: "📷 Thuê thiết bị", message: "Tôi muốn tìm hiểu về dịch vụ thuê máy ảnh và thiết bị" },
-  { label: "👨‍🎨 Thợ chụp", message: "Giới thiệu cho tôi các thợ chụp ảnh của studio" },
   { label: "🎨 Concept chụp", message: "Gợi ý concept chụp ảnh cưới đẹp và trang phục phù hợp" },
   { label: "📅 Ngày tốt", message: "Tư vấn ngày tốt để chụp ảnh cưới và tổ chức đám cưới" },
   { label: "📋 Chuẩn bị", message: "Cần chuẩn bị những gì trước buổi chụp ảnh?" },
@@ -52,7 +51,7 @@ const QUICK_ACTIONS = [
 const WELCOME_MESSAGE = {
   role: "assistant",
   content:
-    "Xin chào! 👋 Tôi là **Trợ lý Cao Hiển**, luôn sẵn sàng hỗ trợ bạn.\n\nTôi có thể tư vấn cho bạn về:\n- 📸 Các gói chụp ảnh & bảng giá\n- 📷 Thuê máy ảnh, thiết bị\n- 👨‍🎨 Lựa chọn thợ chụp phù hợp\n- 🎨 Gợi ý concept, trang phục, địa điểm\n- 📅 Tư vấn ngày tốt, phong tục cưới hỏi\n- 📋 Checklist chuẩn bị trước buổi chụp\n\nBạn cần tư vấn gì ạ? 😊",
+    "Xin chào! 👋 Tôi là **Trợ lý Cao Hiển**, luôn sẵn sàng hỗ trợ bạn.\n\nTôi có thể tư vấn cho bạn về:\n- 📸 Các gói chụp ảnh & bảng giá\n- 📷 Thuê máy ảnh, thiết bị\n- 🎨 Gợi ý concept, trang phục, địa điểm\n- 📅 Tư vấn ngày tốt, phong tục cưới hỏi\n- 📋 Checklist chuẩn bị trước buổi chụp\n\nBạn cần tư vấn gì ạ? 😊",
   timestamp: new Date().toISOString(),
 };
 
