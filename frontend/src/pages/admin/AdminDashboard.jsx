@@ -20,7 +20,6 @@ import {
   CameraOutlined,
   AppstoreOutlined,
   PictureOutlined,
-  ToolOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
@@ -355,18 +354,6 @@ const AdminDashboard = () => {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Thiết bị cho thuê"
-              value={cards.activeRentalResources || 0}
-              prefix={<ToolOutlined />}
-            />
-            <Text type="secondary">
-              Tổng tài nguyên active: {cards.activeResources || 0}
-            </Text>
-          </Card>
-        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>

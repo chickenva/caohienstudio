@@ -56,10 +56,11 @@ const OrdersCreate = () => {
   const [customerResults, setCustomerResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  const [services, setServices] = useState([]);
-  const [photographers, setPhotographers] = useState([]);
+  const [mainServices, setMainServices] = useState([]);
+  const [addonServices, setAddonServices] = useState([]);
 
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedAddons, setSelectedAddons] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
 
@@ -71,15 +72,13 @@ const OrdersCreate = () => {
 
   const fetchOptions = async () => {
     try {
-      const [serviceRes, photographerRes] = await Promise.all([
-        axios.get(`${API_URL}/services`),
-        axios.get(`${API_URL}/users/photographers`),
-      ]);
+      const serviceRes = await axios.get(`${API_URL}/services`);
 
-      setServices(Array.isArray(serviceRes.data) ? serviceRes.data : []);
-      setPhotographers(photographerRes.data.photographers || []);
+      const allServices = Array.isArray(serviceRes.data) ? serviceRes.data : [];
+      setMainServices(allServices.filter(s => !s.allow_addon));
+      setAddonServices(allServices.filter(s => s.allow_addon));
     } catch (err) {
-      message.error("Không thể tải dịch vụ hoặc nhiếp ảnh gia");
+      message.error("Không thể tải dịch vụ");
     }
   };
 
@@ -143,16 +142,35 @@ const OrdersCreate = () => {
   };
 
   const handleServiceChange = (serviceId) => {
-    const service = services.find((item) => item._id === serviceId);
+    const service = mainServices.find((item) => item._id === serviceId);
 
     setSelectedService(service || null);
 
+    let price = service?.base_price || 0;
+    selectedAddons.forEach(id => {
+      const addon = addonServices.find(a => a._id === id);
+      if (addon) price += addon.base_price;
+    });
+
+    form.setFieldsValue({ total_amount: price });
+    setTotalAmount(price);
+
     if (service) {
-      const price = service.base_price || 0;
-      form.setFieldsValue({ total_amount: price });
-      setTotalAmount(price);
       autoFillEndTime(service);
     }
+  };
+
+  const handleAddonsChange = (addonIds) => {
+    setSelectedAddons(addonIds);
+
+    let price = selectedService?.base_price || 0;
+    addonIds.forEach(id => {
+      const addon = addonServices.find(a => a._id === id);
+      if (addon) price += addon.base_price;
+    });
+
+    form.setFieldsValue({ total_amount: price });
+    setTotalAmount(price);
   };
 
   const autoFillEndTime = (service = selectedService) => {
@@ -196,7 +214,7 @@ const OrdersCreate = () => {
         customer_phone: values.customer_phone,
 
         service_id: values.service_id,
-        photographer_ids: values.photographer_ids,
+        extra_service_ids: values.extra_service_ids,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         location: values.location,
@@ -405,7 +423,7 @@ const OrdersCreate = () => {
                     <Select
                       placeholder="Chọn gói dịch vụ"
                       onChange={handleServiceChange}
-                      options={services.map((service) => ({
+                      options={mainServices.map((service) => ({
                         value: service._id,
                         label: `${service.name} - ${Number(
                           service.base_price || 0,
@@ -417,21 +435,16 @@ const OrdersCreate = () => {
 
                 <Col xs={24} md={12}>
                   <Form.Item
-                    label="Nhiếp ảnh gia"
-                    name="photographer_ids"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn nhiếp ảnh gia",
-                      },
-                    ]}
+                    label="Dịch vụ đi kèm"
+                    name="extra_service_ids"
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Chọn nhiếp ảnh gia"
-                      options={photographers.map((p) => ({
-                        value: p._id,
-                        label: p.full_name,
+                      placeholder="Chọn dịch vụ đi kèm (nếu có)"
+                      onChange={handleAddonsChange}
+                      options={addonServices.map((a) => ({
+                        value: a._id,
+                        label: `${a.name} (+${Number(a.base_price || 0).toLocaleString("vi-VN")}đ)`,
                       }))}
                     />
                   </Form.Item>

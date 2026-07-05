@@ -15,13 +15,14 @@ import FAQ from "./pages/customer/FAQ";
 import Galleries from "./pages/customer/Galleries";
 import Services from "./pages/customer/Services";
 import Booking from "./pages/customer/Booking";
-import Rentals from "./pages/customer/Rentals";
 import Contact from "./pages/customer/Contact";
+import RefundPolicy from "./pages/policies/RefundPolicy";
+import Contract from "./pages/policies/Contract";
 
 import GalleryDetail from "./pages/customer/GalleryDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
 import BookingDetail from "./pages/customer/BookingDetail";
-import RentalDetail from "./pages/customer/RentalDetail";
+import BookingConfirm from "./pages/customer/BookingConfirm";
 
 // Customer Pages
 import Profile from "./pages/customer/Profile";
@@ -34,11 +35,9 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminGalleries from "./pages/admin/AdminGalleries";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminPhotographers from "./pages/admin/AdminPhotographers";
-import AdminResources from "./pages/admin/AdminResources";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 
 import CreateOrder from "./pages/admin/CreateOrder";
-import ResourceForm from "./pages/admin/ResourceForm";
 import PhotographerForm from "./pages/admin/PhotographerForm";
 import ServiceForm from "./pages/admin/ServiceForm";
 import GalleryForm from "./pages/admin/GalleryForm";
@@ -67,9 +66,10 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/booking" element={<Booking />} />
-          <Route path="/rentals" element={<Rentals />} />
-          <Route path="/rentals/:id" element={<RentalDetail />} />
+          <Route path="/booking/confirm" element={<BookingConfirm />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/contract" element={<Contract />} />
 
           <Route path="/customer/profile" element={<Profile />} />
           <Route path="/customer/my-bookings" element={<MyBookings />} />
@@ -106,10 +106,6 @@ function App() {
           <Route path="photographers" element={<AdminPhotographers />} />
           <Route path="photographers/add" element={<PhotographerForm />} />
           <Route path="photographers/edit/:id" element={<PhotographerForm />} />
-
-          <Route path="resources" element={<AdminResources />} />
-          <Route path="resources/add" element={<ResourceForm />} />
-          <Route path="resources/edit/:id" element={<ResourceForm />} />
         </Route>
       </Routes>
     </BrowserRouter>

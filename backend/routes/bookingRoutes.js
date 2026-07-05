@@ -13,8 +13,11 @@ router.get("/vnpay-return", bookingController.vnpayReturn);
 // Frontend cũng có thể POST params về backend để xác thực chữ ký
 router.post("/vnpay-return", bookingController.vnpayReturn);
 
-// Lấy danh sách khung giờ bận của thợ chụp
+// Lấy danh sách khung giờ bận của thợ chụp (backward-compatible)
 router.get("/photographer-busy-slots", bookingController.getPhotographerBusySlots);
+
+// Lấy danh sách khung giờ bận của studio (dùng cho booking mới)
+router.get("/studio-busy-slots", bookingController.getStudioBusySlots);
 
 // ==========================================
 // CUSTOMER ROUTES
@@ -68,5 +71,8 @@ router.post(
 
 // Admin cập nhật trạng thái đơn
 router.put("/:id/status", verifyAdmin, bookingController.updateBookingStatus);
+
+// Admin phân ekip phụ trách cho đơn
+router.put("/:id/staff", verifyAdmin, bookingController.updateBookingStaff);
 
 module.exports = router;

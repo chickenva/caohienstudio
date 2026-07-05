@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Table, Tag, Button, message, Space, Select, Card, Row, Col } from "antd";
 import { useNavigate } from "react-router-dom";
-import { EyeOutlined, CreditCardOutlined, ReloadOutlined } from "@ant-design/icons";
+import { EyeOutlined, CreditCardOutlined, ReloadOutlined, CalendarOutlined } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
+import "../../Home.css";
 
 const API_URL = "http://localhost:5000/api";
 const PRIMARY_COLOR = "#9a8a78";
@@ -214,34 +215,21 @@ const MyBookings = () => {
     },
     {
       title: "GÓI DỊCH VỤ",
-      dataIndex: "service_id",
-      key: "service_id",
-      render: (service) => (
-        <span style={{ fontWeight: 600, color: PRIMARY_COLOR }}>
-          {service?.name || "Dịch vụ"}
-        </span>
+      key: "services",
+      render: (_, record) => (
+        <div>
+          <span style={{ fontWeight: 600, color: PRIMARY_COLOR }}>
+            {record.service_id?.name || "Dịch vụ"}
+          </span>
+          {record.extra_service_ids && record.extra_service_ids.length > 0 && (
+            <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+              + {record.extra_service_ids.map(s => s.name).join(", ")}
+            </div>
+          )}
+        </div>
       ),
     },
-    {
-      title: "THỢ CHỤP",
-      dataIndex: "photographer_ids",
-      key: "photographer_ids",
-      render: (photographers) => {
-        if (!photographers || photographers.length === 0) {
-          return <span style={{ color: "#999" }}>Chưa có</span>;
-        }
 
-        return (
-          <div>
-            {photographers.map((photographer) => (
-              <div key={photographer._id} style={{ fontWeight: 500 }}>
-                {photographer.full_name}
-              </div>
-            ))}
-          </div>
-        );
-      },
-    },
     {
       title: "TRẠNG THÁI ĐƠN",
       key: "status",
@@ -336,28 +324,32 @@ const MyBookings = () => {
   const completed = bookings.filter((item) => item.status === "COMPLETED").length;
 
   return (
-    <div style={{ maxWidth: "1250px", margin: "40px auto", padding: "0 20px" }}>
-      <h1
-        style={{
-          fontFamily: FONT_SERIF,
-          fontSize: "34px",
-          textAlign: "center",
-          marginBottom: "12px",
-          color: "#333",
-        }}
-      >
-        Lịch chụp của tôi
-      </h1>
-
-      <p
-        style={{
-          textAlign: "center",
-          color: "#777",
-          marginBottom: "32px",
-        }}
-      >
-        Theo dõi lịch sử đặt lịch, trạng thái thanh toán và chi tiết từng đơn.
-      </p>
+    <div style={{ maxWidth: "1250px", margin: "80px auto 40px", padding: "0 20px" }}>
+      <div style={{ textAlign: "center", marginBottom: "48px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(154, 138, 120, 0.08)", border: "1px solid rgba(154, 138, 120, 0.2)", marginBottom: 20 }}>
+          <CalendarOutlined style={{ color: PRIMARY_COLOR }} />
+          <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
+            Lịch Chụp Của Tôi
+          </span>
+        </div>
+        <h1
+          className="font-serif-luxury"
+          style={{
+            color: "#1F1F1F",
+            fontSize: "clamp(28px, 4vw, 42px)",
+            fontWeight: 300,
+            lineHeight: 1.2,
+            margin: "0 0 16px 0",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Quản lý{" "}
+          <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Đơn Đặt Lịch</span>
+        </h1>
+        <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: "0 auto", fontWeight: 300 }}>
+          Theo dõi lịch sử đặt lịch, trạng thái thanh toán và chi tiết từng đơn.
+        </p>
+      </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} md={6}>

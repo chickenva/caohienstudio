@@ -1,7 +1,6 @@
 const Booking = require("../models/Booking");
 const User = require("../models/User");
 const Service = require("../models/Service");
-const Resource = require("../models/Resource");
 const PublicGallery = require("../models/PublicGallery");
 const Payment = require("../models/Payment");
 
@@ -40,8 +39,6 @@ exports.getAdminOverview = async (req, res) => {
       totalPhotographers,
       activePhotographers,
       activeServices,
-      activeResources,
-      activeRentalResources,
       activeGalleries,
 
       revenueAgg,
@@ -77,13 +74,6 @@ exports.getAdminOverview = async (req, res) => {
       User.countDocuments({ role: "PHOTOGRAPHER", is_active: true }),
 
       Service.countDocuments({ is_active: true }),
-
-      Resource.countDocuments({ is_active: true }),
-
-      Resource.countDocuments({
-        is_active: true,
-        usage_type: { $in: ["RENTAL", "BOTH"] },
-      }),
 
       PublicGallery.countDocuments({ is_active: true }),
 
@@ -213,8 +203,6 @@ exports.getAdminOverview = async (req, res) => {
         activePhotographers,
 
         activeServices,
-        activeResources,
-        activeRentalResources,
         activeGalleries,
       },
 

@@ -229,14 +229,18 @@ export default function AdminOrders() {
     },
     {
       title: "DỊCH VỤ",
-      dataIndex: "service_id",
-      key: "service_id",
-      render: (service) => (
+      key: "services",
+      render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{service?.name || "Dịch vụ"}</div>
-          <div style={{ fontSize: 12, color: "#888" }}>
-            {service?.duration_hours
-              ? `${service.duration_hours} giờ`
+          <div style={{ fontWeight: 600 }}>{record.service_id?.name || "Dịch vụ"}</div>
+          {record.extra_service_ids && record.extra_service_ids.length > 0 && (
+            <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+              + {record.extra_service_ids.map(s => s.name).join(", ")}
+            </div>
+          )}
+          <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+            {record.service_id?.duration_hours
+              ? `${record.service_id.duration_hours} giờ`
               : "Chưa rõ thời lượng"}
           </div>
         </div>
@@ -244,14 +248,14 @@ export default function AdminOrders() {
     },
     {
       title: "THỢ CHỤP",
-      dataIndex: "photographer_ids",
-      key: "photographer_ids",
-      render: (photographers) => {
-        if (!photographers || photographers.length === 0) {
-          return <span style={{ color: "#999" }}>Chưa có</span>;
+      dataIndex: "assigned_staff_ids",
+      key: "assigned_staff_ids",
+      render: (staff) => {
+        if (!staff || staff.length === 0) {
+          return <span style={{ color: "#999" }}>Chưa phân công</span>;
         }
 
-        return photographers.map((p) => (
+        return staff.map((p) => (
           <div key={p._id} style={{ fontWeight: 500 }}>
             {p.full_name}
           </div>
@@ -450,16 +454,24 @@ export default function AdminOrders() {
               </div>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Dịch vụ">
+            <Descriptions.Item label="Gói chính">
               {selectedBooking.service_id?.name}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Thợ chụp">
-              {selectedBooking.photographer_ids?.length > 0
-                ? selectedBooking.photographer_ids
+            <Descriptions.Item label="Gói đi kèm">
+              {selectedBooking.extra_service_ids?.length > 0
+                ? selectedBooking.extra_service_ids
+                  .map((s) => s.name)
+                  .join(", ")
+                : "Không có"}
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Nhân sự phân công">
+              {selectedBooking.assigned_staff_ids?.length > 0
+                ? selectedBooking.assigned_staff_ids
                   .map((p) => p.full_name)
                   .join(", ")
-                : "Chưa có"}
+                : "Chưa phân công"}
             </Descriptions.Item>
 
             <Descriptions.Item label="Thời gian chụp">

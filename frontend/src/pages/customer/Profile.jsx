@@ -9,6 +9,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import "../../Home.css";
 
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
@@ -192,17 +193,32 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ maxWidth: "800px", margin: "40px auto", padding: "0 40px" }}>
-      <h1
-        style={{
-          fontFamily: FONT_SERIF,
-          fontSize: "32px",
-          textAlign: "center",
-          marginBottom: "40px",
-        }}
-      >
-        Quản lý tài khoản
-      </h1>
+    <div style={{ maxWidth: "800px", margin: "80px auto 40px", padding: "0 40px" }}>
+      <div style={{ textAlign: "center", marginBottom: "48px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(154, 138, 120, 0.08)", border: "1px solid rgba(154, 138, 120, 0.2)", marginBottom: 20 }}>
+          <UserOutlined style={{ color: PRIMARY_COLOR }} />
+          <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
+            Tài Khoản
+          </span>
+        </div>
+        <h1
+          className="font-serif-luxury"
+          style={{
+            color: "#1F1F1F",
+            fontSize: "clamp(28px, 4vw, 42px)",
+            fontWeight: 300,
+            lineHeight: 1.2,
+            margin: "0 0 16px 0",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Quản lý{" "}
+          <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Tài Khoản</span>
+        </h1>
+        <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 460, margin: "0 auto", fontWeight: 300 }}>
+          Cập nhật thông tin cá nhân và bảo mật tài khoản của bạn.
+        </p>
+      </div>
 
       {/* 1. THÔNG TIN CÁ NHÂN */}
       <div
@@ -368,7 +384,7 @@ const Profile = () => {
         destroyOnClose
       >
         <div style={{ textAlign: "center", padding: "10px 0" }}>
-          <p>Nhập mã OTP vừa được gửi vào email của bạn để xác nhận.</p>
+          <p style={{ marginBottom: 20 }}>Nhập mã OTP vừa được gửi vào email của bạn để xác nhận.<br /><span style={{ fontSize: "12px", color: "#888", fontStyle: "italic" }}>* Vui lòng kiểm tra hộp thư Rác (Spam) nếu không nhận được email.</span></p>
           <Form onFinish={handleVerifyAndSave}>
             <Form.Item
               name="otp"

@@ -164,12 +164,13 @@ const findActivePendingBooking = async (customerId) => {
     .sort({ createdAt: -1 });
 };
 
-// Kiểm tra thợ chụp có bị trùng lịch với đơn hợp lệ khác không.
+// Kiểm tra thợ chụp có bị trùng lịch với đơn hợp lệ khác không (giữ cho admin).
 const findPhotographerConflict = async ({
   photographerIds,
   startDate,
   endDate,
 }) => {
+  if (!photographerIds || photographerIds.length === 0) return null;
   return Booking.findOne({
     photographer_ids: { $in: photographerIds },
     start_time: { $lt: endDate },
@@ -187,6 +188,28 @@ const findPhotographerConflict = async ({
   })
     .populate("photographer_ids", "full_name email")
     .populate("service_id", "name");
+};
+
+// Kiểm tra studio có booking trùng thời gian không (dùng cho customer booking).
+const findStudioConflict = async ({ startDate, endDate, excludeBookingId }) => {
+  const query = {
+    start_time: { $lt: endDate },
+    end_time: { $gt: startDate },
+    $or: [
+      { status: "DEPOSITED" },
+      { status: "CONFIRMED" },
+      { status: "IN_PROGRESS" },
+      { status: "COMPLETED" },
+      {
+        status: "PENDING",
+        expires_at: { $gt: new Date() },
+      },
+    ],
+  };
+  if (excludeBookingId) {
+    query._id = { $ne: excludeBookingId };
+  }
+  return Booking.findOne(query).populate("service_id", "name");
 };
 
 // Tạo payload lỗi khi thợ chụp bị trùng lịch.
@@ -313,7 +336,7 @@ exports.createVnpayPayment = async (req, res) => {
 
     const {
       service_id,
-      photographer_ids,
+      extra_service_ids,
       start_time,
       end_time,
       location,
@@ -331,16 +354,6 @@ exports.createVnpayPayment = async (req, res) => {
 
     if (!location) {
       return res.status(400).json({ message: "Thiếu địa điểm chụp" });
-    }
-
-    if (
-      !photographer_ids ||
-      !Array.isArray(photographer_ids) ||
-      photographer_ids.length === 0
-    ) {
-      return res.status(400).json({
-        message: "Vui lòng chọn ít nhất 1 thợ chụp",
-      });
     }
 
     const customerId = getCurrentUserId(req);
@@ -369,20 +382,35 @@ exports.createVnpayPayment = async (req, res) => {
 
     const service = await Service.findById(service_id);
 
-    if (!service) {
-      return res.status(404).json({ message: "Không tìm thấy gói dịch vụ" });
+    if (!service || !service.is_active) {
+      return res.status(404).json({ message: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng cung cấp" });
     }
 
-    const photographers = await User.find({
-      _id: { $in: photographer_ids },
-      role: "PHOTOGRAPHER",
-      is_active: true,
-    });
+    // Validate gói đi kèm
+    let validatedAddonIds = [];
+    let addonTotalPrice = 0;
 
-    if (photographers.length !== photographer_ids.length) {
-      return res.status(400).json({
-        message: "Danh sách thợ chụp không hợp lệ",
+    if (extra_service_ids && Array.isArray(extra_service_ids) && extra_service_ids.length > 0) {
+      const addonServices = await Service.find({
+        _id: { $in: extra_service_ids },
+        is_active: true,
       });
+
+      if (addonServices.length !== extra_service_ids.length) {
+        return res.status(400).json({
+          message: "Một hoặc nhiều gói đi kèm không hợp lệ hoặc không được phép chọn làm addon",
+        });
+      }
+
+      // Không cho chọn trùng gói chính
+      if (extra_service_ids.includes(service_id)) {
+        return res.status(400).json({
+          message: "Gói đi kèm không được trùng với gói chính",
+        });
+      }
+
+      validatedAddonIds = addonServices.map((s) => s._id);
+      addonTotalPrice = addonServices.reduce((sum, s) => sum + Number(s.base_price || 0), 0);
     }
 
     const startDate = new Date(start_time);
@@ -405,8 +433,8 @@ exports.createVnpayPayment = async (req, res) => {
         .add(service.duration_hours || 4, "hours")
         .toDate();
 
-    const conflictBooking = await findPhotographerConflict({
-      photographerIds: photographer_ids,
+    // Check lịch studio thay vì thợ chụp
+    const conflictBooking = await findStudioConflict({
       startDate,
       endDate,
     });
@@ -415,11 +443,11 @@ exports.createVnpayPayment = async (req, res) => {
       return sendConflictResponse(
         res,
         conflictBooking,
-        "Thợ chụp đã có lịch trong khung giờ này",
+        "Studio đã có lịch trong khung giờ này. Vui lòng chọn khung giờ khác.",
       );
     }
 
-    const totalAmount = Number(service.base_price || 0);
+    const totalAmount = Number(service.base_price || 0) + addonTotalPrice;
     const depositPercent = Number(deposit_percent || 30);
 
     if (totalAmount <= 0) {
@@ -440,7 +468,7 @@ exports.createVnpayPayment = async (req, res) => {
     const booking = await Booking.create({
       customer_id: customerId,
       service_id: service._id,
-      photographer_ids,
+      extra_service_ids: validatedAddonIds,
       start_time: startDate,
       end_time: endDate,
       location,
@@ -488,6 +516,7 @@ exports.getMyBookings = async (req, res) => {
 
     const bookings = await Booking.find({ customer_id: customerId })
       .populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("extra_service_ids", "name base_price")
       .populate("photographer_ids", "full_name email phone portfolio.avatar")
       .sort({ createdAt: -1 });
 
@@ -516,6 +545,7 @@ exports.getBookingDetail = async (req, res) => {
       customer_id: customerId,
     })
       .populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("extra_service_ids", "name base_price")
       .populate(
         "photographer_ids",
         "full_name email phone portfolio.avatar portfolio.bio",
@@ -870,7 +900,10 @@ exports.createBookingForAdmin = async (req, res) => {
       customer_email,
       customer_phone,
       service_id,
+      extra_service_ids,
       photographer_ids,
+      assigned_staff_ids,
+      external_staff,
       start_time,
       end_time,
       location,
@@ -897,16 +930,6 @@ exports.createBookingForAdmin = async (req, res) => {
       });
     }
 
-    if (
-      !photographer_ids ||
-      !Array.isArray(photographer_ids) ||
-      photographer_ids.length === 0
-    ) {
-      return res.status(400).json({
-        message: "Vui lòng chọn ít nhất 1 nhiếp ảnh gia",
-      });
-    }
-
     const bookingStatus = status || "DEPOSITED";
     const allowedAdminStatuses = ["PENDING", "DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"];
 
@@ -924,13 +947,15 @@ exports.createBookingForAdmin = async (req, res) => {
       });
     }
 
-    const photographers = await User.find({
-      _id: { $in: photographer_ids },
-      role: "PHOTOGRAPHER",
-      is_active: true,
-    });
+    const photographers = (photographer_ids && Array.isArray(photographer_ids) && photographer_ids.length > 0)
+      ? await User.find({
+        _id: { $in: photographer_ids },
+        role: "PHOTOGRAPHER",
+        is_active: true,
+      })
+      : [];
 
-    if (photographers.length !== photographer_ids.length) {
+    if (photographer_ids && photographer_ids.length > 0 && photographers.length !== photographer_ids.length) {
       return res.status(400).json({
         message: "Danh sách nhiếp ảnh gia không hợp lệ",
       });
@@ -1060,7 +1085,10 @@ exports.createBookingForAdmin = async (req, res) => {
     const bookingPayload = {
       customer_id: customer._id,
       service_id: service._id,
-      photographer_ids,
+      photographer_ids: photographer_ids || [],
+      extra_service_ids: extra_service_ids || [],
+      assigned_staff_ids: assigned_staff_ids || [],
+      external_staff: external_staff || [],
       start_time: startDate,
       end_time: endDate,
       location,
@@ -1105,7 +1133,9 @@ exports.createBookingForAdmin = async (req, res) => {
     const populatedBooking = await Booking.findById(booking._id)
       .populate("customer_id", "full_name email phone")
       .populate("service_id", "name thumbnail base_price duration_hours")
-      .populate("photographer_ids", "full_name email phone portfolio.avatar");
+      .populate("extra_service_ids", "name base_price")
+      .populate("photographer_ids", "full_name email phone portfolio.avatar")
+      .populate("assigned_staff_ids", "full_name email phone");
 
     return res.status(201).json({
       message: "Admin tạo đơn đặt lịch thành công",
@@ -1138,7 +1168,9 @@ exports.getAllBookingsForAdmin = async (req, res) => {
     const bookings = await Booking.find(query)
       .populate("customer_id", "full_name email phone")
       .populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("extra_service_ids", "name base_price")
       .populate("photographer_ids", "full_name email phone portfolio.avatar")
+      .populate("assigned_staff_ids", "full_name email phone")
       .sort({ createdAt: -1 });
 
     const result = await Promise.all(
@@ -1276,6 +1308,112 @@ exports.getPhotographerBusySlots = async (req, res) => {
     console.error("Get photographer busy slots error:", error);
     return res.status(500).json({
       message: "Lỗi lấy thông tin lịch bận của thợ chụp",
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
+// STUDIO BUSY SLOTS — cho customer booking mới
+// ==========================================
+
+// Lấy danh sách booking chiếm lịch studio theo ngày.
+exports.getStudioBusySlots = async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ message: "Thiếu tham số date" });
+    }
+
+    const queryStart = moment(date).startOf("day").toDate();
+    const queryEnd = moment(date).endOf("day").toDate();
+
+    const bookings = await Booking.find({
+      start_time: { $lte: queryEnd },
+      end_time: { $gte: queryStart },
+      $or: [
+        { status: "DEPOSITED" },
+        { status: "CONFIRMED" },
+        { status: "IN_PROGRESS" },
+        { status: "COMPLETED" },
+        {
+          status: "PENDING",
+          expires_at: { $gt: new Date() },
+        },
+      ],
+    }).select("start_time end_time service_id");
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Get studio busy slots error:", error);
+    return res.status(500).json({
+      message: "Lỗi lấy thông tin lịch bận của studio",
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
+// ADMIN — PHÂN EKIP
+// ==========================================
+
+// Admin cập nhật ekip phụ trách cho booking.
+exports.updateBookingStaff = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assigned_staff_ids, external_staff } = req.body;
+
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    if (["CANCELED", "EXPIRED", "PAYMENT_FAILED"].includes(booking.status)) {
+      return res.status(400).json({
+        message: "Không thể phân ekip cho đơn đã hủy",
+      });
+    }
+
+    if (assigned_staff_ids !== undefined) {
+      if (Array.isArray(assigned_staff_ids) && assigned_staff_ids.length > 0) {
+        const validStaff = await User.find({
+          _id: { $in: assigned_staff_ids },
+          is_active: true,
+        });
+
+        if (validStaff.length !== assigned_staff_ids.length) {
+          return res.status(400).json({
+            message: "Một hoặc nhiều nhân viên không hợp lệ",
+          });
+        }
+      }
+
+      booking.assigned_staff_ids = assigned_staff_ids;
+    }
+
+    if (external_staff !== undefined) {
+      booking.external_staff = external_staff;
+    }
+
+    await booking.save();
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate("customer_id", "full_name email phone")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name base_price")
+      .populate("assigned_staff_ids", "full_name email phone")
+      .populate("photographer_ids", "full_name email phone");
+
+    return res.status(200).json({
+      message: "Cập nhật ekip phụ trách thành công",
+      booking: populatedBooking,
+    });
+  } catch (error) {
+    console.error("Update booking staff error:", error);
+    return res.status(500).json({
+      message: "Lỗi cập nhật ekip",
       error: error.message,
     });
   }

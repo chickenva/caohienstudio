@@ -205,10 +205,22 @@ const BookingDetail = () => {
   };
 
   const handleRebook = () => {
+    // Map các ID dịch vụ chính (bao gồm cả original_service_ids nếu có)
+    const mainServiceIds = booking.original_service_ids?.length
+      ? booking.original_service_ids.map(s => typeof s === "string" ? s : s._id).filter(Boolean)
+      : booking.service_id?._id ? [booking.service_id._id] : [];
+
+    // Map các ID dịch vụ đi kèm
+    const addonIds = (booking.extra_service_ids || [])
+      .filter(s => !mainServiceIds.includes(typeof s === "string" ? s : s._id))
+      .map(s => typeof s === "string" ? s : s._id)
+      .filter(Boolean);
+
     navigate("/booking", {
       state: {
-        service_id: booking.service_id?._id,
-        photographer_id: booking.photographer_ids?.[0]?._id,
+        service_id: mainServiceIds[0] || booking.service_id?._id,
+        serviceIds: mainServiceIds,
+        addonIds: addonIds,
         location: booking.location,
       },
     });
@@ -290,6 +302,11 @@ const BookingDetail = () => {
               >
                 {formatCurrency(booking.remaining_amount)}
               </strong>
+              {booking.remaining_amount > 0 && (
+                <div style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 4, lineHeight: "1.2" }}>
+                  * Thanh toán khi nhận ảnh (3-4 ngày sau chụp)
+                </div>
+              )}
             </Card>
           </Col>
         </Row>
@@ -299,8 +316,14 @@ const BookingDetail = () => {
             {booking._id}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Dịch vụ">
+          <Descriptions.Item label="Gói chính">
             {booking.service_id?.name || "Dịch vụ"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Gói đi kèm">
+            {booking.extra_service_ids?.length > 0
+              ? booking.extra_service_ids.map(s => s.name).join(", ")
+              : "Không có"}
           </Descriptions.Item>
 
           <Descriptions.Item label="Ngày chụp">
@@ -312,23 +335,18 @@ const BookingDetail = () => {
             {dayjs(booking.end_time).format("HH:mm")}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Thợ chụp">
-            {booking.photographer_ids?.length > 0 ? (
+          <Descriptions.Item label="Thợ chụp/Nhân sự">
+            {booking.assigned_staff_ids?.length > 0 ? (
               <Space direction="vertical">
-                {booking.photographer_ids.map((photographer) => (
-                  <div key={photographer._id}>
-                    <strong>{photographer.full_name}</strong>
-                    {photographer.phone ? ` - ${photographer.phone}` : ""}
-                    {photographer.email ? (
-                      <div style={{ fontSize: 12, color: "#777" }}>
-                        {photographer.email}
-                      </div>
-                    ) : null}
+                {booking.assigned_staff_ids.map((staff) => (
+                  <div key={staff._id}>
+                    <strong>{staff.full_name}</strong>
+                    {staff.phone ? ` - ${staff.phone}` : ""}
                   </div>
                 ))}
               </Space>
             ) : (
-              <span style={{ color: "#999" }}>Chưa có thợ chụp</span>
+              <span style={{ color: "#999" }}>Chưa phân công</span>
             )}
           </Descriptions.Item>
 
@@ -492,7 +510,13 @@ const BookingDetail = () => {
                     <Alert
                       type="warning"
                       showIcon
-                      message="Lưu ý: Hành động này không thể hoàn tác sau khi xác nhận."
+                      message="Theo chính sách của Studio, tiền cọc sẽ KHÔNG ĐƯỢC HOÀN LẠI nếu bạn hủy lịch."
+                      description={
+                        <>
+                          <div style={{ marginBottom: 8 }}>Hành động hủy đơn này không thể hoàn tác.</div>
+                          <div><strong>Gợi ý:</strong> Nếu bạn chỉ muốn dời ngày chụp, vui lòng giữ nguyên đơn và liên hệ trực tiếp với Studio để được hỗ trợ <strong>bảo lưu tiền cọc trong vòng 6 tháng</strong>.</div>
+                        </>
+                      }
                       style={{ marginBottom: 24, textAlign: "left" }}
                     />
 

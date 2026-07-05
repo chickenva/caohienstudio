@@ -140,8 +140,23 @@ exports.sendRegisterOtp = async (req, res) => {
     await transporter.sendMail({
       from: '"Cao Hien Studio" <no-reply@caohien.com>',
       to: email,
-      subject: "Mã xác thực Đăng ký tài khoản",
-      html: `<p>Mã OTP đăng ký của bạn là: <b>${otpCode}</b>. Mã có hiệu lực trong 5 phút.</p>`,
+      subject: "Mã xác thực Đăng ký tài khoản - Cao Hiển Studio",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
+          
+          <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
+          <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để hoàn tất việc đăng ký tài khoản.</p>
+          
+          <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
+          </div>
+          
+          <p style="font-size: 15px; color: #555; margin-bottom: 40px;">Mã này sẽ hết hạn trong 5 phút.</p>
+          
+          <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
+        </div>
+      `,
     });
 
     res.status(200).json({ message: "Mã OTP đã được gửi!" });
@@ -167,8 +182,23 @@ exports.forgotPassword = async (req, res) => {
     await transporter.sendMail({
       from: '"Cao Hien Studio" <no-reply@caohien.com>',
       to: email,
-      subject: "Mã xác thực Khôi phục mật khẩu",
-      html: `<p>Mã OTP khôi phục mật khẩu của bạn là: <b>${otpCode}</b>. Mã có hiệu lực trong 5 phút.</p>`,
+      subject: "Mã xác thực Khôi phục mật khẩu - Cao Hiển Studio",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
+          
+          <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
+          <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để khôi phục mật khẩu của bạn.</p>
+          
+          <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
+          </div>
+          
+          <p style="font-size: 15px; color: #555; margin-bottom: 40px;">Mã này sẽ hết hạn trong 5 phút.</p>
+          
+          <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
+        </div>
+      `,
     });
 
     res.status(200).json({ message: "Mã OTP đã được gửi!" });
@@ -208,8 +238,23 @@ exports.sendUpdateOtp = async (req, res) => {
     await transporter.sendMail({
       from: '"Cao Hien Studio" <no-reply@caohien.com>',
       to: targetEmail,
-      subject: "Mã OTP xác nhận thay đổi thông tin bảo mật",
-      html: `<p>Bạn đang thực hiện thay đổi Email hoặc Mật khẩu. Mã OTP của bạn là: <b>${otpCode}</b> (Hiệu lực 5 phút).</p>`,
+      subject: "Mã xác nhận thay đổi thông tin bảo mật - Cao Hiển Studio",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
+          
+          <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
+          <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để xác nhận thay đổi thông tin bảo mật.</p>
+          
+          <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
+          </div>
+          
+          <p style="font-size: 15px; color: #555; margin-bottom: 40px;">Mã này sẽ hết hạn trong 5 phút.</p>
+          
+          <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
+        </div>
+      `,
     });
 
     res.status(200).json({ message: "Mã OTP đã được gửi đến Email của bạn!" });

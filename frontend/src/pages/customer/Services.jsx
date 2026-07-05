@@ -5,6 +5,7 @@ import {
   ArrowRightOutlined,
   CheckOutlined,
   ClockCircleOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
@@ -116,22 +117,36 @@ const Services = () => {
 
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "80px 20px 100px 20px" }}>
         <div style={{ textAlign: "center", marginBottom: "38px" }} className="scroll-reveal">
-          <span style={{ color: PRIMARY_COLOR, letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" }}>
-            Cao Hiển Studio
-          </span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: 20 }}>
+            <AppstoreOutlined style={{ color: PRIMARY_COLOR }} />
+            <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
+              Cao Hiển Studio
+            </span>
+          </div>
           <h1
             className="font-serif-luxury"
             style={{
-              fontSize: "44px",
-              fontWeight: "300",
+              fontSize: "clamp(32px, 4vw, 48px)",
+              fontWeight: 300,
               color: "#1F1F1F",
-              marginTop: "10px",
+              margin: "0 0 16px 0",
+              lineHeight: 1.2,
+              letterSpacing: "-0.5px",
             }}
           >
-            {CATEGORY_LABELS[currentCategory] || CATEGORY_LABELS.ALL}
+            {currentCategory === "ALL" ? (
+              <>Đa Dạng{" "}<span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Dịch Vụ</span></>
+            ) : (
+              <>{CATEGORY_LABELS[currentCategory]?.split(" ")[0] || "Dịch Vụ"}{" "}
+              <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>{CATEGORY_LABELS[currentCategory]?.split(" ").slice(1).join(" ") || CATEGORY_LABELS[currentCategory]}</span></>
+            )}
           </h1>
-          <div style={{ width: "40px", height: "1px", background: PRIMARY_COLOR, margin: "20px auto 25px auto" }}></div>
-          <p style={{ color: "#555555", fontSize: "15.5px", fontWeight: "300", letterSpacing: "0.5px", maxWidth: 760, margin: "0 auto", lineHeight: 1.8 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: "0 auto 20px" }}>
+            <div style={{ width: 40, height: 1, background: PRIMARY_COLOR }} />
+            <div style={{ width: 6, height: 6, background: PRIMARY_COLOR, transform: "rotate(45deg)" }} />
+            <div style={{ width: 40, height: 1, background: PRIMARY_COLOR }} />
+          </div>
+          <p style={{ color: "#555555", fontSize: "15.5px", fontWeight: 300, letterSpacing: "0.5px", maxWidth: 760, margin: "0 auto", lineHeight: 1.8 }}>
             {CATEGORY_DESCRIPTIONS[currentCategory] || CATEGORY_DESCRIPTIONS.ALL}
           </p>
         </div>

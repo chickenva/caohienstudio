@@ -113,7 +113,7 @@ const Home = () => {
     setContactLoading(true);
     try {
       await axios.post("http://localhost:5000/api/contacts", values);
-      message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được yêu cầu tư vấn và sẽ phản hồi sớm nhất.");
+      message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được yêu cầu tư vấn. Nhân viên sẽ liên hệ với bạn trong vòng 24h.");
       contactForm.resetFields();
     } catch (err) {
       console.error("Submit contact error:", err);

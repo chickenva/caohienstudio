@@ -1,0 +1,5565 @@
+{
+  "page_count": 102,
+  "top_fonts": [
+    [
+      "BCDEEE+TimesNewRomanPSMT",
+      59895
+    ],
+    [
+      "BCDHEE+TimesNewRomanPSMT",
+      32843
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT",
+      4806
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT",
+      1905
+    ],
+    [
+      "BCDJEE+TimesNewRomanPS-ItalicMT",
+      1835
+    ],
+    [
+      "BCDLEE+TimesNewRomanPS-ItalicMT",
+      656
+    ],
+    [
+      "BCEBEE+TimesNewRomanPS-BoldItalicMT",
+      418
+    ],
+    [
+      "BCEAEE+TimesNewRomanPS-BoldItalicMT",
+      175
+    ],
+    [
+      "BCDNEE+SymbolMT",
+      64
+    ],
+    [
+      "BCDMEE+Wingdings-Regular",
+      28
+    ],
+    [
+      "BCECEE+CourierNewPSMT",
+      15
+    ]
+  ],
+  "top_sizes": [
+    [
+      13.0,
+      64801
+    ],
+    [
+      12.0,
+      34845
+    ],
+    [
+      11.0,
+      2256
+    ],
+    [
+      14.0,
+      339
+    ],
+    [
+      16.0,
+      215
+    ],
+    [
+      8.5,
+      130
+    ],
+    [
+      24.0,
+      46
+    ],
+    [
+      10.0,
+      8
+    ]
+  ],
+  "top_font_sizes": [
+    [
+      "BCDEEE+TimesNewRomanPSMT @ 13.0",
+      37400
+    ],
+    [
+      "BCDEEE+TimesNewRomanPSMT @ 12.0",
+      22466
+    ],
+    [
+      "BCDHEE+TimesNewRomanPSMT @ 13.0",
+      22247
+    ],
+    [
+      "BCDHEE+TimesNewRomanPSMT @ 12.0",
+      10580
+    ],
+    [
+      "BCDJEE+TimesNewRomanPS-ItalicMT @ 13.0",
+      1833
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 12.0",
+      1684
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 11.0",
+      1617
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 13.0",
+      1283
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 13.0",
+      787
+    ],
+    [
+      "BCDLEE+TimesNewRomanPS-ItalicMT @ 13.0",
+      570
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 11.0",
+      537
+    ],
+    [
+      "BCEBEE+TimesNewRomanPS-BoldItalicMT @ 13.0",
+      418
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 14.0",
+      258
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 16.0",
+      175
+    ],
+    [
+      "BCEAEE+TimesNewRomanPS-BoldItalicMT @ 13.0",
+      175
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 8.5",
+      130
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 12.0",
+      102
+    ],
+    [
+      "BCDLEE+TimesNewRomanPS-ItalicMT @ 11.0",
+      86
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 14.0",
+      81
+    ],
+    [
+      "BCDNEE+SymbolMT @ 13.0",
+      49
+    ],
+    [
+      "BCDGEE+TimesNewRomanPS-BoldMT @ 24.0",
+      46
+    ],
+    [
+      "BCDEEE+TimesNewRomanPSMT @ 16.0",
+      29
+    ],
+    [
+      "BCDMEE+Wingdings-Regular @ 13.0",
+      28
+    ],
+    [
+      "BCDHEE+TimesNewRomanPSMT @ 11.0",
+      16
+    ],
+    [
+      "BCDFEE+TimesNewRomanPS-BoldMT @ 16.0",
+      11
+    ],
+    [
+      "BCECEE+CourierNewPSMT @ 13.0",
+      11
+    ],
+    [
+      "BCDNEE+SymbolMT @ 10.0",
+      8
+    ],
+    [
+      "BCDNEE+SymbolMT @ 12.0",
+      7
+    ],
+    [
+      "BCECEE+CourierNewPSMT @ 12.0",
+      4
+    ],
+    [
+      "BCDJEE+TimesNewRomanPS-ItalicMT @ 12.0",
+      2
+    ]
+  ],
+  "page_metrics_first_20": [
+    {
+      "page": 1,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 502.78,
+      "min_top": 59.01,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 2,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 514.78,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 3,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 58.03,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 4,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 58.03,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 5,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.55,
+      "min_top": 59.01,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 6,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 558.7,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 7,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 8,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 555.58,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 9,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 10,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 557.69,
+      "min_top": 59.01,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 11,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 557.69,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 12,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 557.69,
+      "min_top": 59.01,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 13,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 557.69,
+      "min_top": 58.72,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 14,
+      "width": 612,
+      "height": 792,
+      "min_x0": 99.26,
+      "max_x1": 557.69,
+      "min_top": 59.01,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 15,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 16,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 17,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 18,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 19,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    },
+    {
+      "page": 20,
+      "width": 612,
+      "height": 792,
+      "min_x0": 85.1,
+      "max_x1": 558.7,
+      "min_top": 37.96,
+      "max_bottom": 756.16
+    }
+  ],
+  "page_metrics_body_estimate": {
+    "avg_min_x0": 85.71,
+    "median_min_x0": 85.1,
+    "avg_max_x1": 554.9,
+    "median_max_x1": 557.69,
+    "avg_min_top": 39.09,
+    "median_min_top": 37.96,
+    "avg_max_bottom": 756.16,
+    "median_max_bottom": 756.16
+  },
+  "headings": [
+    {
+      "page": 1,
+      "top": 123,
+      "text": "KHOA CÔNG NGHỆ THÔNG TIN",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 114,
+      "text": "KHOA CÔNG NGHỆ THÔNG TIN",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 81,
+      "text": "Khoa : CNTT",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 375,
+      "text": "1 − Th ả o lu ận nhóm, xác đị nh m ụ c tiêu và các ch ức năng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 444,
+      "text": "2 ReactJS, Spring Boot, RESTful API.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 558,
+      "text": "4 Thi ế t k ế use case, mô t ả ch ức năng và kiế n trúc t ổ ng th ể",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 23,
+      "top": 81,
+      "text": "li ệu đơn giả n, nh ẹ và d ễ m ở r ộ ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 26,
+      "top": 441,
+      "text": "li ệu như mạ ng xã h ộ i. Các tr ạng thái như thông tin ngườ i dùng, danh sách bài vi ết, lượ t",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          12
+        ]
+      ]
+    },
+    {
+      "page": 28,
+      "top": 351,
+      "text": "li ệ u và x ử lý l ỗ i hi ệ u qu ả . Vi ệ c s ử d ụ ng h ệ qu ả n tr ị cơ sở d ữ li ệ u mã ngu ồ n m ở cũng giúp",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          27
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 504,
+      "text": "1 Đăng ký tài khoả n Guest",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 528,
+      "text": "2 Xác th ự c email Guest",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 552,
+      "text": "3 Đăng nhậ p Guest, User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 573,
+      "text": "4 Đăng xuấ t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 597,
+      "text": "5 Quên m ậ t kh ẩ u User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 618,
+      "text": "6 Qu ả n lý thông tin cá nhân (xem / c ậ p nh ậ t h ồ sơ) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          16
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 642,
+      "text": "7 Xem dòng th ờ i gian (Feed) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 666,
+      "text": "8 Đăng bài viế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 687,
+      "text": "9 Đăng lạ i bài vi ế t (Repost) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 60,
+      "text": "10 Xóa bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 81,
+      "text": "11 Xem chi ti ế t bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 105,
+      "text": "12 Thích / B ỏ thích bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 129,
+      "text": "13 Bình lu ậ n bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 150,
+      "text": "14 Thích / B ỏ thích bình lu ậ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 174,
+      "text": "15 Theo dõi ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 198,
+      "text": "16 H ủy theo dõi ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 219,
+      "text": "17 Tìm ki ếm ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 243,
+      "text": "18 Tìm ki ế m bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 267,
+      "text": "19 Nh ậ n và xem thông báo User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 288,
+      "text": "20 G ử i tin nh ắ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 312,
+      "text": "21 Nh ậ n tin nh ắ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 333,
+      "text": "22 Xem danh sách h ộ i tho ạ i User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 357,
+      "text": "23 Tìm ki ế m h ộ i tho ạ i User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 105,
+      "text": "4.1.1 JUnit Framework",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 195,
+      "text": "4.1.1.1 Mô hình xây d ự ng test trong JUnit",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          9
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 354,
+      "text": "4.1.1.2 Cách JUnit ch ạ y test",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          6
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 516,
+      "text": "4.1.1.3 Tính năng chính củ a JUnit",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          5
+        ],
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 60,
+      "text": "4.1.1.4 Ví d ụ",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          3
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 543,
+      "text": "4.1.2 Mockito:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 678,
+      "text": "4.1.3 UnitTest cho d ự án",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          5
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 95,
+      "top": 81,
+      "text": "4.2.1 Môi trườ ng tri ể n khai",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 96,
+      "top": 60,
+      "text": "4.2.2 C ấu hình cơ sở d ữ li ệ u",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 96,
+      "top": 216,
+      "text": "4.2.3 Tri ể n khai server Backend",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 97,
+      "top": 570,
+      "text": "4.2.4 Tri ể n khai server Frontend",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    }
+  ],
+  "line_samples": [
+    {
+      "page": 1,
+      "top": 99,
+      "text": "TRƯỜNG ĐẠI HỌC SƯ PHẠM KỸ THUẬT TP. HỒ CHÍ MINH",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          11
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 123,
+      "text": "KHOA CÔNG NGHỆ THÔNG TIN",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 150,
+      "text": "BỘ MÔN CÔNG NGHỆ PHẦN MỀM",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 333,
+      "text": "NGUYỄN DUY HÀO : 221101 33",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 357,
+      "text": "NGUYỄN HIỆP KA : 22110157",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 381,
+      "text": "NGUYỄN THÙY TRÂM : 22110249",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 438,
+      "text": "XÂY DỰNG NỀN TẢNG",
+      "max_size": 24.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 480,
+      "text": "MẠNG XÃ HỘI",
+      "max_size": 24.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 546,
+      "text": "TIỂU LUẬN CHUYÊN NGÀNH CNPM",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 612,
+      "text": "GIÁO VIÊN HƯỚNG DẪN",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 636,
+      "text": "ThS. NGUYỄN HỮU TRUNG",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 1,
+      "top": 702,
+      "text": "KHÓA 2022 – 2026",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 96,
+      "text": "T RƯỜNG ĐẠI HỌC SƯ PHẠM KỸ THUẬT TP. HỒ CHÍ MINH",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          11
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 114,
+      "text": "KHOA CÔNG NGHỆ THÔNG TIN",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 138,
+      "text": "BỘ MÔN CÔNG NGHỆ PHẦN MỀM",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 321,
+      "text": "NGUYỄN DUY HÀO : 221101 33",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 345,
+      "text": "NGUYỄN HIỆP KA : 22110157",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 372,
+      "text": "NGUYỄN THÙY TRÂM : 22110249",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 429,
+      "text": "XÂY DỰNG NỀN TẢNG",
+      "max_size": 24.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 471,
+      "text": "MẠNG XÃ HỘI",
+      "max_size": 24.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 537,
+      "text": "TIỂU LUẬN CHUYÊN NGÀNH CNPM",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 603,
+      "text": "GIÁO VIÊN HƯỚNG DẪN",
+      "max_size": 14.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 627,
+      "text": "ThS. NGUYỄN HỮU TRUNG",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 2,
+      "top": 693,
+      "text": "KHÓA 2022 - 2026",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 57,
+      "text": "ĐH SƯ PHẠM KỸ THUẬT XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          9
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 72,
+      "text": "TP.HCM KHOA CNTT",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 75,
+      "text": "Độc lập – Tự do – Hạnh Phúc",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 87,
+      "text": "*******",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 90,
+      "text": "*******",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 117,
+      "text": "PHIẾU NHẬN XÉT CỦA GIÁO VIÊN HƯỚNG DẪN",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 144,
+      "text": "Họ và tên Sinh viên 1 : Nguy ễn Duy H ào MSSV 1: 22110133",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 162,
+      "text": "Họ và tên Sinh viên 2: Nguy ễn Hiệp Ka MSSV 2: 22110157",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 183,
+      "text": "Họ và tên Sinh viên 3: Nguy ễn Th ùy Trâm MSSV 3: 22110249",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 201,
+      "text": "Ngành: Công nghệ Thông tin",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 219,
+      "text": "Tên đề tài: Xây d ựng nền tảng mạng x ã h ội",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 237,
+      "text": "Họ và tên Giáo viên hướng dẫn: ThS. Nguy ễn Hữu Trung",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 261,
+      "text": "NHẬN XÉT",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 282,
+      "text": "1. Về nội dung đề tài & khối lượng thực hiện:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 297,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 315,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 333,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 351,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 366,
+      "text": "2. Ưu điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 384,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 402,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 420,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 435,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 453,
+      "text": "3. Khuyết điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 471,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 489,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 507,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 525,
+      "text": "4. Đề nghị cho bảo vệ hay không ?",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 546,
+      "text": "5. Đánh giá loại:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 567,
+      "text": "6. Điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 588,
+      "text": "Tp. Hồ Chí Minh, ngày tháng năm 202",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 603,
+      "text": "Giáo viên hướng dẫn",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 3,
+      "top": 621,
+      "text": "(Ký & ghi rõ họ tên)",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 57,
+      "text": "ĐH SƯ PHẠM KỸ THUẬT XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          9
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 72,
+      "text": "TP.HCM KHOA CNTT",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 75,
+      "text": "Độc lập – Tự do – Hạnh Phúc",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 87,
+      "text": "*******",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 90,
+      "text": "*******",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 117,
+      "text": "PHIẾU NHẬN XÉT CỦA GIÁO VIÊN PHẢN BIỆN",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 144,
+      "text": "Họ và tên Sinh viên 1 : Nguy ễn Duy H ào MSSV 1: 22110133",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 162,
+      "text": "Họ và tên Sinh viên 2: Nguy ễn Hiệp Ka MSSV 2: 22110157",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 183,
+      "text": "Họ và tên Sinh viên 3: Nguy ễn Th ùy Trâm MSSV 3: 22110249",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 201,
+      "text": "Ngành: Công nghệ Thông tin",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 219,
+      "text": "Tên đề tài: Xây d ựng nền tảng mạng x ã h ội",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 237,
+      "text": "Họ và tên Giáo viên phản biện : ThS. Tr ương Thị Ngọc Ph ượng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 255,
+      "text": "NHẬN XÉT",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 276,
+      "text": "1. Về nội dung đề tài & khối lượng thực hiện:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 294,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 312,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 333,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 351,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 369,
+      "text": "2. Ưu điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 387,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 402,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 420,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 438,
+      "text": "......................................................................................................................................................",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 456,
+      "text": "3. Khuyết điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 474,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 492,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 510,
+      "text": "...........................................................................................................................................",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 528,
+      "text": "4. Đề nghị cho bảo vệ hay không ?",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 549,
+      "text": "5. Đánh giá loại:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 570,
+      "text": "6. Điểm:",
+      "max_size": 12.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 591,
+      "text": "Tp. Hồ Chí Minh, ngày tháng năm 202",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 606,
+      "text": "Giáo viên hướng dẫn",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "top": 621,
+      "text": "(Ký & ghi rõ họ tên)",
+      "max_size": 11.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 60,
+      "text": "L Ờ I C ẢM ƠN",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 87,
+      "text": "Nhóm em xin gửi lời cảm ơn sâu sắc và lòng biết ơn chân thành đến Thầy Nguyễn",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          18
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 108,
+      "text": "Hữu Trung, Giảng viên Khoa Công Nghệ Thông Tin, Trường Đại học Sư Phạm Kỹ Thuật",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          16
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 132,
+      "text": "Thành phố Hồ Chí Minh, người đã trực tiếp hướng dẫn và đồng hành cùng nhóm em trong",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          18
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 153,
+      "text": "suốt quá trình thực hiện Tiểu luận chuyên ngành.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 177,
+      "text": "Trong quá trình thực hiện đề tài, Thầy đã dành nhiều thời gian, kiến thức chuyên",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          16
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 198,
+      "text": "môn và tâm huyết để hướng dẫn, định hướng cũng như hỗ trợ nhóm em hoàn thành bài tiểu",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 222,
+      "text": "luận. Nhờ sự chỉ dẫn tận tình và những kinh nghiệm thực tiễn của Thầy, nhóm em đã hiểu",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 243,
+      "text": "rõ hơn về Công nghệ Phần mềm cũng như quy trình phát triển phần mềm trong thực tế.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          17
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 267,
+      "text": "Thầy luôn sẵn sàng lắng nghe, giải đáp các thắc mắc và hỗ trợ nhóm em trong việc",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          18
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 288,
+      "text": "phân tích, xử lý các vấn đề phát sinh. Sự tận tâm và nghiêm túc của Thầy đã giúp nhóm em",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          21
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 312,
+      "text": "vượt qua khó khăn, rèn luyện tư duy, kỹ năng làm việc nhóm và khả năng giải quyết vấn",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 333,
+      "text": "đề cần thiết cho công việc sau này.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 357,
+      "text": "Nhóm em xin chân thành cảm ơn Thầy không chỉ vì kiến thức chuyên môn đã truyền",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          17
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 378,
+      "text": "đạt, mà còn vì tinh thần trách nhiệm, sự quan tâm và những lời động viên kịp thời dành cho",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          20
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 399,
+      "text": "sinh viên. Những lời khuyên và sự hướng dẫn của Thầy đã trở thành nguồn động lực giúp",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          18
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 423,
+      "text": "nhóm em không ngừng cố gắng trong quá trình học tập.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          11
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 444,
+      "text": "Một lần nữa, nhóm em xin gửi lời cảm ơn chân thành đến Thầy Nguyễn Hữu Trung",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          17
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 468,
+      "text": "vì sự tận tâm và những đóng góp quý báu của Thầy. Những kiến thức và kinh nghiệm học",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 489,
+      "text": "được sẽ là hành trang quan trọng giúp nhóm em hoàn thành tốt tiểu luận và phục vụ cho",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 513,
+      "text": "quá trìn h học tập, làm việc trong tương lai. Kính chúc Thầy luôn dồi dào sức khỏe, nhiều",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          17
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 534,
+      "text": "niềm vui và thành công trong sự nghiệp giảng dạy và nghiên cứu.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          13
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 579,
+      "text": "Trân trọng,",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "top": 603,
+      "text": "Nhóm sinh viên",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 60,
+      "text": "Trường ĐH Sư Phạ m K ỹ Thu ậ t TP.HCM",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 81,
+      "text": "Khoa : CNTT",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 126,
+      "text": "ĐỀ CƯƠNG TIỂU LUẬN CHUYÊN NGÀNH",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 153,
+      "text": "Họ và Tên SV thực hiện 1 : Nguyễn Duy Hào Mã số SV: 22110133",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          15
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 177,
+      "text": "Họ và Tên SV thực hiện 2 : Nguyễn Hiệp Ka Mã số SV: 22110157",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          15
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 198,
+      "text": "Họ và Tên SV thực hiện 3 : Nguyễn Thùy Trâm Mã số SV: 22110249",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          15
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 222,
+      "text": "Thời gian làm tiểu luận: Học kỳ I năm học 2025 -2026",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 243,
+      "text": "Chuyên ngành : Công nghệ phần mềm",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 267,
+      "text": "Tên tiểu luận: Xây dựng nền tảng mạng xã hội sử dụng ReactJs và Spring Boot",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          16
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 288,
+      "text": "GV hướng dẫn : ThS. Nguyễn Hữu Trung",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 312,
+      "text": "Nhiệm vụ của Tiểu Luận :",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 333,
+      "text": "❖ Lý thuy ế t:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDMEE+Wingdings-Regular",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 354,
+      "text": "⚫",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDMEE+Wingdings-Regular",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 357,
+      "text": "Frontend:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 378,
+      "text": "− S ử d ụng ReactJS (Vite) để xây d ự ng giao di ện ngườ i dùng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 402,
+      "text": "− Redux Toolkit để qu ả n lý tr ạ ng thái toàn c ụ c.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 426,
+      "text": "− Axios để giao ti ế p gi ữ a frontend và backend.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 450,
+      "text": "− Tailwind CSS để thi ế t k ế giao di ệ n hi ện đạ i.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 471,
+      "text": "⚫ Backend:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDMEE+Wingdings-Regular",
+          1
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 495,
+      "text": "− S ử d ụ ng ngôn ng ữ Java và Spring Boot để xây d ự ng h ệ th ố ng backend.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          11
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 519,
+      "text": "− Spring Data JPA để truy v ấ n và qu ả n lý d ữ li ệ u.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 540,
+      "text": "− Spring Security để xác th ự c và phân quy ền ngườ i dùng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 564,
+      "text": "⚫ Ki ến trúc và cơ sở d ữ li ệ u:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 588,
+      "text": "− Áp d ụ ng ki ế n trúc RESTful API.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 612,
+      "text": "− S ử d ụ ng h ệ qu ả n tr ị cơ sở d ữ li ệ u PostgreSQL.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 633,
+      "text": "− Xác th ự c b ằ ng JWT nh ằm đả m b ả o an toàn h ệ th ố ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          15
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 657,
+      "text": "❖ Th ự c hành",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDMEE+Wingdings-Regular",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 6,
+      "top": 678,
+      "text": "⚫ Xây d ự ng giao di ệ n m ạ ng xã h ộ i Clone Threads:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 60,
+      "text": "- Phát tri ể n giao di ện ngườ i dùng v ớ i các ch ức năng chính: đăng bài viế t, xem b ả ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          16
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          11
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 81,
+      "text": "tin (feed), like/unlike, bình lu ận, repost, theo dõi ngườ i dùng và xem trang cá nhân.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 105,
+      "text": "- Thi ế t k ế giao di ệ n b ằ ng ReactJS k ế t h ợp Tailwind CSS, đả m b ả o tr ả i nghi ệm ngườ i",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          20
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          13
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 126,
+      "text": "dùng t ố t và responsive.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 147,
+      "text": "⚫ Qu ả n lý tr ạng thái và tương tác API:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 171,
+      "text": "- S ử d ụng Redux Toolkit để qu ả n lý tr ạng thái ngườ i dùng, bài vi ế t, bình lu ậ n và các",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          17
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          11
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 192,
+      "text": "lượt tương tác.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 216,
+      "text": "- S ử d ụng Axios để th ự c hi ệ n các yêu c ầ u HTTP t ừ frontend đế n backend.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          15
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          10
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 237,
+      "text": "⚫ Phát tri ể n Backend cho Clone Threads:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDMEE+Wingdings-Regular",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 261,
+      "text": "- Xây d ự ng h ệ th ố ng backend theo mô hình RESTful API b ằ ng Spring Boot.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          17
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 282,
+      "text": "- Thi ế t k ế và tri ể n khai các API cho các ch ức năng: quản lý ngườ i dùng, bài vi ế t, bình",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          19
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 306,
+      "text": "lu ận, lượ t thích, repost và theo dõi.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 327,
+      "text": "- K ế t n ố i và qu ả n lý d ữ li ệ u v ớ i PostgreSQL thông qua Spring Data JPA.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          20
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 351,
+      "text": "⚫ Xác th ự c, phân quy ề n và b ả o m ậ t: Áp d ụ ng Spring Security k ế t h ợp JWT để xây",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          20
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 372,
+      "text": "d ựng cơ chế xác th ự c không tr ạ ng thái.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 396,
+      "text": "⚫ Lưu trữ tài nguyên và t ối ưu hệ th ố ng: S ử d ụng Cloudinary để lưu trữ hình ả nh",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 417,
+      "text": "cho bài vi ế t.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 441,
+      "text": "Đề cương viế t ti ể u lu ậ n",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          5
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 462,
+      "text": "Ph ầ n 1: M ở đầ u",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 486,
+      "text": "1.1. Tính c ấ p thi ế t c ủa đề tài",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 507,
+      "text": "1.2. M ục đích của đề tài",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 531,
+      "text": "1.3. Cách ti ế p c ận và phương pháp nghiên cứ u",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 552,
+      "text": "1.4. Phân tích nh ữ ng công trình có liên quan",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 576,
+      "text": "1.5. K ế t qu ả d ự ki ến đạt đượ c",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 597,
+      "text": "Ph ầ n 2: N ộ i dung",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 618,
+      "text": "Chương 1: C ơ sở lý thuy ế t và công ngh ệ s ử d ụ ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 642,
+      "text": "1.1. Ki ế n trúc h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 663,
+      "text": "1.2. Các công ngh ệ s ử d ụng trong đề tài",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 687,
+      "text": "Chương 2: Phân tích và thi ế t k ế h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 7,
+      "top": 708,
+      "text": "2.1. Kh ả o sát hi ệ n tr ạ ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 60,
+      "text": "2.2. Yêu c ầ u nghi ệ p v ụ c ủ a h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 81,
+      "text": "2.3. Phân tích yêu c ầ u c ủ a h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 105,
+      "text": "2.4. Thi ế t k ế h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 126,
+      "text": "Chương 3: Thi ế t k ế giao di ệ n",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 147,
+      "text": "Chương 4: Ki ể m th ử h ệ th ố ng và tri ể n khai h ệ th ố ng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 171,
+      "text": "Ph ầ n 3: K ế t lu ậ n",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 192,
+      "text": "3.1. K ế t qu ả đạt đượ c",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 216,
+      "text": "3.2. H ạ n ch ế",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 237,
+      "text": "3.3. Hướ ng phát tri ển trong tương lai",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 261,
+      "text": "Danh m ụ c tài li ệ u tham kh ả o",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 306,
+      "text": "KẾ HOẠCH THỰC HIỆN",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 327,
+      "text": "STT Th ờ i gian Công vi ệ c",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          7
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 351,
+      "text": "− Tìm hi ểu đề tài xây d ự ng website m ạ ng xã h ộ i.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 363,
+      "text": "27/08/2025 –",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 375,
+      "text": "1 − Th ả o lu ận nhóm, xác đị nh m ụ c tiêu và các ch ức năng",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 387,
+      "text": "02/09/2025",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 399,
+      "text": "chính c ủ a h ệ th ố ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 423,
+      "text": "− Nghiên c ứ u các công ngh ệ s ử d ụng trong đề tài như",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 432,
+      "text": "03/09/2025 –",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 444,
+      "text": "2 ReactJS, Spring Boot, RESTful API.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 456,
+      "text": "09/09/2025",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 468,
+      "text": "Tìm hi ể u mô hình Client – Server và ki ế n trúc h ệ th ố ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 489,
+      "text": "10/09/2025 –",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 492,
+      "text": "− L ậ p k ế ho ạ ch th ự c hi ện đồ án.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 501,
+      "text": "3",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 513,
+      "text": "16/09/2025 Phân công nhi ệ m v ụ cho t ừ ng thành viên trong nhóm.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 537,
+      "text": "− Phân tích yêu c ầ u nghi ệ p v ụ .",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 549,
+      "text": "17/09/2025 –",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 558,
+      "text": "4 Thi ế t k ế use case, mô t ả ch ức năng và kiế n trúc t ổ ng th ể",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 570,
+      "text": "30/09/2025",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 582,
+      "text": "c ủ a h ệ th ố ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 606,
+      "text": "− Thi ế t k ế cơ sở d ữ li ệ u.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 627,
+      "text": "01/10/2025 – Xây d ự ng Backend v ớ i Spring Boot.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 639,
+      "text": "5",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 651,
+      "text": "05/12/2025 Phát tri ể n Frontend b ằ ng ReactJS và tích h ợ p v ớ i",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 8,
+      "top": 672,
+      "text": "Backend.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 9,
+      "top": 60,
+      "text": "Ngày 24 tháng 12 năm 202 5",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 9,
+      "top": 81,
+      "text": "Người viết đề cương",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 9,
+      "top": 171,
+      "text": "Ý kiến của giáo viên hướng dẫn",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 60,
+      "text": "M Ụ C L Ụ C",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          4
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 87,
+      "text": "PH Ầ N 1: M Ở ĐẦ U .......................................................................................................... 1",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 108,
+      "text": "1.1. TÍNH C Ấ P THI Ế T C ỦA ĐỀ TÀI .......................................................... 1",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 132,
+      "text": "1.2. M ỤC ĐÍCH CỦA ĐỀ TÀI ..................................................................... 2",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 153,
+      "text": "1.3. CÁCH TI Ế P C ẬN VÀ PHƯƠNG PHÁP NGHIÊN CỨ U .................... 2",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 177,
+      "text": "1.4. PHÂN TÍCH NH Ữ NG CÔNG TRÌNH CÓ LIÊN QUAN ..................... 5",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 198,
+      "text": "1.5. K Ế T QU Ả D Ự KI ẾN ĐẠT ĐƯỢ C ........................................................ 6",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 222,
+      "text": "PH Ầ N 2: N Ộ I DUNG ...................................................................................................... 8",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 243,
+      "text": "CHƯƠNG 1: CƠ SỞ LÝ THUY Ế T VÀ CÔNG NGH Ệ S Ử D Ụ NG .................... 8",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          8
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 267,
+      "text": "1.1. KI Ế N TRÚC H Ệ TH Ố NG ........................................................................ 8",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 288,
+      "text": "1.2. CÁC CÔNG NGH Ệ S Ử D ỤNG TRONG ĐỀ TÀI ................................ 10",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 312,
+      "text": "CHƯƠNG 2: PHÂN TÍCH VÀ THI Ế T K Ế H Ệ TH Ố NG ................................... 21",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 333,
+      "text": "2.1. KH Ả O SÁT HI Ệ N TR Ạ NG ................................................................... 21",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 357,
+      "text": "2.2. YÊU C Ầ U NGHI Ệ P V Ụ C Ủ A H Ệ TH Ố NG .......................................... 24",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 378,
+      "text": "2.3. PHÂN TÍCH YÊU C Ầ U C Ủ A H Ệ TH Ố NG .......................................... 26",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 399,
+      "text": "2.4. THI Ế T K Ế H Ệ TH Ố NG ......................................................................... 30",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 423,
+      "text": "CHƯƠNG 3: THI Ế T K Ế GIAO DI Ệ N ................................................................ 68",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 444,
+      "text": "3.1. GIAO DI ỆN ĐĂNG KÝ / ĐĂNG NHẬ P .............................................. 68",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 468,
+      "text": "3.2. TRANG CH Ủ ......................................................................................... 70",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 489,
+      "text": "3.4. TRANG THÔNG BÁO .......................................................................... 73",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 513,
+      "text": "3.5. PROFILE................................................................................................. 73",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 534,
+      "text": "3.6. POPUP MESSAGE ................................................................................. 74",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 558,
+      "text": "3.7. TRANG MESSAGE ............................................................................... 75",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 579,
+      "text": "CHƯƠNG 4: KI Ể M TH Ử H Ệ TH Ố NG VÀ TRI Ể N KHAI H Ệ TH Ố NG .......... 76",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          15
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          9
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 603,
+      "text": "4.1. KI Ể M TH Ử H Ệ TH Ố NG ........................................................................ 76",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 624,
+      "text": "4.2. TRI Ể N KHAI H Ệ TH Ố NG ..................................................................... 81",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 648,
+      "text": "PH Ầ N 3: K Ế T LU Ậ N .................................................................................................... 85",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 669,
+      "text": "3.1. K Ế T QU Ả ĐẠT ĐƯỢ C ......................................................................... 85",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 10,
+      "top": 693,
+      "text": "3.2. H Ạ N CH Ế ............................................................................................... 86",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 11,
+      "top": 60,
+      "text": "3.3. HƯỚ NG PHÁT TRI ỂN TRONG TƯƠNG LAI .................................... 86",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 11,
+      "top": 81,
+      "text": "DANH M Ụ C TÀI LI Ệ U THAM KH Ả O ....................................................................... 88",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          11
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 60,
+      "text": "DANH MỤC HÌNH ẢNH",
+      "max_size": 16.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 87,
+      "text": "H ì nh 2.1. Threads websites ............................................................................................ 21",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 108,
+      "text": "H ì nh 2.2. Instagram websites ......................................................................................... 22",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 132,
+      "text": "H ì nh 2.3. Facebook websites ......................................................................................... 23",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 153,
+      "text": "H ì nh 2.4. Lược đồ ch ức năng (UseCase) ....................................................................... 30",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          6
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 177,
+      "text": "H ình 2.5. Lược đồ l ớ p Class Diagram ........................................................................... 58",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 198,
+      "text": "H ình 2.6. Lược đồ Sequence Diagram UserController .................................................. 59",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 222,
+      "text": "H ình 2.7. Lược đồ Sequence Diagram PostController .................................................. 60",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 243,
+      "text": "H ình 2.8. Lược đồ Sequence Diagram LikeController .................................................. 61",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 267,
+      "text": "H ình 2.9. Lược đồ Sequence Diagram CommentController.......................................... 62",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 288,
+      "text": "H ình 2.10. Lược đồ Sequence Diagram LikeController ................................................ 63",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 312,
+      "text": "H ình 2.11. Lược đồ Sequence Diagram MessageController ......................................... 63",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 333,
+      "text": "H ình 2.12. Lược đồ Sequence Diagram ConversationController .................................. 64",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 357,
+      "text": "H ình 2.13. Lược đồ Sequence Diagram NotificationController .................................... 65",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 378,
+      "text": "H ình 2.14. Lược đồ Sequence Diagram SearchController ............................................ 65",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 399,
+      "text": "H ình 2.15. Lược đồ Sequence Diagram AuthenticationController................................ 66",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 423,
+      "text": "H ình 2.16. Lược đồ Sequence Diagram SocketController ............................................ 66",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 444,
+      "text": "H ình 2.17. Lược đồ ERD ............................................................................................... 67",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 468,
+      "text": "H ì nh 3.1. Giao di ện trang Đăng nhậ p ............................................................................ 68",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 489,
+      "text": "H ì nh 3.2. Giao di ện trang Đăng ký ................................................................................ 68",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 513,
+      "text": "H ì nh 3.3. Giao di ệ n trang xác nh ậ n email ...................................................................... 69",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          13
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 534,
+      "text": "H ì nh 3.4. Giao di ệ n trang quên m ậ t kh ẩ u ...................................................................... 69",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 558,
+      "text": "H ì nh 3.5. Giao di ện trang Đặ t l ạ i m ậ t kh ẩ u ................................................................... 70",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 579,
+      "text": "H ì nh 3.6. Giao di ệ n Trang ch ủ ....................................................................................... 70",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 603,
+      "text": "H ì nh 3.7. Giao di ện Đăng bài viế t.................................................................................. 71",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 624,
+      "text": "H ì nh 3.8. Giao di ệ n Chi ti ế t bài vi ế t .............................................................................. 71",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 648,
+      "text": "H ì nh 3.9. Giao di ệ n trang Tìm ki ế m .............................................................................. 72",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          12
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 669,
+      "text": "H ì nh 3.10. Trang Tìm ki ế m Users ................................................................................. 72",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 12,
+      "top": 693,
+      "text": "H ì nh 3.11. Trang Tìm ki ế m Posts .................................................................................. 73",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          10
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 23,
+      "top": 81,
+      "text": "li ệu đơn giả n, nh ẹ và d ễ m ở r ộ ng.",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          7
+        ]
+      ]
+    },
+    {
+      "page": 26,
+      "top": 441,
+      "text": "li ệu như mạ ng xã h ộ i. Các tr ạng thái như thông tin ngườ i dùng, danh sách bài vi ết, lượ t",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          14
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          12
+        ]
+      ]
+    },
+    {
+      "page": 28,
+      "top": 351,
+      "text": "li ệ u và x ử lý l ỗ i hi ệ u qu ả . Vi ệ c s ử d ụ ng h ệ qu ả n tr ị cơ sở d ữ li ệ u mã ngu ồ n m ở cũng giúp",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          27
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          19
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 504,
+      "text": "1 Đăng ký tài khoả n Guest",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 528,
+      "text": "2 Xác th ự c email Guest",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 552,
+      "text": "3 Đăng nhậ p Guest, User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 573,
+      "text": "4 Đăng xuấ t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 597,
+      "text": "5 Quên m ậ t kh ẩ u User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 618,
+      "text": "6 Qu ả n lý thông tin cá nhân (xem / c ậ p nh ậ t h ồ sơ) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          16
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 642,
+      "text": "7 Xem dòng th ờ i gian (Feed) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 666,
+      "text": "8 Đăng bài viế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          3
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 42,
+      "top": 687,
+      "text": "9 Đăng lạ i bài vi ế t (Repost) User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 60,
+      "text": "10 Xóa bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 81,
+      "text": "11 Xem chi ti ế t bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 105,
+      "text": "12 Thích / B ỏ thích bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 129,
+      "text": "13 Bình lu ậ n bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 150,
+      "text": "14 Thích / B ỏ thích bình lu ậ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 174,
+      "text": "15 Theo dõi ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          4
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 198,
+      "text": "16 H ủy theo dõi ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          5
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 219,
+      "text": "17 Tìm ki ếm ngườ i dùng User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          6
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 243,
+      "text": "18 Tìm ki ế m bài vi ế t User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 267,
+      "text": "19 Nh ậ n và xem thông báo User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          8
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 288,
+      "text": "20 G ử i tin nh ắ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 312,
+      "text": "21 Nh ậ n tin nh ắ n User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          7
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 333,
+      "text": "22 Xem danh sách h ộ i tho ạ i User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 43,
+      "top": 357,
+      "text": "23 Tìm ki ế m h ộ i tho ạ i User",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDEEE+TimesNewRomanPSMT",
+          9
+        ],
+        [
+          "BCDHEE+TimesNewRomanPSMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 105,
+      "text": "4.1.1 JUnit Framework",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          3
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 195,
+      "text": "4.1.1.1 Mô hình xây d ự ng test trong JUnit",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          9
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 354,
+      "text": "4.1.1.2 Cách JUnit ch ạ y test",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          6
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 90,
+      "top": 516,
+      "text": "4.1.1.3 Tính năng chính củ a JUnit",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          5
+        ],
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 60,
+      "text": "4.1.1.4 Ví d ụ",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          3
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 543,
+      "text": "4.1.2 Mockito:",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          2
+        ]
+      ]
+    },
+    {
+      "page": 91,
+      "top": 678,
+      "text": "4.1.3 UnitTest cho d ự án",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDJEE+TimesNewRomanPS-ItalicMT",
+          5
+        ],
+        [
+          "BCDLEE+TimesNewRomanPS-ItalicMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 95,
+      "top": 81,
+      "text": "4.2.1 Môi trườ ng tri ể n khai",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          4
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          4
+        ]
+      ]
+    },
+    {
+      "page": 96,
+      "top": 60,
+      "text": "4.2.2 C ấu hình cơ sở d ữ li ệ u",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          5
+        ]
+      ]
+    },
+    {
+      "page": 96,
+      "top": 216,
+      "text": "4.2.3 Tri ể n khai server Backend",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    },
+    {
+      "page": 97,
+      "top": 570,
+      "text": "4.2.4 Tri ể n khai server Frontend",
+      "max_size": 13.0,
+      "fonts": [
+        [
+          "BCDFEE+TimesNewRomanPS-BoldMT",
+          6
+        ],
+        [
+          "BCDGEE+TimesNewRomanPS-BoldMT",
+          1
+        ]
+      ]
+    }
+  ]
+}

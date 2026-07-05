@@ -109,15 +109,7 @@ const AdminLayout = () => {
         { key: "/admin/photographers/add", label: "Thêm mới" },
       ],
     },
-    {
-      key: "/admin/resources",
-      icon: <CameraOutlined />,
-      label: "Tài nguyên / thiết bị",
-      children: [
-        { key: "/admin/resources", label: "Danh sách tài nguyên" },
-        { key: "/admin/resources/add", label: "Thêm tài nguyên" },
-      ],
-    },
+
     {
       key: "/admin/customers",
       icon: <SolutionOutlined />,

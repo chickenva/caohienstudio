@@ -1,1179 +1,1099 @@
-# 📸 CAO HIẾN STUDIO — Hệ Thống Quản Lý Studio Chụp Ảnh
+# CAO HIEN STUDIO - Hệ thống quản lý studio chụp ảnh
 
-> **Phiên bản**: 1.0.2 | **Cập nhật**: Tháng 6 năm 2026 | **Trạng thái**: Đang phát triển ✅
+![React](https://img.shields.io/badge/React-19.2-blue?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5.2-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)
+![Ant Design](https://img.shields.io/badge/Ant%20Design-6.3-0170FE?logo=antdesign&logoColor=white)
 
-Cao Hiến Studio là một ứng dụng web **full-stack** quản lý toàn diện hoạt động của một studio chụp ảnh chuyên nghiệp, bao gồm: đặt lịch, thanh toán trực tuyến, quản lý nhân sự, tài nguyên thiết bị, gallery ảnh và báo cáo doanh thu.
+> Cập nhật: 03/07/2026  
+> Trạng thái: đang phát triển  
+> Tên thương hiệu tiếng Việt có dấu: **Cao Hiển Studio**  
+> Tên logo/không dấu: **CAOHIENSTUDIO**  
+> Lưu ý: tên đúng là **Cao Hiển**, không phải **Cao Hiền**.
 
----
+## 1. Gioi thieu
 
-## 📋 Mục Lục
+Cao Hiển Studio la ung dung web full-stack ho tro van hanh studio chup anh. He thong phuc vu hai nhom nguoi dung chinh:
 
-1. [Tổng Quan Hệ Thống](#-tổng-quan-hệ-thống)
-2. [Công Nghệ Sử Dụng](#-công-nghệ-sử-dụng)
-3. [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)
-4. [Cấu Trúc Thư Mục](#-cấu-trúc-thư-mục)
-5. [Cơ Sở Dữ Liệu — MongoDB Collections](#-cơ-sở-dữ-liệu--mongodb-collections)
-6. [API Endpoints](#-api-endpoints)
-7. [Tính Năng Theo Vai Trò](#-tính-năng-theo-vai-trò)
-8. [Luồng Hoạt Động Chi Tiết](#-luồng-hoạt-động-chi-tiết)
-9. [Authentication & Security](#-authentication--security)
-10. [Cài Đặt & Chạy Ứng Dụng](#-cài-đặt--chạy-ứng-dụng)
-11. [Biến Môi Trường](#-biến-môi-trường)
-12. [Troubleshooting](#-troubleshooting)
-13. [Changelog](#-changelog)
+- **Khach hang**: xem gioi thieu studio, goi chup, album, nhiep anh gia, lien he, dat lich, thanh toan coc va theo doi don.
+- **Admin**: quan ly dashboard, khach hang, dich vu, nhiep anh gia, gallery, don dat lich va thanh toan.
 
----
+Du an da bo sung **AI Chatbot tu van nguoi dung** bang Google Gemini API. Chatbot lay du lieu that tu database de tu van goi chup, thue may anh/thiet bi, chon tho chup, concept, trang phuc, dia diem, checklist truoc buoi chup va ngay tot/phong tuc o muc tham khao.
 
-## 🎯 Tổng Quan Hệ Thống
+## 2. Tinh nang noi bat
 
-Hệ thống phục vụ **2 nhóm người dùng chính**:
+- Giao dien khach hang theo phong cach luxury/light premium.
+- Xem danh sach va chi tiet dich vu chup anh.
+- Bo loc nang cao cho tung danh muc dich vu, loc cac goi dang bi an, va loai bo chuc nang xoa o trang admin de bao ve du lieu.
+- Trang FAQ doc lap voi thiet ke Light Luxury dong bo trang chu, ho tro deep-linking cuon muot va mo rong tu trang chi tiet goi dich vu.
+- Toi uu nut quay lai trang danh sach goi dich vu giu nguyen danh muc bo loc thong qua Router state.
+- Xem danh sach album/gallery cong khai, co lien ket Google Drive folder.
+- Xem danh sach va chi tiet nhiep anh gia.
+- Dat lich chup anh truc tuyen, chon dich vu, tho chup, ngay gio va dia diem.
+- Goi y dia chi Viet Nam bang Photon Komoot API trong man hinh dat lich.
+- Du bao thoi tiet bang Open-Meteo Forecast va Archive API.
+- Thanh toan coc qua VNPay, ho tro coc 30%, 50% hoac thanh toan 100%.
+- Booking PENDING co thoi han 15 phut, qua han se bi huy de tranh giu lich ao.
+- Khach hang xem don cua minh, huy don PENDING, tao lai link thanh toan va polling trang thai.
+- Admin tao don ho khach hang, chon khach co san hoac tao khach moi/tam.
+- Admin quan ly service, gallery, photographer, customer va booking.
+- Dashboard admin thong ke don, doanh thu, khach hang, nhiep anh gia, dich vu va gallery.
+- Form lien he luu MongoDB va gui email thong bao.
+- OTP email cho dang ky, quen mat khau, doi email va doi mat khau trong profile.
+- AI Chat Widget noi o giao dien customer.
 
-| Vai trò | Mô tả | Truy cập |
-|---------|-------|----------|
-| **Customer** (Khách hàng) | Xem dịch vụ, đặt lịch, thanh toán, theo dõi đơn | `/` → `/customer/*` |
-| **Admin** (Quản trị viên) | Quản lý toàn bộ hệ thống, duyệt đơn, gán nhân sự | `/admin/*` |
-
-### Tính năng nổi bật
-
-- ✅ **Giao diện Khách hàng Luxury & Premium** — Thiết kế lại toàn bộ giao diện khách hàng (Trang chủ, Giới thiệu, Dịch vụ, Album, Nhiếp ảnh gia, Cho thuê, Liên hệ) theo phong cách sang trọng, sử dụng panel kính mờ (glassmorphism), hiệu ứng ánh sáng (spotlight) và các hiệu ứng chuyển động mượt mà (scroll reveal).
-- ✅ **Đặt lịch & Thanh toán online** — Đặt lịch chụp tiện lợi kết hợp thanh toán cọc online VNPay + PayOS (30%, 50% hoặc 100% tuỳ thuộc vào thời gian đặt sớm hay gấp).
-- ✅ **Lịch thông minh & Dự báo thời tiết** — Chọn ngày chụp trên lưới lịch trực quan tích hợp API Open-Meteo. Hệ thống tự động lấy dự báo 14 ngày thực tế hoặc truy vấn dữ liệu lịch sử cùng kỳ năm ngoái để đưa ra lời khuyên chụp ảnh tối ưu nhất.
-- ✅ **Tự động gợi ý địa chỉ (Photon API)** — Tìm kiếm địa điểm chụp thông minh với tính năng tự động gợi ý địa chỉ Việt Nam qua API Photon (Komoot).
-- ✅ **Xác thực OTP qua email** — Đăng ký tài khoản, thay đổi email liên hệ và khôi phục mật khẩu thông qua mã OTP bảo mật.
-- ✅ **Quản lý dịch vụ** — Admin quản lý và cấu hình linh hoạt các gói dịch vụ (Wedding, Event, Family...) kèm theo hiển thị chi tiết các đặc điểm/tính năng dịch vụ.
-- ✅ **Quản lý nhân sự (Photographer)** — Quản lý thông tin thợ chụp, chuyên môn, mô tả bản thân và trạng thái hoạt động.
-- ✅ **Quản lý tài nguyên** — Theo dõi và quản lý thiết bị chụp, ống kính, thiết bị ánh sáng, props và các địa điểm/thiết bị cho thuê.
-- ✅ **Gallery công khai** — Trưng bày các album ảnh dự án nổi bật của studio, hỗ trợ tìm kiếm và phân loại danh mục.
-- ✅ **Dashboard Admin** — Thống kê trực quan đơn hàng, doanh thu, khách hàng mới theo thời gian thực.
-- ✅ **Google Drive Integration** — Tích hợp Google Drive API (Service Account) để tự động upload và đồng bộ kho ảnh của từng đơn hàng.
-- ✅ **Real-time** — Tích hợp Socket.IO giúp truyền tải dữ liệu và cập nhật trạng thái tức thì.
-
----
-
-## 💻 Công Nghệ Sử Dụng
+## 3. Cong nghe su dung
 
 ### Backend
 
-| Thành phần | Công nghệ | Phiên bản |
-|-----------|-----------|-----------|
-| Runtime | Node.js | 18+ |
-| Framework | Express.js | ^5.2.1 |
-| Database | MongoDB (Mongoose) | ^9.5.0 |
-| Authentication | JSON Web Token | ^9.0.3 |
-| Password Hash | bcrypt / bcryptjs | ^6.0.0 / ^3.0.3 |
-| Email | Nodemailer | ^8.0.5 |
-| Cache | Redis | ^5.12.1 |
-| Real-time | Socket.IO | ^4.8.3 |
-| Payment | @payos/node | ^2.0.5 |
-| File Upload | Multer | ^2.1.1 |
-| Cloud Storage | Google Drive API (googleapis) | ^171.4.0 |
-| Dev Server | Nodemon | ^3.1.14 |
+| Thành phần | Công nghệ | Ghi chú |
+| --- | --- | --- |
+| Runtime | Node.js | Khuyến nghị 18+ |
+| Framework | Express.js 5.2 | REST API |
+| Database | MongoDB + Mongoose 9 | Lưu user, booking, payment, service, resource, gallery |
+| Auth | JWT | Header `Authorization: Bearer <token>` |
+| Password | bcrypt/bcryptjs | Hash mật khẩu |
+| Email | Nodemailer | Gửi OTP và thông báo liên hệ |
+| Payment | VNPay | Tạo link thanh toán và verify callback |
+| Payment SDK | `@payos/node` | Đã cài dependency, chưa thấy route PayOS riêng |
+| AI | `@google/generative-ai` | Gemini chatbot tư vấn |
+| Upload | Multer | Upload ảnh tạm vào `uploads/` |
+| Google Drive | googleapis | Lấy ảnh từ Google Drive folder |
+| Realtime | Socket.IO 4.8 | Cài dependency, chờ tích hợp socket server |
+| Cache | Redis | Cài dependency, chờ cấu hình cache layer |
 
 ### Frontend
 
-| Thành phần | Công nghệ | Phiên bản |
-|-----------|-----------|-----------|
-| Framework | React | ^19.2.5 |
-| Build Tool | Vite | ^8.0.9 |
-| Routing | React Router DOM | ^7.14.2 |
-| HTTP Client | Axios | ^1.15.2 |
-| UI Library | Ant Design | ^6.3.6 |
-| Icons | @ant-design/icons | ^6.1.1 |
-| Charts | Recharts | ^3.8.1 |
-| Date | Day.js | ^1.11.20 |
-| Real-time | Socket.IO Client | ^4.8.3 |
-| Address API | Photon (Komoot) API | REST (Tự động gợi ý địa chỉ Việt Nam) |
-| Weather API | Open-Meteo API | REST (Dự báo thời tiết 14 ngày & Lưu trữ lịch sử) |
+| Thành phần | Công nghệ | Ghi chú |
+| --- | --- | --- |
+| Framework | React 19.2 | Functional components + hooks |
+| Build tool | Vite 8.0 | Dev server mặc định `5173` |
+| Routing | React Router DOM 7.14 | Routes tập trung trong `App.jsx` |
+| UI library | Ant Design 6.3 | Admin UI, form, table, buttons |
+| Icons | `@ant-design/icons` | Header, footer, dashboard, chatbot |
+| HTTP client | Axios | Gọi REST API |
+| Charts | Recharts 3.8 | Dashboard |
+| Date | Day.js | Xử lý ngày giờ frontend |
+| Realtime client | Socket.IO Client 4.8 | Dependency sẵn sàng |
+| External APIs | Photon, Open-Meteo | Gọi trực tiếp từ trang Booking |
 
----
+## 4. Cau truc thu muc
 
-## 🏗️ Kiến Trúc Hệ Thống
-
-```
-┌───────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React + Vite)                     │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │   CustomerLayout  │  AdminLayout  │  Auth Pages         │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                    http://localhost:5173                        │
-└─────────────────────────────┬─────────────────────────────────┘
-                              │ REST API (Axios) + WebSocket
-┌─────────────────────────────▼─────────────────────────────────┐
-│                   BACKEND (Express.js)                         │
-│                    http://localhost:5000                        │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  authRoutes  │ bookingRoutes │ serviceRoutes            │   │
-│  │  userRoutes  │ resourceRoutes│ galleryRoutes            │   │
-│  │  contactRoutes│ driveRoutes  │ dashboardRoutes          │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│  ┌──────────────┐  ┌───────────────┐  ┌────────────────────┐  │
-│  │ Middleware   │  │ Controllers   │  │ Services           │  │
-│  │ verifyToken  │  │ Business      │  │ Email, Payment,    │  │
-│  │ verifyAdmin  │  │ Logic         │  │ Drive, Redis       │  │
-│  └──────────────┘  └───────────────┘  └────────────────────┘  │
-└──────────┬─────────────────────┬────────────────┬─────────────┘
-           │                     │                │
-    ┌──────▼──────┐       ┌──────▼──────┐  ┌──────▼──────┐
-    │  MongoDB    │       │   Redis     │  │  Google     │
-    │  (Data)     │       │  (Cache /   │  │  Drive      │
-    │             │       │   Session)  │  │  (Storage)  │
-    └─────────────┘       └─────────────┘  └─────────────┘
-           │
-    ┌──────▼──────────────────────────────┐
-    │  External Payment Gateways          │
-    │  VNPay Sandbox / PayOS              │
-    └─────────────────────────────────────┘
-```
-
----
-
-## 📁 Cấu Trúc Thư Mục
-
-```
+```txt
 caohienstudio/
-├── backend/
-│   ├── server.js                  # Entry point — khởi động Express + MongoDB
-│   ├── .env                       # Biến môi trường (không commit)
-│   ├── .env.example               # Mẫu biến môi trường
-│   ├── seedAdmin.js               # Tạo tài khoản admin ban đầu
-│   ├── google-service-account.json# Credentials Google Drive (không commit)
-│   ├── config/
-│   │   └── db.js                  # Cấu hình kết nối MongoDB
-│   ├── models/                    # Mongoose Schemas
-│   │   ├── User.js                # Người dùng (customer + photographer)
-│   │   ├── Booking.js             # Lịch đặt dịch vụ
-│   │   ├── Order.js               # Đơn hàng (Admin tạo từ Booking)
-│   │   ├── Payment.js             # Lịch sử giao dịch thanh toán
-│   │   ├── Service.js             # Gói dịch vụ chụp ảnh
-│   │   ├── Resource.js            # Tài nguyên / thiết bị cho thuê
-│   │   ├── PublicGallery.js       # Album gallery công khai
-│   │   ├── Contact.js             # Liên hệ từ khách
-│   │   └── OTP.js                 # Mã OTP xác thực
-│   ├── controllers/               # Business Logic
-│   │   ├── authController.js      # Đăng nhập, đăng ký, OTP, profile
-│   │   ├── bookingController.js   # Booking, VNPay payment flow
-│   │   ├── serviceController.js   # CRUD dịch vụ
-│   │   ├── resourceController.js  # CRUD tài nguyên / rentals
-│   │   ├── galleryController.js   # CRUD gallery công khai
-│   │   ├── userController.js      # Quản lý photographer + customer
-│   │   ├── dashboardController.js # Thống kê, báo cáo
-│   │   ├── driveController.js     # Upload Google Drive
-│   │   └── contactController.js   # Nhận form liên hệ
-│   ├── routes/                    # API Route Definitions
-│   │   ├── authRoutes.js          # /api/auth
-│   │   ├── bookingRoutes.js       # /api/bookings
-│   │   ├── serviceRoutes.js       # /api/services
-│   │   ├── resourceRoutes.js      # /api/resources
-│   │   ├── galleryRoutes.js       # /api/galleries
-│   │   ├── userRoutes.js          # /api/users
-│   │   ├── dashboardRoutes.js     # /api/dashboard
-│   │   ├── driveRoutes.js         # /api/drive
-│   │   └── contactRoutes.js       # /api/contacts
-│   ├── middleware/
-│   │   └── authMiddleware.js      # verifyToken, verifyAdmin
-│   ├── services/                  # Utility Services (email, payment, ...)
-│   └── uploads/                   # File uploads (local)
-│
-├── frontend/
-│   ├── index.html
-│   ├── vite.config.js
-│   └── src/
-│       ├── main.jsx               # Entry point React
-│       ├── App.jsx                # Định nghĩa toàn bộ routes
-│       ├── App.css / index.css    # Global styles
-│       ├── components/
-│       │   ├── ProtectedRoute.jsx # Bảo vệ route yêu cầu đăng nhập
-│       │   └── layout/
-│       │       ├── CustomerLayout.jsx  # Layout với Navbar + Footer
-│       │       └── AdminLayout.jsx     # Layout sidebar admin
-│       └── pages/
-│           ├── auth/
-│           │   ├── Login.jsx
-│           │   ├── Register.jsx
-│           │   └── ForgotPassword.jsx
-│           ├── customer/          # Trang cho khách hàng & công khai
-│           │   ├── Home.jsx           # Trang chủ
-│           │   ├── About.jsx          # Giới thiệu studio
-│           │   ├── Services.jsx       # Danh sách gói dịch vụ
-│           │   ├── ServiceDetail.jsx  # Chi tiết gói dịch vụ
-│           │   ├── Booking.jsx        # Form đặt lịch
-│           │   ├── BookingDetail.jsx  # Chi tiết lịch đặt + thanh toán
-│           │   ├── BookingSuccess.jsx # Xác nhận đặt thành công
-│           │   ├── MyBookings.jsx     # Danh sách lịch đặt của tôi
-│           │   ├── Payment.jsx        # Trang thanh toán
-│           │   ├── VnpayReturn.jsx    # Callback xử lý VNPay return
-│           │   ├── Galleries.jsx      # Xem gallery công khai
-│           │   ├── GalleryDetail.jsx  # Chi tiết album gallery
-│           │   ├── Photographers.jsx  # Danh sách nhiếp ảnh gia
-│           │   ├── PhotographerDetail.jsx # Chi tiết photographer
-│           │   ├── Rentals.jsx        # Danh sách thiết bị cho thuê
-│           │   ├── RentalDetail.jsx   # Chi tiết thiết bị cho thuê
-│           │   ├── AlbumDetail.jsx    # Xem album ảnh đơn hàng
-│           │   ├── Contact.jsx        # Form liên hệ
-│           │   └── Profile.jsx        # Trang cá nhân khách hàng
-│           └── admin/             # Trang quản trị
-│               ├── AdminDashboard.jsx    # Dashboard tổng quan
-│               ├── AdminOrders.jsx       # Danh sách đơn hàng
-│               ├── CreateOrder.jsx       # Tạo đơn hàng từ booking
-│               ├── AdminServices.jsx     # Danh sách dịch vụ
-│               ├── ServiceForm.jsx       # Tạo / sửa dịch vụ
-│               ├── AdminPhotographers.jsx # Danh sách photographer
-│               ├── PhotographerForm.jsx  # Tạo / sửa photographer
-│               ├── AdminResources.jsx    # Danh sách tài nguyên
-│               ├── ResourceForm.jsx      # Tạo / sửa tài nguyên
-│               ├── AdminGalleries.jsx    # Danh sách gallery
-│               ├── GalleryForm.jsx       # Tạo / sửa gallery
-│               ├── AdminCustomers.jsx    # Danh sách khách hàng
-│               └── AdminProfile.jsx      # Trang cá nhân admin
-│
-├── postman/                       # Postman collection để test API
-└── README.md
+  backend/
+    server.js                  # Entry point Express
+    seedAdmin.js               # Tao/cap nhat admin tu .env
+    config/db.js               # Cau hinh DB rieng, hien server.js dang connect truc tiep
+    controllers/               # Business logic
+    middleware/                # Auth middleware
+    models/                    # Mongoose schemas
+    routes/                    # REST routes
+    services/                  # Google Drive service
+    uploads/                   # File upload tam
+  frontend/
+    src/
+      App.jsx                  # Khai bao routes
+      components/              # Layout, Logo, AIChatWidget, ProtectedRoute
+      pages/auth/              # Login/Register/ForgotPassword
+      pages/customer/          # Trang public/customer
+      pages/admin/             # Trang admin
+  postman/                     # Request mau
+  menu/                        # Anh/tai lieu tham khao
+
+Mo hinh xu ly chung:
+
+```txt
+React/Vite -> Axios -> Express Routes -> Controllers -> Mongoose Models -> MongoDB
 ```
 
----
+## 5. Backend overview
 
-## 📊 Cơ Sở Dữ Liệu — MongoDB Collections
+File `backend/server.js` hien dang:
 
-### 1. `users` — Người Dùng
+- Load `.env` bang `dotenv`.
+- Khoi tao Express.
+- Bat `express.json()`.
+- Bat CORS bang `app.use(cors())`.
+- Ket noi MongoDB bang `mongoose.connect(process.env.MONGO_URI)`.
+- Mount cac route:
+  - `/api/auth`
+  - `/api/galleries`
+  - `/api/services`
+  - `/api/bookings`
+  - `/api/resources`
+  - `/api/contacts`
+  - `/api/users`
+  - `/api/drive`
+  - `/api/dashboard`
+  - `/api/ai-chat`
 
-```javascript
+Middleware trong `backend/middleware/authMiddleware.js`:
+
+- `verifyToken`: kiem tra JWT tu header `Authorization`.
+- `verifyAdmin`: verify token, doc user that tu DB, bat buoc role `ADMIN` va `is_active=true`.
+- `verifyAdminOrPhotographer`: du phong cho dashboard photographer sau nay.
+
+## 6. Frontend overview
+
+### Layout/components chinh
+
+| File | Vai tro |
+| --- | --- |
+| `CustomerLayout.jsx` | Header, footer, user menu, scroll top va AI Chat Widget |
+| `AdminLayout.jsx` | Layout trang quan tri |
+| `Logo.jsx` | Logo SVG dang code |
+| `AIChatWidget.jsx` | Widget chatbot noi |
+| `AIChatWidget.css` | Style chatbot |
+| `ProtectedRoute.jsx` | Bao ve route theo localStorage |
+
+### Routes public/customer
+
+| Duong dan | Component | Mo ta |
+| --- | --- | --- |
+| `/` | `Home` | Trang chu |
+| `/about` | `About` | Gioi thieu |
+| `/faq` | `FAQ` | Cau hoi thuong gap (FAQ) |
+| `/galleries` | `Galleries` | Danh sach album |
+| `/galleries/:id` | `GalleryDetail` | Chi tiet album |
+| `/photographers` | N/A | Chuyen huong (Redirect) den `/services` |
+| `/photographers/:id` | N/A | Chuyen huong (Redirect) den `/services` |
+| `/services` | `Services` | Goi chup |
+| `/services/:id` | `ServiceDetail` | Chi tiet goi chup |
+| `/booking` | `Booking` | Dat lich |
+| `/contact` | `Contact` | Lien he |
+| `/customer/profile` | `Profile` | Tai khoan |
+| `/customer/my-bookings` | `MyBookings` | Don cua toi |
+| `/customer/my-bookings/:id` | `BookingDetail` | Chi tiet don |
+| `/vnpay-return` | `VnpayReturn` | Xu ly ket qua VNPay |
+
+### Routes auth
+
+| Duong dan | Component |
+| --- | --- |
+| `/login` | `Login` |
+| `/register` | `Register` |
+| `/forgot-password` | `ForgotPassword` |
+
+### Routes admin
+
+| Duong dan | Component | Mo ta |
+| --- | --- | --- |
+| `/admin/profile` | `AdminProfile` | Ho so admin |
+| `/admin/dashboard` | `AdminDashboard` | Dashboard |
+| `/admin/customers` | `AdminCustomers` | Khach hang |
+| `/admin/orders` | `AdminOrders` | Don dat lich |
+| `/admin/orders/create` | `CreateOrder` | Tao don ho khach |
+| `/admin/galleries` | `AdminGalleries` | Album |
+| `/admin/galleries/create` | `GalleryForm` | Tao album |
+| `/admin/galleries/edit/:id` | `GalleryForm` | Sua album |
+| `/admin/services` | `AdminServices` | Dich vu |
+| `/admin/services/add` | `ServiceForm` | Tao dich vu |
+| `/admin/services/edit/:id` | `ServiceForm` | Sua dich vu |
+| `/admin/photographers` | `AdminPhotographers` | Nhiep anh gia |
+| `/admin/photographers/add` | `PhotographerForm` | Tao tho chup |
+| `/admin/photographers/edit/:id` | `PhotographerForm` | Sua tho chup |
+| `/admin/resources` | `AdminResources` | Thiet bi/tai nguyen |
+| `/admin/resources/add` | `ResourceForm` | Tao thiet bi |
+| `/admin/resources/edit/:id` | `ResourceForm` | Sua thiet bi |
+
+## 7. Database schema
+
+### User - `backend/models/User.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `email` | String | Bat buoc, unique |
+| `password_hash` | String | Bat buoc |
+| `full_name` | String | Bat buoc |
+| `phone` | String | So dien thoai |
+| `role` | Enum | `ADMIN`, `PHOTOGRAPHER`, `CUSTOMER` |
+| `portfolio.avatar` | String | Anh dai dien photographer |
+| `portfolio.bio` | String | Gioi thieu photographer |
+| `portfolio.specialties` | Array String | Chuyen mon |
+| `portfolio.years_of_experience` | Number | So nam kinh nghiem |
+| `portfolio.featured_images` | Array String | Anh noi bat |
+| `portfolio.google_drive_folder_id` | String | Folder Drive portfolio |
+| `portfolio.google_drive_folder_url` | String | URL Drive |
+| `is_active` | Boolean | Khoa/mo tai khoan |
+
+### Service - `backend/models/Service.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `name` | String | Ten goi chup |
+| `description` | String | Mo ta |
+| `base_price` | Number | Gia co ban |
+| `duration_hours` | Number | Thoi luong tinh theo gio |
+| `thumbnail` | String | Anh dai dien |
+| `is_active` | Boolean | An/hien |
+
+### PublicGallery - `backend/models/PublicGallery.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `title` | String | Ten album |
+| `description` | String | Mo ta |
+| `category` | Enum | `WEDDING`, `PORTRAIT`, `EVENT`, `GRADUATION` |
+| `location` | String | Dia diem chup |
+| `drive_folder_id` | String | Folder Google Drive chua anh |
+| `drive_folder_url` | String | Link folder Drive |
+| `coverImage` | String | Anh bia tuy chon |
+| `photographer_id` | ObjectId User | Photographer lien quan |
+| `service_id` | ObjectId Service | Service lien quan |
+| `featured` | Boolean | Album noi bat |
+| `is_active` | Boolean | An/hien |
+
+### Booking - `backend/models/Booking.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `customer_id` | ObjectId User | Khach dat lich |
+| `service_id` | ObjectId Service | Goi chup |
+| `photographer_ids` | Array ObjectId User | Nhiep anh gia |
+| `start_time` | Date | Gio bat dau |
+| `end_time` | Date | Gio ket thuc |
+| `location` | String | Dia diem chup |
+| `total_amount` | Number | Tong tien |
+| `status` | Enum | `PENDING`, `DEPOSITED`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELED` |
+| `expires_at` | Date | Han thanh toan cua don PENDING |
+| `note` | String | Ghi chu |
+
+Trang thai hop le:
+
+```txt
+PENDING -> DEPOSITED -> CONFIRMED -> IN_PROGRESS -> COMPLETED
+PENDING -> CANCELED
+DEPOSITED -> CANCELED
+CONFIRMED -> CANCELED
+```
+
+### Payment - `backend/models/Payment.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `reference_id` | ObjectId Booking | Booking lien quan |
+| `reference_type` | String | Mac dinh `BOOKING` |
+| `amount` | Number | So tien |
+| `payment_method` | String | `VNPAY`, `MANUAL`, ... |
+| `payment_type` | String | `DEPOSIT_30`, `DEPOSIT_50`, `FULL_100`, `ADMIN_CREATED`, ... |
+| `transaction_id` | String | Ma giao dich VNPay |
+| `status` | Enum | `PENDING`, `SUCCESS`, `FAILED`, `EXPIRED` |
+| `paid_at` | Date | Thoi diem thanh toan |
+| `expires_at` | Date | Han link thanh toan |
+
+### OTP - `backend/models/OTP.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `email` | String | Email nhan OTP |
+| `otp` | String | Ma OTP 4 so |
+| `createdAt` | Date TTL | Tu xoa sau 300 giay |
+
+### Contact - `backend/models/Contact.js`
+
+| Truong | Kieu | Ghi chu |
+| --- | --- | --- |
+| `name` | String | Ten khach |
+| `phone` | String | So dien thoai |
+| `email` | String | Email tuy chon |
+| `message` | String | Noi dung |
+| `status` | Enum | `UNREAD`, `READ`, `CONTACTED` |
+
+### Order - `backend/models/Order.js`
+
+`Order` van con trong codebase nhu schema cu/phu tro. Luong hien tai dang dung `Booking` + `Payment` la chinh cho don dat lich.
+
+## 8. API endpoints
+
+Base URL:
+
+```txt
+http://localhost:5000/api
+```
+
+### Auth
+
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| POST | `/auth/login` | Public | Dang nhap |
+| POST | `/auth/register` | Public | Dang ky tai khoan |
+| POST | `/auth/verify-otp` | Public | Xac thuc OTP chung |
+| POST | `/auth/send-register-otp` | Public | Gui OTP dang ky |
+| POST | `/auth/forgot-password` | Public | Gui OTP quen mat khau |
+| POST | `/auth/reset-password` | Public | Dat lai mat khau |
+| GET | `/auth/me` | User | Lay profile hien tai |
+| POST | `/auth/send-update-otp` | User | Gui OTP doi email/mat khau |
+| PUT | `/auth/update-profile` | User | Cap nhat ho ten, phone, email |
+| PUT | `/auth/reset-password-profile` | User | Doi mat khau trong profile |
+
+Payload dang ky:
+
+```json
 {
-  _id: ObjectId,
-  fullName: String,          // Tên đầy đủ
-  phone: String,             // Số điện thoại
-  email: String,             // Email (unique, index)
-  password: String,          // Bcrypt hash, rounds=10
-  role: String,              // "admin" | "customer" | "photographer"
-  isActive: Boolean,         // Admin có thể khoá tài khoản
-  // Các trường riêng cho Photographer
-  specialization: String,    // Chuyên môn (vd: "Chụp ngoại cảnh")
-  bio: String,               // Mô tả bản thân
-  avatar: String,            // URL ảnh đại diện
-  createdAt: Date,
-  updatedAt: Date
+  "fullName": "Nguyen Van A",
+  "phone": "0979767602",
+  "email": "user@example.com",
+  "password": "Password@123"
 }
 ```
 
-> **Lưu ý**: Model `User` dùng chung cho cả `customer` và `photographer`. Admin được seed riêng qua `seedAdmin.js`.
+Payload dang nhap:
 
----
-
-### 2. `services` — Gói Dịch Vụ Chụp Ảnh
-
-```javascript
-{
-  _id: ObjectId,
-  name: String,              // "Gói Cưới Truyền Thống"
-  price: Number,             // Giá VND (vd: 15000000)
-  thumbnail: String,         // URL ảnh đại diện
-  description: String,       // Mô tả ngắn (hiển thị card)
-  details: String,           // Nội dung chi tiết (trang detail)
-  features: [String],        // ["8 giờ chụp", "500+ ảnh edited", ...]
-  category: String,          // "Wedding" | "Event" | "Family"
-  isActive: Boolean,         // false = ẩn khỏi danh sách công khai
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
----
-
-### 3. `bookings` — Lịch Đặt Dịch Vụ
-
-```javascript
-{
-  _id: ObjectId,
-  userId: ObjectId,          // ref: User
-  serviceId: ObjectId,       // ref: Service
-  serviceName: String,       // Lưu snapshot tên dịch vụ lúc đặt
-  price: Number,             // Giá lúc đặt
-  appointmentDate: Date,     // Ngày giờ chụp
-  location: String,          // Địa điểm chụp
-  note: String,              // Ghi chú của khách
-  bookingType: String,       // "Early" | "Late" | "Urgent"
-  status: String,            // "Pending" | "Confirmed" | "Completed" | "Cancelled"
-  depositAmount: Number,     // Số tiền cọc đã thanh toán
-  paidAt: Date,              // Thời điểm thanh toán cọc thành công
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-**Vòng đời trạng thái Booking:**
-```
-[Tạo] → Pending → [Admin xác nhận] → Confirmed → [Hoàn tất] → Completed
-                                                → [Huỷ] → Cancelled
-```
-
----
-
-### 4. `orders` — Đơn Hàng (Admin quản lý)
-
-```javascript
-{
-  _id: ObjectId,
-  bookingId: ObjectId,       // ref: Booking (nguồn gốc)
-  customerId: ObjectId,      // ref: User (customer)
-  photographerId: ObjectId,  // ref: User (photographer được gán)
-  serviceName: String,
-  totalAmount: Number,
-  depositAmount: Number,
-  status: String,            // "Pending" | "Deposited" | "Completed" | "Cancelled"
-  shootDate: Date,
-  notes: String,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
----
-
-### 5. `payments` — Lịch Sử Thanh Toán
-
-```javascript
-{
-  _id: ObjectId,
-  bookingId: ObjectId,       // ref: Booking
-  amount: Number,
-  paymentMethod: String,     // "VNPAY" | "PAYOS" | "CASH"
-  transactionId: String,     // Mã giao dịch từ cổng thanh toán
-  status: String,            // "PENDING" | "SUCCESS" | "FAILED"
-  paidAt: Date,
-  createdAt: Date
-}
-```
-
----
-
-### 6. `resources` — Tài Nguyên / Thiết Bị
-
-```javascript
-{
-  _id: ObjectId,
-  name: String,              // "Canon 5D Mark IV"
-  type: String,              // "Camera" | "Lens" | "Light" | "Props" | "Location"
-  description: String,
-  price: Number,             // Giá cho thuê (nếu là rental)
-  quantity: Number,          // Số lượng
-  status: String,            // "Available" | "In Use" | "Maintenance"
-  isRental: Boolean,         // true = hiển thị cho khách thuê
-  isActive: Boolean,         // Ẩn/hiện
-  images: [String],          // Mảng URL ảnh
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
----
-
-### 7. `publicgalleries` — Album Gallery Công Khai
-
-```javascript
-{
-  _id: ObjectId,
-  title: String,             // Tên album
-  description: String,
-  category: String,          // "Wedding" | "Event" | "Family" | ...
-  coverImage: String,        // Ảnh bìa
-  images: [String],          // Mảng URL ảnh
-  isActive: Boolean,         // Ẩn/hiện
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
----
-
-### 8. `otps` — Mã OTP Xác Thực
-
-```javascript
-{
-  _id: ObjectId,
-  email: String,             // Email nhận OTP
-  otp: String,               // Mã 4–6 chữ số
-  purpose: String,           // "register" | "forgot-password" | "update-email"
-  expiresAt: Date,           // Hết hạn sau 5–10 phút
-  attempts: Number,          // Số lần nhập sai (tối đa 3)
-  verified: Boolean,
-  createdAt: Date
-}
-```
-
----
-
-### 9. `contacts` — Form Liên Hệ
-
-```javascript
-{
-  _id: ObjectId,
-  name: String,
-  email: String,
-  phone: String,
-  message: String,
-  createdAt: Date
-}
-```
-
----
-
-## 🔗 API Endpoints
-
-> Base URL: `http://localhost:5000/api`
-> Header xác thực: `Authorization: Bearer <JWT_TOKEN>`
-
-### `/api/auth` — Xác Thực & Tài Khoản
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| POST | `/register` | Public | Đăng ký tài khoản mới |
-| POST | `/login` | Public | Đăng nhập, nhận JWT |
-| POST | `/send-register-otp` | Public | Gửi OTP xác thực email đăng ký |
-| POST | `/verify-otp` | Public | Xác thực mã OTP |
-| POST | `/forgot-password` | Public | Gửi OTP reset mật khẩu |
-| POST | `/reset-password` | Public | Đặt lại mật khẩu mới |
-| GET | `/me` | Token | Lấy thông tin cá nhân |
-| POST | `/send-update-otp` | Token | Gửi OTP khi đổi email |
-| PUT | `/update-profile` | Token | Cập nhật thông tin cá nhân |
-| PUT | `/reset-password-profile` | Token | Đổi mật khẩu khi đã đăng nhập |
-
-**Ví dụ — Đăng nhập:**
-```http
-POST /api/auth/login
-Content-Type: application/json
-
+```json
 {
   "email": "user@example.com",
-  "password": "Password123!@"
+  "password": "Password@123"
 }
+```
 
-// Response 200:
+### Services
+
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| GET | `/services` | Public | Lay service active |
+| GET | `/services/:id` | Public | Chi tiet service active |
+| GET | `/services/admin/all` | Admin | Lay tat ca service |
+| GET | `/services/admin/:id` | Admin | Chi tiet service cho admin |
+| POST | `/services/admin` | Admin | Tao service |
+| PUT | `/services/admin/:id` | Admin | Cap nhat service |
+| PATCH | `/services/admin/:id/toggle-active` | Admin | An/hien service |
+| DELETE | `/services/admin/:id` | Admin | Xoa mem/an service |
+
+Payload tao/sua service:
+
+```json
 {
-  "message": "Đăng nhập thành công!",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": { "_id": "...", "fullName": "...", "role": "customer" }
+  "name": "Goi chup cuoi premium",
+  "description": "Chup cuoi ngoai canh",
+  "base_price": 5000000,
+  "duration_hours": 6,
+  "thumbnail": "https://..."
 }
 ```
 
----
 
-### `/api/services` — Dịch Vụ Chụp Ảnh
 
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/` | Public | Danh sách dịch vụ đang hoạt động |
-| GET | `/:id` | Public | Chi tiết 1 dịch vụ |
-| GET | `/admin/all` | Admin | Tất cả dịch vụ (kể cả đã ẩn) |
-| GET | `/admin/:id` | Admin | Chi tiết 1 dịch vụ (admin view) |
-| POST | `/admin` | Admin | Tạo dịch vụ mới |
-| PUT | `/admin/:id` | Admin | Cập nhật dịch vụ |
-| PATCH | `/admin/:id/toggle-active` | Admin | Ẩn/hiện dịch vụ |
-| DELETE | `/admin/:id` | Admin | Xóa mềm dịch vụ |
+### Users, photographers, customers
 
----
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| GET | `/users/photographers` | Public | Danh sach photographer active |
+| GET | `/users/photographers/:id` | Public | Chi tiet photographer |
+| GET | `/users/admin/photographers` | Admin | Tat ca photographer |
+| GET | `/users/admin/photographers/:id` | Admin | Chi tiet photographer cho admin |
+| POST | `/users/admin/photographers` | Admin | Tao photographer |
+| PUT | `/users/admin/photographers/:id` | Admin | Cap nhat photographer |
+| PATCH | `/users/admin/photographers/:id/toggle-active` | Admin | Khoa/mo photographer |
+| GET | `/users/admin/customers` | Admin | Danh sach customer |
+| GET | `/users/admin/customers/search?keyword=` | Admin | Tim customer |
+| GET | `/users/admin/customers/:id` | Admin | Chi tiet customer |
+| PATCH | `/users/admin/customers/:id/toggle-active` | Admin | Khoa/mo customer |
 
-### `/api/bookings` — Đặt Lịch & Thanh Toán
+### Galleries
 
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/vnpay-return` | Public | VNPay redirect callback (GET) |
-| POST | `/vnpay-return` | Public | VNPay xác thực từ frontend (POST) |
-| POST | `/create-vnpay` | Token | Tạo link thanh toán VNPay |
-| GET | `/my-bookings` | Token | Lịch đặt của khách đang đăng nhập |
-| GET | `/:id/check-status` | Token | Kiểm tra trạng thái booking + payment |
-| POST | `/:id/repay` | Token | Tạo lại link thanh toán (nếu PENDING) |
-| POST | `/:id/cancel` | Token | Huỷ lịch đặt (nếu còn PENDING) |
-| GET | `/:id` | Token | Chi tiết 1 lịch đặt |
-| GET | `/admin/all` | Admin | Tất cả booking |
-| POST | `/admin/create` | Admin | Admin tạo booking hộ khách |
-| PUT | `/:id/status` | Admin | Admin cập nhật trạng thái booking |
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| GET | `/galleries?category=ALL` | Public | Danh sach album |
+| GET | `/galleries/:id` | Public | Chi tiet album |
+| POST | `/galleries/admin` | Admin | Tao album |
+| PUT | `/galleries/admin/:id` | Admin | Cap nhat album |
+| PATCH | `/galleries/admin/:id/toggle-active` | Admin | An/hien album |
+| DELETE | `/galleries/admin/:id` | Admin | Xoa album |
 
-**Ví dụ — Tạo link thanh toán VNPay:**
-```http
-POST /api/bookings/create-vnpay
-Authorization: Bearer <token>
-Content-Type: application/json
+Payload tao/sua gallery:
 
+```json
 {
-  "serviceId": "507f191e810c19729de860ea",
-  "serviceName": "Gói Cưới Truyền Thống",
-  "price": 15000000,
-  "appointmentDate": "2026-08-15",
-  "location": "Nhà hàng Tiệc Cưới, Q.1, TP.HCM",
-  "note": "Yêu cầu chụp ngoài trời buổi chiều",
-  "depositAmount": 5000000
+  "title": "Pre-wedding Da Lat",
+  "description": "Album cuoi ngoai canh",
+  "category": "WEDDING",
+  "location": "Da Lat",
+  "drive_folder_id": "google-drive-folder-id",
+  "drive_folder_url": "https://drive.google.com/...",
+  "coverImage": "https://...",
+  "photographer_id": "user_id",
+  "service_id": "service_id",
+  "featured": true
 }
+```
 
-// Response 200:
+### Bookings and VNPay
+
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| GET | `/bookings/vnpay-return` | Public | VNPay redirect GET |
+| POST | `/bookings/vnpay-return` | Public | Frontend gui params VNPay de verify |
+| GET | `/bookings/photographer-busy-slots` | Public | Lay khung gio ban cua photographer |
+| POST | `/bookings/create-vnpay` | User | Tao booking + payment link VNPay |
+| GET | `/bookings/my-bookings` | User | Danh sach booking cua toi |
+| GET | `/bookings/:id` | User | Chi tiet booking cua toi |
+| GET | `/bookings/:id/check-status` | User | Kiem tra trang thai booking/payment |
+| POST | `/bookings/:id/repay` | User | Tao lai link thanh toan PENDING |
+| POST | `/bookings/:id/cancel` | User | Huy booking PENDING |
+| GET | `/bookings/admin/all?status=ALL` | Admin | Tat ca booking |
+| POST | `/bookings/admin/create` | Admin | Tao booking ho khach |
+| PUT | `/bookings/:id/status` | Admin | Cap nhat trang thai booking |
+
+Payload customer tao booking VNPay:
+
+```json
 {
-  "message": "Tạo link thanh toán thành công!",
-  "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...",
-  "bookingId": "507f191e810c19729de860eb"
+  "service_id": "service_id",
+  "photographer_ids": ["photographer_id"],
+  "start_time": "2026-06-30T08:00:00.000Z",
+  "end_time": "2026-06-30T12:00:00.000Z",
+  "location": "TP. Ho Chi Minh",
+  "note": "Chup concept Han Quoc",
+  "deposit_percent": 30
 }
 ```
 
----
+`deposit_percent` hop le: `30`, `50`, `100`.
 
-### `/api/resources` — Tài Nguyên & Thiết Bị Cho Thuê
+Payload admin tao booking ho:
 
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/rentals` | Public | Danh sách thiết bị cho thuê công khai |
-| GET | `/rentals/:id` | Public | Chi tiết thiết bị cho thuê |
-| GET | `/admin/all` | Admin | Tất cả tài nguyên |
-| GET | `/admin/:id` | Admin | Chi tiết tài nguyên |
-| POST | `/admin` | Admin | Tạo tài nguyên mới |
-| PUT | `/admin/:id` | Admin | Cập nhật tài nguyên |
-| PATCH | `/admin/:id/toggle-active` | Admin | Ẩn/hiện tài nguyên |
-| DELETE | `/admin/:id` | Admin | Xóa mềm tài nguyên |
-
----
-
-### `/api/galleries` — Gallery Công Khai
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/` | Public | Danh sách album gallery đang hoạt động |
-| GET | `/:id` | Public | Chi tiết album gallery |
-| POST | `/admin` | Admin | Tạo album mới |
-| PUT | `/admin/:id` | Admin | Cập nhật album |
-| PATCH | `/admin/:id/toggle-active` | Admin | Ẩn/hiện album |
-| DELETE | `/admin/:id` | Admin | Xóa album |
-
----
-
-### `/api/users` — Quản Lý Người Dùng
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/photographers` | Public | Danh sách photographer công khai |
-| GET | `/photographers/:id` | Public | Chi tiết photographer |
-| GET | `/admin/photographers` | Admin | Tất cả photographer (admin) |
-| GET | `/admin/photographers/:id` | Admin | Chi tiết photographer (admin) |
-| POST | `/admin/photographers` | Admin | Tạo photographer mới |
-| PUT | `/admin/photographers/:id` | Admin | Cập nhật photographer |
-| PATCH | `/admin/photographers/:id/toggle-active` | Admin | Khoá/mở tài khoản |
-| GET | `/admin/customers` | Admin | Danh sách khách hàng |
-| GET | `/admin/customers/search` | Admin | Tìm kiếm khách hàng |
-| GET | `/admin/customers/:id` | Admin | Chi tiết khách hàng |
-| PATCH | `/admin/customers/:id/toggle-active` | Admin | Khoá/mở tài khoản khách |
-
----
-
-### `/api/dashboard` — Thống Kê & Báo Cáo
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| GET | `/` | Admin | Thống kê tổng quan (đơn, doanh thu, khách hàng) |
-
----
-
-### `/api/contacts` — Liên Hệ
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| POST | `/` | Public | Gửi form liên hệ |
-
----
-
-### `/api/drive` — Google Drive Upload
-
-| Method | Endpoint | Auth | Mô tả |
-|--------|----------|------|-------|
-| POST | `/upload` | Admin | Upload file lên Google Drive |
-
----
-
-## 👥 Tính Năng Theo Vai Trò
-
-### 🌐 Khách vãng lai (Chưa đăng nhập)
-
-| Tính năng | URL |
-|-----------|-----|
-| Xem trang chủ giới thiệu | `/` |
-| Xem giới thiệu studio | `/about` |
-| Xem danh sách dịch vụ | `/services` |
-| Xem chi tiết dịch vụ | `/services/:id` |
-| Xem gallery ảnh | `/galleries`, `/galleries/:id` |
-| Xem danh sách nhiếp ảnh gia | `/photographers`, `/photographers/:id` |
-| Xem thiết bị cho thuê | `/rentals`, `/rentals/:id` |
-| Gửi form liên hệ | `/contact` |
-| Đăng ký / Đăng nhập | `/register`, `/login` |
-| Quên mật khẩu | `/forgot-password` |
-
----
-
-### 👤 Khách hàng (Đã đăng nhập, role: `customer`)
-
-| Tính năng | URL | Ghi chú |
-|-----------|-----|---------|
-| Đặt lịch chụp | `/booking` | Lịch thông minh chọn ngày, chọn khung giờ chụp & dự báo thời tiết Open-Meteo |
-| Thanh toán cọc VNPay | `/customer/my-bookings/:id` | 30–50% giá dịch vụ |
-| Tạo lại link thanh toán | BookingDetail → Repay | Nếu đơn vẫn PENDING |
-| Huỷ lịch đặt | BookingDetail → Cancel | Chỉ khi status = PENDING |
-| Xem danh sách lịch đặt | `/customer/my-bookings` | Filter theo trạng thái |
-| Xem chi tiết lịch đặt | `/customer/my-bookings/:id` | Trạng thái, tiến trình, payment |
-| Xem album ảnh đã chụp | Từ BookingDetail | Sau khi đơn Completed |
-| Cập nhật hồ sơ cá nhân | `/customer/profile` | Tên, SĐT không cần OTP |
-| Đổi email | `/customer/profile` | Yêu cầu OTP xác thực email mới |
-| Đổi mật khẩu | `/customer/profile` | Yêu cầu OTP |
-
----
-
-### 👨‍💼 Admin (role: `admin`)
-
-| Nhóm | Tính năng | URL |
-|------|-----------|-----|
-| **Dashboard** | Thống kê tổng: đơn hàng, doanh thu, khách hàng mới | `/admin/dashboard` |
-| **Đơn hàng** | Xem tất cả booking, lọc theo trạng thái | `/admin/orders` |
-| | Tạo đơn hàng hộ khách (gán photographer, ngày chụp) | `/admin/orders/create` |
-| | Cập nhật trạng thái booking | Orders table → Actions |
-| **Dịch vụ** | Xem, tạo, sửa, ẩn/hiện, xóa dịch vụ | `/admin/services` |
-| | Form tạo/sửa dịch vụ | `/admin/services/add`, `/admin/services/edit/:id` |
-| **Photographer** | Xem, tạo, sửa, khoá/mở tài khoản | `/admin/photographers` |
-| | Form tạo/sửa photographer | `/admin/photographers/add`, `.../edit/:id` |
-| **Tài nguyên** | Xem, tạo, sửa, ẩn/hiện, xóa tài nguyên & rental | `/admin/resources` |
-| | Form tạo/sửa tài nguyên | `/admin/resources/add`, `.../edit/:id` |
-| **Gallery** | Xem, tạo, sửa, ẩn/hiện, xóa album | `/admin/galleries` |
-| | Form tạo/sửa album | `/admin/galleries/create`, `.../edit/:id` |
-| **Khách hàng** | Xem danh sách, tìm kiếm, khoá/mở tài khoản | `/admin/customers` |
-| **Profile** | Cập nhật thông tin admin | `/admin/profile` |
-
----
-
-## 🔄 Luồng Hoạt Động Chi Tiết
-
-### 1️⃣ Luồng Đăng Ký Tài Khoản
-
-```
-Khách nhập form (họ tên, email, SĐT, password)
-    │
-    ▼ Validation frontend (regex)
-    │   - Họ tên: Chỉ chữ cái + dấu
-    │   - SĐT: Bắt đầu 0, 10–11 chữ số
-    │   - Email: Format hợp lệ
-    │   - Password: 8–16 ký tự, có CHỮ HOA, chữ thường, số, ký tự đặc biệt
-    │
-    ▼ POST /api/auth/send-register-otp
-    │   Backend tạo OTP 4–6 số, lưu DB (expiresAt = now + 5 phút)
-    │   Gửi email qua Nodemailer
-    │
-    ▼ Khách nhập OTP → POST /api/auth/verify-otp
-    │   Kiểm tra: OTP đúng? Còn hạn? Attempts < 3?
-    │   Nếu đúng → mark verified, xóa OTP
-    │
-    ▼ POST /api/auth/register
-    │   Hash password (bcrypt, rounds=10)
-    │   Tạo User record, role = "customer"
-    │   Sinh JWT (payload: id, email, role; expires: 7d)
-    │
-    ▼ Frontend nhận token → lưu localStorage
-    └── Redirect → /
-```
-
----
-
-### 2️⃣ Luồng Đặt Lịch & Thanh Toán VNPay
-
-```
-Khách vào /services → Chọn dịch vụ → /booking
-    │
-    ▼ Chọn ngày trên Lịch thông minh & truy vấn thời tiết
-    │   - Ngày trong vòng 14 ngày tới: Gọi Open-Meteo Forecast API lấy dự báo thời gian thực
-    │   - Ngày ngoài 14 ngày/quá khứ: Gọi Open-Meteo Archive API lấy dữ liệu lịch sử cùng kỳ năm ngoái
-    │   - Hệ thống hiển thị nhiệt độ, khả năng mưa, gió, độ ẩm và đưa ra lời khuyên chụp ảnh phù hợp
-    │   - Chọn khung giờ chụp (Time Slots) phù hợp còn trống
-    │
-    ▼ Nhập thông tin đặt lịch & gợi ý địa điểm chụp
-    │   - Nhập thợ chụp (Photographer) mong muốn
-    │   - Nhập địa điểm chụp chi tiết: Tích hợp Photon (Komoot) API tự động gợi ý địa chỉ tại Việt Nam khi gõ tìm kiếm
-    │   - Nhập ghi chú thêm cho ê-kíp
-    │
-    ▼ POST /api/bookings/create-vnpay
-    │   Backend:
-    │   1. Tạo Booking record (status: "Pending")
-    │   2. Tạo Payment record (status: "PENDING")
-    │   3. Build URL VNPay với các params:
-    │      - vnp_Amount = depositAmount × 100
-    │      - vnp_TxnRef = payment._id
-    │      - vnp_ReturnUrl = VNPAY_RETURN_URL
-    │      - vnp_CreateDate, vnp_ExpireDate
-    │   4. Tạo checksum HMAC-SHA512
-    │   5. Trả về paymentUrl
-    │
-    ▼ Frontend redirect → VNPay sandbox
-    │   Test card: 4111111111111111 | Exp: 12/25 | OTP: 123456
-    │
-    ▼ VNPay redirect → GET /vnpay-return?vnp_*params
-    │   Backend:
-    │   1. Verify chữ ký SHA512
-    │   2. Kiểm tra vnp_ResponseCode === "00"
-    │   3. Update Payment status → "SUCCESS"
-    │   4. Update Booking depositAmount, status → "Confirmed"
-    │   5. Redirect frontend → /vnpay-return?bookingId=...
-    │
-    ▼ /vnpay-return (frontend) → Đọc bookingId từ query
-    └── Hiển thị trang xác nhận thành công
-```
-
-> **Polling fallback**: Frontend gọi `GET /api/bookings/:id/check-status` mỗi 3 giây để kiểm tra nếu redirect bị lỗi.
-
----
-
-### 3️⃣ Luồng Admin Xử Lý Đơn Hàng
-
-```
-Admin → /admin/orders → Xem danh sách Booking
-    │
-    ▼ Click "Tạo đơn hàng" → /admin/orders/create
-    │   Điền: Gán photographer, ngày chụp, ghi chú
-    │   POST /api/bookings/admin/create
-    │
-    ▼ Sau ngày chụp → Upload ảnh lên Google Drive
-    │   POST /api/drive/upload
-    │   Lấy URL → tạo/cập nhật Gallery record
-    │
-    ▼ PUT /api/bookings/:id/status (status: "Completed")
-    │
-    └── Gửi email thông báo cho khách
-```
-
----
-
-### 4️⃣ Luồng Cập Nhật Profile (OTP Có Điều Kiện)
-
-```javascript
-// Đổi tên, SĐT → KHÔNG cần OTP → Cập nhật trực tiếp
-if (chỉ thay đổi fullName || phone) {
-  PUT /api/auth/update-profile → { fullName, phone }
-  // Response: 200, cập nhật ngay
-}
-
-// Đổi email → CẦN OTP
-if (email thay đổi) {
-  POST /api/auth/send-update-otp  // Gửi OTP đến email MỚI
-  // Khách nhập OTP
-  POST /api/auth/verify-otp
-  PUT /api/auth/update-profile → { email, otp }
-  // Response: 200, cập nhật email
-}
-```
-
----
-
-## 🔐 Authentication & Security
-
-### JWT Token
-
-```javascript
-// Payload sau khi đăng nhập:
+```json
 {
-  id: user._id,
-  email: user.email,
-  role: "customer" | "admin" | "photographer",
-  iat: <issued at>,
-  exp: <now + 7 ngày>
+  "customer_id": "optional_existing_customer_id",
+  "customer_full_name": "Khach moi",
+  "customer_email": "customer@example.com",
+  "customer_phone": "0900000000",
+  "service_id": "service_id",
+  "photographer_ids": ["photographer_id"],
+  "start_time": "2026-06-30T08:00:00.000Z",
+  "end_time": "2026-06-30T12:00:00.000Z",
+  "location": "Vinh Long",
+  "note": "Admin tao ho",
+  "total_amount": 5000000,
+  "status": "DEPOSITED",
+  "paid_amount": 1500000,
+  "payment_method": "MANUAL"
 }
-
-// Frontend gửi trong header:
-Authorization: Bearer <token>
-
-// Backend middleware verifyToken:
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
-req.user = decoded;
-
-// Backend middleware verifyAdmin:
-if (req.user.role !== "admin") return 403;
 ```
 
-### Password Security
+### Contact
 
-```javascript
-// Tạo hash khi đăng ký:
-const hash = await bcrypt.hash(password, 10); // ~100ms
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| POST | `/contacts` | Public | Gui form lien he |
 
-// Validate khi đăng nhập:
-const isMatch = await bcrypt.compare(inputPassword, storedHash);
+Payload:
 
-// Yêu cầu mật khẩu:
-// Regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+]).{8,16}$/
-// - 8–16 ký tự
-// - Ít nhất 1 chữ hoa, 1 chữ thường, 1 số, 1 ký tự đặc biệt
+```json
+{
+  "name": "Nguyen Van A",
+  "phone": "0979767602",
+  "email": "user@example.com",
+  "message": "Toi can tu van goi chup cuoi"
+}
 ```
 
-### OTP Security
+### Dashboard
 
-- Sinh ngẫu nhiên 4–6 chữ số
-- Lưu MongoDB với `expiresAt = now + 5 phút`
-- Tối đa **3 lần** nhập sai → reject, yêu cầu OTP mới
-- Xóa OTP khỏi DB sau khi xác thực thành công
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| GET | `/dashboard/admin/overview` | Admin | So lieu dashboard tong quan |
 
-### VNPay Signature Verification
+Response gom:
 
-```javascript
-const crypto = require("crypto");
-const hmac = crypto.createHmac("sha512", process.env.VNPAY_SECRET_KEY);
-hmac.update(Buffer.from(sortedParamString, "utf-8"));
-const signature = hmac.digest("hex");
-// So sánh với vnp_SecureHash từ VNPay
+- `cards`: tong don, don theo trang thai, khach hang, photographer, service, resource, gallery.
+- `revenue`: doanh thu du kien, doanh thu da coc, doanh thu hoan thanh, doanh thu thang, tien thanh toan thuc te.
+- `bookingStatus`: thong ke booking theo status.
+- `recentBookings`: 6 don moi nhat.
+
+### Google Drive
+
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| POST | `/drive/folders` | Admin | Tao folder Google Drive |
+| GET | `/drive/folders/:folderId/images` | Public | Lay anh trong folder |
+| POST | `/drive/folders/:folderId/images` | Admin | Upload anh vao folder |
+
+Luu y ky thuat hien tai:
+
+- `googleDriveService.js` hien co `listImagesInFolder`.
+- `driveController.js` dang goi them `createFolder` va `uploadImageToFolder`.
+- Truoc khi dung tao folder/upload trong production, can dam bao hai ham nay duoc implement trong service.
+- Scope hien tai la `https://www.googleapis.com/auth/drive.readonly`, phu hop doc anh, chua phu hop tao folder/upload.
+
+### AI Chat
+
+| Method | Endpoint | Auth | Mo ta |
+| --- | --- | --- | --- |
+| POST | `/ai-chat` | Public | Gui cau hoi den chatbot tu van |
+
+Payload:
+
+```json
+{
+  "message": "Toi muon chup anh cuoi ngoai canh thi nen chon goi nao?",
+  "history": [
+    { "role": "user", "content": "Xin chao" },
+    { "role": "assistant", "content": "Xin chao, toi co the ho tro gi?" }
+  ]
+}
 ```
 
----
+Response thanh cong:
 
-## 🚀 Cài Đặt & Chạy Ứng Dụng
-
-### Yêu Cầu Hệ Thống
-
-| Công cụ | Phiên bản tối thiểu |
-|---------|---------------------|
-| Node.js | 18+ |
-| npm | 9+ |
-| MongoDB | 6+ (local hoặc Atlas) |
-| Redis | 7+ (tuỳ chọn) |
-
----
-
-### Bước 1 — Clone & Cài Dependencies
-
-```bash
-# Clone project
-git clone <repository-url>
-cd caohienstudio
-
-# Cài backend
-cd backend
-npm install
-
-# Cài frontend
-cd ../frontend
-npm install
+```json
+{
+  "reply": "Noi dung tu van cua AI...",
+  "timestamp": "2026-06-22T00:00:00.000Z"
+}
 ```
 
----
+Gioi han hien tai:
 
-### Bước 2 — Cấu Hình Backend (.env)
+- 20 tin nhan/phut/IP.
+- Tin nhan toi da 1000 ky tu.
+- Chi lay 20 message gan nhat tu `history`.
+- Can `GEMINI_API_KEY` trong backend `.env`.
+
+## 9. AI Chatbot tu van nguoi dung
+
+File backend: `backend/controllers/aiChatController.js`  
+File frontend: `frontend/src/components/AIChatWidget.jsx`, `frontend/src/components/AIChatWidget.css`
+
+### Nguon du lieu AI dang doc
+
+Ham `getStudioContext()` lay:
+
+- `Service.find({ is_active: true })`
+- `User.find({ role: "PHOTOGRAPHER", is_active: true })`
+
+Sau do format thanh context cho Gemini.
+
+### Pham vi tu van
+
+AI co the tu van:
+
+- Goi chup anh va gia/thoi luong theo data `Service`.
+- Lua chon photographer theo chuyen mon, bio va so nam kinh nghiem.
+- Concept chup: wedding, pre-wedding, portrait, family, graduation, event, fashion.
+- Trang phuc, mau sac, phu kien, makeup, kieu toc theo concept.
+- Dia diem chup tai TP.HCM, Vinh Long va cac dia diem pho bien.
+- Checklist chuan bi truoc buoi chup.
+- Ngay tot, ngay cuoi, tuoi va phong tuc Viet Nam o muc tham khao.
+
+### Quy tac nen giu
+
+- Uu tien du lieu trong database truoc.
+- Khong bia gia neu database khong co.
+- Khong khang dinh lich con trong neu chua goi API kiem tra lich.
+- Tu van phong tuc/xem ngay/xem tuoi phai ghi ro la thong tin tham khao theo quan niem dan gian.
+- AI chi tu van va dieu huong, chua nen tu tao booking/thanh toan truc tiep neu user chua xac nhan.
+
+### Luu y frontend
+
+`AIChatWidget.jsx` dang hardcode:
+
+```js
+const API_URL = "http://localhost:5000/api/ai-chat";
+```
+
+Neu deploy nen doi thanh:
+
+```js
+const API_URL = `${import.meta.env.VITE_API_URL}/ai-chat`;
+```
+
+## 10. Luong nghiep vu chinh
+
+### Dang ky
+
+```txt
+User nhap email
+  -> POST /auth/send-register-otp
+  -> Nhan OTP email
+  -> POST /auth/verify-otp
+  -> POST /auth/register
+  -> Backend hash password
+  -> Luu User role CUSTOMER
+```
+
+### Dang nhap
+
+```txt
+POST /auth/login
+  -> Kiem tra email/password
+  -> Tao JWT
+  -> Frontend luu token va user vao localStorage
+```
+
+JWT payload hien tai chi gom:
+
+```js
+{ id: user._id }
+```
+
+Role duoc frontend lay tu response login va luu trong `localStorage`. Middleware admin doc user that tu DB de kiem tra role.
+
+### Dat lich va thanh toan VNPay
+
+```txt
+Customer chon goi chup, photographer, ngay gio, dia diem
+  -> Frontend check busy slots
+  -> POST /bookings/create-vnpay
+  -> Backend kiem tra user/service/photographer/thoi gian/trung lich
+  -> Tao Booking status PENDING, expires_at = now + 15 phut
+  -> Tao Payment status PENDING
+  -> Tao paymentUrl VNPay
+  -> User thanh toan tren VNPay
+  -> Backend verify chu ky HMAC SHA512
+  -> Thanh cong: Payment SUCCESS, Booking DEPOSITED
+  -> That bai/huy/qua han: Payment FAILED/EXPIRED, Booking CANCELED
+```
+
+### Admin tao don ho
+
+```txt
+Admin vao /admin/orders/create
+  -> Chon customer co san hoac nhap khach moi
+  -> Chon service, photographer, thoi gian, dia diem
+  -> Backend kiem tra trung lich
+  -> Tao Booking voi status tuy chon
+  -> Neu status DEPOSITED/COMPLETED co paid_amount thi tao Payment MANUAL SUCCESS
+```
+
+### Lay lich ban photographer
+
+```txt
+GET /api/bookings/photographer-busy-slots?photographer_id=...&date=YYYY-MM-DD
+GET /api/bookings/photographer-busy-slots?photographer_id=...&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+```
+
+Chi tinh booking `DEPOSITED`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, va `PENDING` con han.
+
+## 11. Bien moi truong
+
+### Backend `.env`
+
+Tao file:
 
 ```bash
 cd backend
 cp .env.example .env
-# Mở .env và điền các giá trị thực tế (xem mục Biến Môi Trường bên dưới)
 ```
 
----
-
-### Bước 3 — Tạo Tài Khoản Admin
-
-```bash
-cd backend
-node seedAdmin.js
-# Tạo tài khoản admin mặc định vào MongoDB
-```
-
----
-
-### Bước 4 — Chạy Backend
-
-```bash
-cd backend
-npm run dev
-# Nodemon khởi động → http://localhost:5000
-# Log: ✅ MongoDB Connected | 🚀 Server running on port 5000
-```
-
----
-
-### Bước 5 — Cấu Hình & Chạy Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-# Sửa .env:
-# VITE_API_URL=http://localhost:5000/api
-
-npm run dev
-# Vite khởi động → http://localhost:5173
-```
-
----
-
-### Truy Cập Ứng Dụng
-
-| Đường dẫn | Mô tả |
-|-----------|-------|
-| `http://localhost:5173/` | Trang chủ (public) |
-| `http://localhost:5173/login` | Đăng nhập |
-| `http://localhost:5173/register` | Đăng ký |
-| `http://localhost:5173/services` | Xem dịch vụ |
-| `http://localhost:5173/admin/dashboard` | Trang Admin |
-| `http://localhost:5000/api/auth/me` | Test API |
-
----
-
-## ⚙️ Biến Môi Trường
-
-### Backend (`backend/.env`)
+Mau cau hinh nen co:
 
 ```env
-# ========================================
-# SERVER
-# ========================================
 PORT=5000
 NODE_ENV=development
-
-# ========================================
-# DATABASE
-# ========================================
-# Local:
+FRONTEND_URL=http://localhost:5173
 MONGO_URI=mongodb://localhost:27017/caohienstudio
-# Atlas (production):
-# MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/caohienstudio
 
-# ========================================
-# AUTHENTICATION
-# ========================================
 JWT_SECRET=your_super_secret_jwt_key_at_least_32_chars
 JWT_EXPIRE=7d
 BCRYPT_ROUNDS=10
 
-# ========================================
-# EMAIL (Nodemailer via Gmail)
-# ========================================
+ADMIN_EMAIL=admin@caohienstudio.com
+ADMIN_PASSWORD=Admin@123456
+ADMIN_FULL_NAME=Cao Hien Admin
+ADMIN_PHONE=0979767602
+
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your_app_specific_password   # Tạo tại: myaccount.google.com/apppasswords
+EMAIL_PASS=your_app_specific_password
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 
-# ========================================
-# VNPAY PAYMENT GATEWAY
-# ========================================
-# Đăng ký sandbox: https://sandbox.vnpayment.vn/devreg
 VNPAY_TMN_CODE=YOUR_TMN_CODE
 VNPAY_SECRET_KEY=YOUR_SECRET_KEY
 VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
 VNPAY_RETURN_URL=http://localhost:5173/vnpay-return
-# Alias (tương thích):
 VNP_TMNCODE=YOUR_TMN_CODE
 VNP_HASHSECRET=YOUR_SECRET_KEY
+VNP_RETURNURL=http://localhost:5173/vnpay-return
 
-# ========================================
-# PAYOS PAYMENT GATEWAY
-# ========================================
 PAYOS_CLIENT_ID=your_payos_client_id
 PAYOS_API_KEY=your_payos_api_key
 PAYOS_WEBHOOK_SECRET=your_webhook_secret
 
-# ========================================
-# REDIS (Tuỳ chọn)
-# ========================================
+GOOGLE_APPLICATION_CREDENTIALS=./google-service-account.json
+GOOGLE_DRIVE_ROOT_FOLDER_ID=your_root_folder_id
+GEMINI_API_KEY=your_gemini_api_key_here
+
 REDIS_URL=redis://:password@localhost:6379
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# ========================================
-# FRONTEND URL
-# ========================================
-FRONTEND_URL=http://localhost:5173
-
-# ========================================
-# FILE UPLOAD
-# ========================================
 UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760  # 10MB
+MAX_FILE_SIZE=10485760
+LOG_LEVEL=debug
 ```
 
-### Frontend (`frontend/.env`)
+Luu y:
+
+- Khong commit `.env`.
+- Khong commit service account that len public repo.
+- `seedAdmin.js` can `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME`; `ADMIN_PHONE` tuy chon.
+- `googleDriveService.js` dang doc `GOOGLE_APPLICATION_CREDENTIALS`.
+- AI Chat bat buoc can `GEMINI_API_KEY`.
+
+### Frontend `.env`
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 VITE_SOCKET_URL=http://localhost:5000
+VITE_ENV=development
 ```
 
----
+Luu y: nhieu file frontend hien dang hardcode `http://localhost:5000/api`; nen refactor sang `import.meta.env.VITE_API_URL` khi deploy.
 
-## 🐛 Troubleshooting
+## 12. Cai dat va chay du an
 
-### ❌ "MongoDB Connection Failed"
+### Yeu cau
 
-```
-Nguyên nhân:
-- MONGO_URI sai format hoặc sai credentials
-- MongoDB chưa chạy (local)
-- IP chưa được whitelist (Atlas)
+- Node.js 18+
+- npm 9+
+- MongoDB local hoac MongoDB Atlas
+- Gmail App Password neu muon gui OTP/email
+- VNPay sandbox credentials neu test thanh toan
+- Gemini API key neu dung AI chat
+- Google service account neu dung gallery Drive
 
-Giải pháp:
-1. Kiểm tra MongoDB local: mongosh "mongodb://localhost:27017"
-2. Atlas: Vào Network Access → Add IP Address → 0.0.0.0/0 (development)
-3. Kiểm tra MONGO_URI trong .env không có ký tự thừa
-```
+### Cai dependencies
 
-### ❌ "OTP không hợp lệ hoặc hết hạn"
-
-```
-Nguyên nhân:
-- OTP hết hạn (> 5 phút)
-- Nhập sai OTP quá 3 lần
-- Đồng hồ server lệch múi giờ
-
-Giải pháp:
-1. Request OTP mới
-2. Đảm bảo server timezone đúng: process.env.TZ = "Asia/Ho_Chi_Minh"
-3. Tăng thời gian hết hạn OTP nếu cần (chỉnh expiresAt trong controller)
+```bash
+cd backend
+npm install
 ```
 
-### ❌ "Email không gửi được"
-
-```
-Nguyên nhân:
-- EMAIL_PASS dùng mật khẩu thông thường (phải dùng App Password)
-- Google block đăng nhập từ "ứng dụng kém bảo mật"
-- SMTP port bị firewall block
-
-Giải pháp:
-1. Bật 2FA Google Account
-2. Tạo App Password: myaccount.google.com/apppasswords
-3. Dán App Password vào EMAIL_PASS (không có dấu cách)
-4. Test: nodemailer.createTransport({...}).verify()
+```bash
+cd frontend
+npm install
 ```
 
-### ❌ "VNPay Signature Verification Failed"
+### Tao admin
 
-```
-Nguyên nhân:
-- VNPAY_SECRET_KEY sai
-- Params không được sort đúng theo alphabet
-- Có ký tự encode lỗi trong query string
+Dam bao `.env` co `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME`, sau do chay:
 
-Giải pháp:
-1. Kiểm tra lại VNPAY_SECRET_KEY = VNPAY_TMN_CODE = đúng từ dashboard VNPay
-2. Đảm bảo dùng Buffer.from(paramString, "utf-8") khi tạo HMAC
-3. Log toàn bộ sorted params để so sánh với VNPay docs
+```bash
+cd backend
+node seedAdmin.js
 ```
 
-### ❌ "CORS Error"
+### Chay backend
 
+```bash
+cd backend
+npm run dev
 ```
-Giải pháp (backend/server.js):
+
+Backend chay tai:
+
+```txt
+http://localhost:5000
+```
+
+### Chay frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend chay tai:
+
+```txt
+http://localhost:5173
+```
+
+## 13. Scripts
+
+### Backend
+
+```json
+{
+  "dev": "nodemon server.js",
+  "test": "echo \"Error: no test specified\" && exit 1"
+}
+```
+
+### Frontend
+
+```json
+{
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview"
+}
+```
+
+## 14. Test nhanh
+
+### Test backend
+
+Backend hien chua co `/health`; co the test endpoint public:
+
+```bash
+curl http://localhost:5000/api/services
+```
+
+### Test AI Chat
+
+Can co `GEMINI_API_KEY` trong `backend/.env`.
+
+```bash
+curl -X POST http://localhost:5000/api/ai-chat ^
+  -H "Content-Type: application/json" ^
+  -d "{\"message\":\"Studio co nhung goi chup nao?\",\"history\":[]}"
+```
+
+### Test Postman
+
+- Import request YAML tu `postman/collections/caohienstudio`.
+- Dung `base_url = http://localhost:5000/api`.
+- Sau khi login, copy token vao bien `token`.
+- Endpoint admin can header `Authorization: Bearer <token>`.
+
+## 15. Bao mat va validation
+
+### Mat khau
+
+Backend yeu cau mat khau 8-16 ky tu, co chu thuong, chu hoa, so va ky tu dac biet.
+
+Regex hien tai:
+
+```js
+/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()>\.]).{8,16}$/
+```
+
+### OTP
+
+- OTP 4 chu so.
+- Luu vao MongoDB collection `OTP`.
+- TTL 300 giay.
+- Sau khi dang ky/reset thanh cong, xoa OTP theo email.
+
+### JWT
+
+- Frontend luu `token` va `user` trong `localStorage`.
+- Protected endpoint gui `Authorization: Bearer <token>`.
+
+### VNPay signature
+
+- Tao chu ky bang HMAC SHA512.
+- Sap xep params theo alphabet.
+- Remove `vnp_SecureHash` va `vnp_SecureHashType` truoc khi verify.
+- Neu sai chu ky, return 400 va khong cap nhat DB.
+
+### AI Chat
+
+- API key chi nam o backend.
+- Public endpoint co in-memory rate limit.
+- Khong nen gui thong tin nhay cam cua user vao AI trong buoc hien tai.
+- Chatbot hien chi tu van, khong tao booking/thanh toan truc tiep.
+
+## 16. Tich hop ngoai
+
+### Photon Komoot API
+
+Dung trong `Booking.jsx` de goi y dia chi Viet Nam:
+
+```txt
+https://photon.komoot.io/api/?q=...&bbox=102.14,8.56,109.46,23.39
+```
+
+### Open-Meteo
+
+Dung trong `Booking.jsx`:
+
+- Forecast API cho 14 ngay toi.
+- Archive API de lay thoi tiet lich su cung ky nam truoc.
+
+### Google Gemini
+
+Dung package:
+
+```js
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+```
+
+Thu model theo thu tu:
+
+```js
+["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash"]
+```
+
+### Google Drive
+
+Doc anh trong folder:
+
+```txt
+GET /api/drive/folders/:folderId/images
+```
+
+Service account path:
+
+```env
+GOOGLE_APPLICATION_CREDENTIALS=./google-service-account.json
+```
+
+## 17. Quy uoc code
+
+### Backend
+
+- Dung CommonJS: `require`, `module.exports`.
+- Route chi khai bao endpoint va middleware.
+- Controller xu ly business logic.
+- Model chi khai bao schema.
+- Endpoint nhay cam/admin dung `verifyAdmin`.
+- Endpoint customer dung `verifyToken`.
+- Response loi nen co `message` ro rang.
+- Khi them bien moi truong moi, cap nhat `backend/.env.example` va README.
+- Khi them collection/model moi, cap nhat README muc database schema.
+
+### Frontend
+
+- Dung functional components va hooks.
+- Uu tien Ant Design cho form/table/admin UI.
+- Routes tap trung trong `App.jsx`.
+- Nen chuyen API URL hardcoded sang `import.meta.env.VITE_API_URL` khi chuan bi deploy.
+- Logo/thuong hieu dung thong nhat `Cao Hiển Studio`/`CAOHIENSTUDIO`.
+- AI Chat Widget la component dung chung trong `CustomerLayout`.
+
+## 18. Trang thai hien tai va luu y ky thuat
+
+### Da co trong code
+
+- Auth customer/admin.
+- OTP email.
+- CRUD service.
+- CRUD gallery.
+- Quan ly photographer/customer.
+- Booking + VNPay.
+- Admin tao booking ho khach.
+- Dashboard overview.
+- Contact form.
+- AI Chatbot Gemini.
+- Frontend public/customer/admin pages.
+- Logo SVG code trong `Logo.jsx`.
+- Trang FAQ doc lap voi giao dien luxury, ho tro deep-linking va dong bo style.
+- Toi uu dieu huong quay lai bang gia giu nguyen danh muc da loc thong qua Router state.
+
+### Can kiem tra/hoan thien tiep
+
+- `backend/services/googleDriveService.js` can bo sung `createFolder` va `uploadImageToFolder` neu muon dung endpoint tao folder/upload.
+- Scope Google Drive hien la readonly; can doi scope neu upload.
+- Socket.IO dependency da cai nhung server chua khoi tao socket instance.
+- Redis dependency/env da co nhung chua thay module cache thuc su.
+- PayOS dependency/env da co nhung chua thay route PayOS rieng.
+- Frontend con nhieu URL hardcoded localhost.
+- Chua co automated test.
+- `backend/package.json` test script hien chi la placeholder.
+- README cu/terminal co hien tuong mojibake do encoding/console; file README moi co gang giam emoji de tranh loi hien thi.
+
+## 19. Troubleshooting
+
+### MongoDB Connection Failed
+
+Kiem tra `MONGO_URI`, MongoDB local/Atlas, whitelist IP va credentials.
+
+```bash
+mongosh "mongodb://localhost:27017/caohienstudio"
+```
+
+### Khong gui duoc OTP/email
+
+Kiem tra Gmail 2FA, App Password, `EMAIL_USER`, `EMAIL_PASS` va firewall SMTP.
+
+### VNPay sai chu ky
+
+Kiem tra `VNPAY_TMN_CODE`, `VNPAY_SECRET_KEY`, return URL va logic sort params.
+
+### Booking bi CANCELED sau 15 phut
+
+Day la logic hien tai: booking PENDING co `expires_at = now + 15 minutes`. Qua han thi booking sang `CANCELED`, payment PENDING sang `EXPIRED`.
+
+### AI Chat bao chua cau hinh
+
+Them `GEMINI_API_KEY` vao `backend/.env`, sau do restart backend.
+
+### Google Drive khong lay duoc anh
+
+Kiem tra `GOOGLE_APPLICATION_CREDENTIALS`, quyen cua service account, `drive_folder_id` va folder co anh.
+
+### CORS error
+
+Backend hien dang `app.use(cors())`. Neu deploy production nen cau hinh chat hon:
+
+```js
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: process.env.FRONTEND_URL,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 ```
 
-### ❌ "Token hết hạn / Unauthorized 401"
+## 20. Dinh huong phat trien
 
-```
-Giải pháp (frontend):
-1. Kiểm tra token trong localStorage còn không
-2. JWT hết hạn sau 7 ngày → yêu cầu đăng nhập lại
-3. Implement interceptor Axios để auto redirect /login khi nhận 401
-```
+- Hoan thien Google Drive upload/tai khoan service account.
+- Chuyen toan bo URL frontend sang bien moi truong.
+- Them endpoint `/health` cho backend.
+- Them Socket.IO realtime notification cho admin khi co booking/contact moi.
+- Luu lich su AI chat vao MongoDB neu can quan ly hoi thoai.
+- Cho AI goi tool noi bo de check lich trong, nhung khong tu tao booking neu user chua xac nhan.
+- Them dashboard cho photographer.
+- Quan ly lich ban/nghi phep cua photographer.
+- Them test cho booking/VNPay/auth/AI chat.
+- Lam sach encoding tieng Viet trong console/log neu can.
 
----
+## 21. Thong tin lien he hien trong code
 
-## 📝 Changelog
+Footer/customer UI hien co:
 
-### v1.0.2 (Tháng 6/2026) — Hiện tại
-- ✅ **Luxury & Premium UI Redesign (Toàn bộ phía Khách hàng)**: Thiết kế lại toàn bộ giao diện khách hàng bao gồm Trang chủ, Giới thiệu (About), Dịch vụ (Services), Album (Galleries), Nhiếp ảnh gia (Photographers), Cho thuê thiết bị (Rentals), Liên hệ (Contact) và Đặt lịch (Booking). Giao diện mang ngôn ngữ thiết kế sang trọng, hiện đại với panel kính mờ (glassmorphism), hiệu ứng ánh sáng (spotlight), font chữ Outfit & Serif-Luxury quý phái, các hiệu ứng hover mượt mà và animation scroll reveal.
-- ✅ **Smart Calendar & Weather Integration**: Tích hợp lưới lịch trực quan chọn ngày chụp và khung giờ (Time Slots) trống. Hệ thống tự động kết nối API Open-Meteo Forecast (dự báo 14 ngày) và Open-Meteo Archive (truy vấn thời tiết lịch sử cùng kỳ năm ngoái) để đưa ra chỉ số thời tiết (nhiệt độ, gió, độ ẩm, khả năng mưa) cùng các lời khuyên chụp ảnh tương ứng cho khách hàng.
-- ✅ **Address Auto-Suggestion (Photon Komoot API)**: Tích hợp thành công thanh gợi ý địa chỉ tự động dựa trên Photon API, giới hạn phạm vi tìm kiếm trong bản đồ Việt Nam để nâng cao trải nghiệm điền thông tin địa điểm chụp.
-- ✅ **Profile Update OTP Logic**: Tối ưu hóa trải nghiệm đổi thông tin cá nhân. Chỉ yêu cầu mã OTP khi khách hàng thay đổi email hoặc mật khẩu; các thay đổi họ tên, số điện thoại được cập nhật trực tiếp không cần OTP.
-- ✅ **Endpoint `/send-update-otp`**: Gửi OTP xác thực đến địa chỉ email mới trước khi tiến hành cập nhật trong hệ thống.
-- ✅ **Endpoint `/reset-password-profile`**: Cho phép khách hàng đổi mật khẩu trực tiếp trong trang cá nhân (yêu cầu xác thực OTP).
-- ✅ **Google Drive Integration**: Hỗ trợ admin upload album ảnh hoàn thiện của đơn hàng lên Google Drive thông qua Service Account.
-- ✅ **Contact Form**: Khách hàng gửi biểu mẫu liên hệ trực tiếp từ giao diện mới, tự động lưu thông tin vào cơ sở dữ liệu MongoDB.
+- Dia chi: `34B4 TL 887, phuong An Hoi, Vinh Long`
+- Dien thoai: `(+84) 979 7676 02`
+- Email: `caohienstudio@gmail.com`
+- Gio mo cua: `09:00 AM - 05:00 PM`
+- Facebook: `https://www.facebook.com/caohienstudio`
+- Instagram: `https://www.instagram.com/caohien.photojournalism`
 
-### v1.0.1 (Tháng 5/2026)
-- ✅ **Fix thanh toán VNPay**: Hỗ trợ cả GET/POST callback từ VNPay
-- ✅ **Endpoint `/check-status`**: Polling trạng thái thanh toán real-time
-- ✅ **Endpoint `/repay`**: Tạo lại link thanh toán cho đơn PENDING
-- ✅ **Endpoint `/cancel`**: Khách tự huỷ đơn khi còn PENDING
-- ✅ **Admin create booking**: Admin tạo booking hộ khách
+## 22. License / muc dich
 
-### v1.0.0 (Tháng 4/2026)
-- ✅ Khởi tạo dự án: Backend Express + Frontend React/Vite
-- ✅ Xác thực JWT + OTP email
-- ✅ CRUD Services, Resources, Galleries
-- ✅ Flow đặt lịch cơ bản
-- ✅ Dashboard Admin thống kê
+Du an duoc phat trien cho muc dich hoc tap, khoa luan/tieu luan chuyen nganh va mo phong quan ly studio chup anh thuc te.
 
----
+Sinh vien: Ho Vu Anh  
+MSSV: 22110097  
+Thuong hieu: Cao Hiển Studio
 
-## 📌 Ghi Chú Phát Triển
+## 23. Nhat ky cap nhat (Update History)
 
-### Test API với Postman
-- Import collection từ thư mục `/postman`
-- Set biến `base_url = http://localhost:5000/api`
-- Set biến `token` = JWT nhận được sau đăng nhập
-- Test VNPay sandbox: card `4111111111111111`, Exp `12/25`, OTP `123456`
+### Cap nhat ngay 03/07/2026:
+- **Bo dropdown menu "DICH VU"**:
+  - Menu "DICH VU" tren navbar truoc day hien dropdown chon danh muc (Truyen thong, Phong su, Ket hop, Anh/Photobook, Thue may anh).
+  - Da doi thanh link thang: bam vao "DICH VU" se dieu huong truc tiep den trang `/services` (tat ca dich vu).
+  - Xoa bo `serviceMenuItems` array va thay the `<Dropdown>` bang `<span onClick>`.
+- **Xoa hoan toan chuc nang Thue may anh (Rentals/Resources)**:
+  - Frontend:
+    - Xoa cac trang `Rentals.jsx`, `RentalDetail.jsx`, `AdminResources.jsx`, `ResourceForm.jsx`.
+    - Xoa routes `/rentals`, `/rentals/:id`, `/admin/resources`, `/admin/resources/add`, `/admin/resources/edit/:id` khoi `App.jsx`.
+    - Xoa menu "Tai nguyen / thiet bi" khoi sidebar `AdminLayout.jsx`.
+    - Xoa card thong ke "Thiet bi cho thue" khoi `AdminDashboard.jsx`.
+    - Xoa link "Thue thiet bi" khoi footer `CustomerLayout.jsx`.
+    - Xoa muc "Quan ly Kho tai nguyen" khoi `SharedLayout.jsx`.
+  - Backend:
+    - Xoa `backend/routes/resourceRoutes.js`.
+    - Xoa `backend/controllers/resourceController.js`.
+    - Xoa `backend/models/Resource.js`.
+    - Xoa mount `/api/resources` khoi `server.js`.
+    - Xoa query `activeResources`, `activeRentalResources` khoi `dashboardController.js`.
+    - Xoa Resource query va phan tu van thue thiet bi khoi `aiChatController.js`.
 
-### Seed Admin mặc định
-```bash
-node backend/seedAdmin.js
-# Email: admin@caohienstudio.com
-# Password: Admin@123456 (hoặc xem trong seedAdmin.js)
-```
+### Cap nhat ngay 26/06/2026:
+- **Trang Dat lich (Booking.jsx)**:
+  - Cho phep chon nhieu Goi dich vu chinh tren mot dong (khong wrap xuong dong).
+  - O goi dich vu di kem cung hien thi tren 1 dong va rut gon: Hien thi goi dau tien, neu chon them se hien thi dang "+1, +2..." (vi du: "Goi le toi... +3").
+  - Loai bo hoan toan mau nen xanh cua checkbox khi duoc check; thay bang duong vien vang Luxury va checkmark vang tren nen trong suot (su dung High-Specificity CSS).
+  - Chỉnh font chu cua tieu de "TOM TAT CHI PHI" thanh font Outfit dong bo voi tieu de lich chup, in hoa toan bo, in dam va tang kich co (fontSize: 20).
+  - Them o nhap Ma giam gia (Voucher/Coupon) va nut Ap dung trong card Tom tat chi phi. To mau do noi bat cho phan giam gia (vi du: "Giam gia (CAOHIEN50): -50.000d").
+  - Luoc bo tieu de H3 cua "Muc ap dung thanh toan" ben cot phai, chi giu lai card thong tin ben trong va can giua dep mat.
+  - Khoi phuc va hoan thien nut Switch chon chup "1 ngay" hoac "Nhieu ngay" nhu cu: Khac phuc triet de loi chon khung gio chup va custom gio o che do nhieu ngay (range mode); dong thoi highlight duong vien va nen `.cal-cell-range` cho cac o ngay tren lich nam trong khoang giua nhat.
+- **Trang Xac nhan (BookingConfirm.jsx)**:
+  - Ho tro hien thi ro rang khoang thoi gian dat lich tu ngay bat dau den ngay ket thuc neu khach hang chon dat lich nhieu ngay.
 
-### Hot reload (Development)
-- Backend: `npm run dev` → Nodemon tự reload khi sửa file
-- Frontend: `npm run dev` → Vite HMR tự reload tức thì
-
----
-
-## 📬 Liên Hệ & Hỗ Trợ
-
-- **Studio**: Cao Hiến Studio
-- **Email**: info@caohienstudio.com
-- **Website**: www.caohienstudio.com
-
----
-
-## 📄 License
-
-Dự án này được phát triển cho mục đích học thuật (Tiểu luận chuyên ngành / Khóa luận tốt nghiệp) và quản lý thực tế studio chụp ảnh.
-
-**Sinh viên**: Hồ Vũ Anh — MSSV: 22110097  
-**Phiên bản**: 1.0.2 | **Cập nhật**: Tháng 6 năm 2026
-
----
-
-## 🤖 Hướng Dẫn Dành Cho AI Assistant (AI Context & Guidelines)
-
-Phần này được thiết kế đặc biệt dành cho các công cụ AI Coding Assistant (như Gemini, Copilot, Cursor) để dễ dàng đọc hiểu, nắm bắt ngữ cảnh dự án và đưa ra những đóng góp chính xác nhất.
-
-### 1. Style Guide & Quy Ước Code (Coding Conventions)
-
-**Backend (Node.js/Express):**
-- **Kiến trúc:** Bám sát mô hình MVC. Routes chỉ định nghĩa endpoint -> Controller xử lý business logic -> Models chứa schema MongoDB. KHÔNG viết logic xử lý dữ liệu phức tạp vào file Route.
-- **Module System:** Sử dụng CommonJS (`require` / `module.exports`).
-- **Error Handling:** Mọi async function trong Controller phải được bọc bởi `try/catch`. Response lỗi hoặc thành công phải tuân theo format JSON đồng nhất: `{ message: "...", data: ... }`.
-- **Bảo mật:** Tất cả các endpoint trả dữ liệu nhạy cảm hoặc thao tác admin đều phải đi qua middleware `verifyToken` và `verifyAdmin`. Mật khẩu lưu vào DB luôn phải được hash bằng `bcrypt`.
-
-**Frontend (React/Vite):**
-- **Component:** 100% sử dụng Functional Components và Hooks (`useState`, `useEffect`, `useMemo`).
-- **UI Framework:** Hệ thống sử dụng thư viện **Ant Design (antd)** làm chuẩn thiết kế. Sử dụng các component có sẵn của antd (Table, Form, Input, Button) trước khi quyết định viết custom CSS để giữ UI đồng nhất và chuyên nghiệp.
-- **Routing:** Quản lý tập trung trong `App.jsx`. Route bảo mật cần nằm trong layout phân quyền (`AdminLayout`, `CustomerLayout`).
-- **API Call:** Luôn sử dụng `axios`. Nên tận dụng interceptors để xử lý lỗi 401 (token hết hạn) và tự động đính kèm header `Authorization`.
-
-### 2. Trạng Thái Hiện Tại (Current Status) & Tiến Độ Cập Nhật
-
-Hệ thống đang ở giai đoạn **Phiên bản 1.0.2** (Đang phát triển & hoàn thiện). Dưới đây là bức tranh tổng thể:
-- **Đã hoàn thiện:** Khung giao diện UI cho Khách hàng & Admin; Luồng Auth (Đăng nhập, Đăng ký, OTP, Quên mật khẩu); Đặt lịch Booking & Thanh toán cọc qua cổng VNPay; Quản lý Services, Galleries, Resources cho Admin. Upload ảnh lưu trữ vào Google Drive.
-- **Điểm nóng (Hotspots):** Luồng xử lý thanh toán (VNPay IPN/Return) là luồng nhạy cảm nhất. Đã support cả GET/POST request do khác biệt giữa callback của các môi trường. TUYỆT ĐỐI CẨN THẬN khi refactor code trong `bookingController.js`.
-- **Mục tiêu tiếp theo (TODOs):**
-  1. Hoàn thiện module Real-time Chat bằng `Socket.IO` (đã setup server, cần build UI frontend).
-  2. Nâng cấp luồng Giao việc (Assign Photographer): Gửi thông báo real-time/email khi Admin gán đơn hàng (Order) cho Photographer.
-  3. Hoàn thiện tính năng Quản lý Nghỉ phép/Lịch bận của Photographer để tránh trùng lặp khi đặt lịch.
-  4. Trực quan hóa Dashboard: Bổ sung các biểu đồ Recharts sâu hơn về tỷ lệ chuyển đổi dịch vụ.
-
-### 3. Sơ Đồ Quan Hệ Cơ Sở Dữ Liệu (Database Relationships)
-
-Dưới đây là các quan hệ cốt lõi cần nhớ để populate (join) không bị lỗi:
-- `Booking` 1-n `User` (Ref tới userId - Khách đặt) và `Service` (Ref tới serviceId).
-- `Order` (Đơn hàng chính thức) được sinh ra từ `Booking` sau khi duyệt. `Order` có 3 Refs quan trọng: `bookingId`, `customerId` (Khách), và `photographerId` (Nhân sự chụp).
-- `Payment` 1-1 `Booking`. Khi webhook VNPay trả về trạng thái giao dịch SUCCESS, **phải** đồng thời cập nhật `status` của `Payment` và `status` + `depositAmount` của `Booking`.
-
-### 4. Quy Tắc "Cứng" Khi Viết Code Mới
-- **Biến môi trường:** Nếu yêu cầu logic sinh ra biến môi trường mới (vd: API Key mới), AI **phải** tự động bổ sung biến đó vào file `backend/.env.example` VÀ danh sách biến môi trường trong file `README.md` này.
-- **Database Schema:** Nếu tạo collection MongoDB mới, AI **phải** cập nhật cấu trúc bảng vào mục `Cơ Sở Dữ Liệu` trong file `README.md` để giữ tài liệu luôn sống (living documentation).
-- **Phá vỡ cấu trúc:** Tránh tối đa việc thay đổi luồng thanh toán hoặc cấu trúc Auth hiện có trừ khi có yêu cầu tái cấu trúc toàn diện từ User.

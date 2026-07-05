@@ -18,7 +18,29 @@ const bookingSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
+      },
+    ],
+
+    extra_service_ids: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+      },
+    ],
+
+    assigned_staff_ids: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    external_staff: [
+      {
+        full_name: { type: String },
+        email: { type: String },
+        phone: { type: String },
+        role_note: { type: String },
       },
     ],
 

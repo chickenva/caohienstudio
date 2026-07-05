@@ -125,25 +125,7 @@ const SharedLayout = () => {
     {
       type: "divider",
     },
-    {
-      key: "resources",
-      label: "Quản lý Kho tài nguyên",
-      icon: <ShoppingOutlined />,
-      children: [
-        {
-          key: "resources-add",
-          label: "Thêm tài nguyên",
-          icon: <PlusOutlined />,
-          onClick: () => navigate("/admin/resources/add"),
-        },
-        {
-          key: "resources-edit",
-          label: "Chỉnh sửa thông tin",
-          icon: <EditOutlined />,
-          onClick: () => navigate("/admin/resources"),
-        },
-      ],
-    },
+
     {
       key: "staff",
       label: "Quản lý Nhân sự",

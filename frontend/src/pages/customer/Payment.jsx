@@ -54,16 +54,10 @@ const Payment = () => {
   const handlePayment = async () => {
     try {
       setLoading(true);
-      // Gọi API tạo link VNPay
+      // Gọi API tạo lại link VNPay cho đơn hàng hiện tại
       const res = await axios.post(
-        `${API_URL}/bookings/create-vnpay`,
-        {
-          service_id: booking.service_id._id,
-          start_time: booking.start_time,
-          location: booking.location,
-          note: booking.note,
-          deposit_percent: 30, // Cọc 30% giá trị dịch vụ
-        },
+        `${API_URL}/bookings/${id}/repay`,
+        {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         },
@@ -75,7 +69,7 @@ const Payment = () => {
       }
     } catch (error) {
       message.error(
-        "Lỗi khởi tạo thanh toán: " + error.response?.data?.message,
+        "Lỗi khởi tạo thanh toán: " + (error.response?.data?.message || "Vui lòng thử lại sau"),
       );
       setLoading(false);
     }

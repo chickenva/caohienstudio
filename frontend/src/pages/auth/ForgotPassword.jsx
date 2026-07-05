@@ -197,6 +197,7 @@ const ForgotPassword = () => {
               }}
             >
               Mã xác thực đã được gửi đến: <br /> <strong>{email}</strong>
+              <br /><span style={{ fontSize: "12px", color: "#888", fontStyle: "italic" }}>* Vui lòng kiểm tra hộp thư Rác (Spam) nếu không nhận được email.</span>
             </div>
 
             <Form.Item

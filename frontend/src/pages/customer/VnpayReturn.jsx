@@ -61,7 +61,7 @@ const VnpayReturn = () => {
         }
         subTitle={
           paymentStatus === "success"
-            ? "Lịch hẹn của bạn đã được ghi nhận. Bạn có thể xem lại trong danh sách lịch chụp."
+            ? "Lịch hẹn của bạn đã được ghi nhận. Nhân viên sẽ liên hệ xác nhận với bạn trong vòng 24h."
             : "Giao dịch không thành công hoặc đã bị hủy. Bạn có thể thử thanh toán lại trong chi tiết đơn hàng."
         }
         extra={[

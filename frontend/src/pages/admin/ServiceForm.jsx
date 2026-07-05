@@ -75,6 +75,7 @@ const ServiceForm = () => {
         duration_hours: service.duration_hours,
         thumbnail: service.thumbnail,
         is_active: service.is_active,
+        allow_addon: service.allow_addon || false,
       });
 
       setThumbnailPreview(service.thumbnail || "");
@@ -224,6 +225,10 @@ const ServiceForm = () => {
 
               <Form.Item label="Hiển thị trên website" name="is_active" valuePropName="checked">
                 <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
+              </Form.Item>
+
+              <Form.Item label="Là Dịch Vụ Đi Kèm (Add-on)" name="allow_addon" valuePropName="checked">
+                <Switch checkedChildren="Có" unCheckedChildren="Không" />
               </Form.Item>
             </Col>
 

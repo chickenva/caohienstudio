@@ -70,34 +70,7 @@ const CustomerLayout = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Menu Dropdown cho Dịch vụ
-  const serviceMenuItems = [
-    {
-      key: "traditional",
-      label: "Truyền thống",
-      onClick: () => handleMenuClick("/services?category=TRADITIONAL"),
-    },
-    {
-      key: "photojournalism",
-      label: "Phóng sự",
-      onClick: () => handleMenuClick("/services?category=PHOTOJOURNALISM"),
-    },
-    {
-      key: "combo",
-      label: "Kết hợp",
-      onClick: () => handleMenuClick("/services?category=COMBO"),
-    },
-    {
-      key: "print",
-      label: "Ảnh / Photobook",
-      onClick: () => handleMenuClick("/services?category=PRINT"),
-    },
-    {
-      key: "rentals",
-      label: "Thuê máy ảnh",
-      onClick: () => handleMenuClick("/rentals"),
-    },
-  ];
+
 
   // Kiểm tra trạng thái đăng nhập để hiển thị Header
   useEffect(() => {
@@ -231,30 +204,12 @@ const CustomerLayout = () => {
             THƯ VIỆN ẢNH
           </span>
 
-          <Dropdown menu={{ items: serviceMenuItems }} placement="bottom" arrow>
-            <span
-              style={{
-                cursor: "default",
-                borderBottom:
-                  location.pathname.includes("/services") ||
-                  location.pathname.includes("/rentals")
-                    ? `1.5px solid ${PRIMARY_COLOR}`
-                    : "none",
-                paddingBottom: "3px",
-                color:
-                  location.pathname.includes("/services") ||
-                  location.pathname.includes("/rentals")
-                    ? PRIMARY_COLOR
-                    : "#2F2F2F",
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "1px",
-              }}
-              className="nav-dropdown-trigger"
-            >
-              DỊCH VỤ
-            </span>
-          </Dropdown>
+          <span
+            onClick={() => handleMenuClick("/services")}
+            style={menuStyle("/services")}
+          >
+            DỊCH VỤ
+          </span>
 
           <span
             onClick={() => handleMenuClick("/booking")}
@@ -265,7 +220,7 @@ const CustomerLayout = () => {
 
 
           <span
-            onClick={() => navigate("/contact")}
+            onClick={() => handleMenuClick("/contact")}
             style={menuStyle("/contact")}
           >
             LIÊN HỆ
@@ -496,13 +451,7 @@ const CustomerLayout = () => {
                 >
                   Gói dịch vụ
                 </li>
-                <li
-                  onClick={() => handleMenuClick("/rentals")}
-                  style={{ cursor: "pointer" }}
-                  className="footer-link"
-                >
-                  Thuê thiết bị
-                </li>
+
                 <li
                   onClick={() => handleMenuClick("/contact")}
                   style={{ cursor: "pointer" }}
@@ -540,25 +489,18 @@ const CustomerLayout = () => {
                 }}
               >
                 <li
-                  onClick={() => handleMenuClick("/contact")}
+                  onClick={() => handleMenuClick("/contract")}
                   style={{ cursor: "pointer" }}
                   className="footer-link"
                 >
-                  Hướng dẫn đặt lịch
+                  Hợp đồng dịch vụ
                 </li>
                 <li
-                  onClick={() => handleMenuClick("/contact")}
+                  onClick={() => handleMenuClick("/refund-policy")}
                   style={{ cursor: "pointer" }}
                   className="footer-link"
                 >
                   Chính sách hủy & hoàn cọc
-                </li>
-                <li
-                  onClick={() => handleMenuClick("/about")}
-                  style={{ cursor: "pointer" }}
-                  className="footer-link"
-                >
-                  Quy trình làm việc
                 </li>
                 <li
                   onClick={() => handleMenuClick("/faq")}
