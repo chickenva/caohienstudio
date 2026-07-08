@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Spin, message, Image, Empty, Row, Col } from "antd";
 import {
@@ -10,6 +10,13 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
+import {
+  getGalleryImageSrcSet,
+  getGalleryImageUrl,
+  getImageDimensions,
+  getImageErrorHandler,
+  preloadImages,
+} from "../../utils/imageUtils";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
@@ -31,6 +38,8 @@ const GalleryDetail = () => {
   const [gallery, setGallery] = useState(null);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [masonryColumnCount, setMasonryColumnCount] = useState(1);
+  const [imageDimensions, setImageDimensions] = useState({});
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
@@ -67,6 +76,95 @@ const GalleryDetail = () => {
       revealElements.forEach((el) => observer.unobserve(el));
     };
   }, [loading, gallery, images]);
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      const width = window.innerWidth;
+
+      if (width >= 1400) {
+        setMasonryColumnCount(4);
+      } else if (width >= 992) {
+        setMasonryColumnCount(3);
+      } else if (width >= 576) {
+        setMasonryColumnCount(2);
+      } else {
+        setMasonryColumnCount(1);
+      }
+    };
+
+    updateColumnCount();
+    window.addEventListener("resize", updateColumnCount);
+
+    return () => {
+      window.removeEventListener("resize", updateColumnCount);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (images.length === 0) {
+      setImageDimensions({});
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadDimensions = async () => {
+      const entries = await Promise.all(
+        images.map(async (img, idx) => {
+          const key = img.id || String(idx);
+          const storedWidth = Number(img.width || img.imageMediaMetadata?.width);
+          const storedHeight = Number(img.height || img.imageMediaMetadata?.height);
+
+          if (storedWidth > 0 && storedHeight > 0) {
+            return [key, { width: storedWidth, height: storedHeight }];
+          }
+
+          const url = getGalleryImageUrl(img, "grid", FALLBACK_IMAGE);
+          const dimensions = await getImageDimensions(url);
+
+          return [key, dimensions];
+        }),
+      );
+
+      if (!cancelled) {
+        setImageDimensions(Object.fromEntries(entries));
+      }
+    };
+
+    loadDimensions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [images]);
+
+  const masonryColumns = useMemo(() => {
+    const columns = Array.from({ length: masonryColumnCount }, () => ({
+      height: 0,
+      items: [],
+    }));
+
+    images.forEach((img, idx) => {
+      const key = img.id || String(idx);
+      const dimensions = imageDimensions[key];
+      const width = Number(img.width || img.imageMediaMetadata?.width || dimensions?.width);
+      const height = Number(img.height || img.imageMediaMetadata?.height || dimensions?.height);
+      const ratio = width > 0 && height > 0 ? width / height : 1.35;
+      const estimatedHeight = 1 / Math.max(ratio, 0.25);
+      const targetColumnIndex = columns.reduce(
+        (bestIndex, column, columnIndex) =>
+          column.height < columns[bestIndex].height ? columnIndex : bestIndex,
+        0,
+      );
+
+      columns[targetColumnIndex].items.push({ img, idx });
+      columns[targetColumnIndex].height += estimatedHeight + 0.08;
+    });
+
+    return columns.map((column) => column.items);
+  }, [images, imageDimensions, masonryColumnCount]);
 
   const fetchGalleryDetail = async () => {
     setLoading(true);
@@ -120,7 +218,18 @@ const GalleryDetail = () => {
         { id: 6, imageUrl: "https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=1200" },
       ];
 
-      setGallery(demoGalleries[id] || demoGalleries["demo-gal-1"]);
+      const demoGallery = demoGalleries[id] || demoGalleries["demo-gal-1"];
+      await preloadImages(
+        [
+          getGalleryImageUrl(demoGallery, "cover", FALLBACK_IMAGE),
+          ...demoImages.slice(0, 8).map((img) =>
+            getGalleryImageUrl(img, "grid", FALLBACK_IMAGE),
+          ),
+        ],
+        { limit: 9, timeoutMs: 2800 },
+      );
+
+      setGallery(demoGallery);
       setImages(demoImages);
       setLoading(false);
       return;
@@ -130,8 +239,26 @@ const GalleryDetail = () => {
       const res = await axios.get(
         `http://localhost:5000/api/galleries/${id}`,
       );
-      setGallery(res.data.gallery);
-      setImages(res.data.images || []);
+      const fetchedGallery = res.data.gallery;
+      const fetchedImages = res.data.images || [];
+      const firstImageFallback = getGalleryImageUrl(
+        fetchedImages[0],
+        "cover",
+        FALLBACK_IMAGE,
+      );
+
+      await preloadImages(
+        [
+          getGalleryImageUrl(fetchedGallery, "cover", firstImageFallback),
+          ...fetchedImages.slice(0, 10).map((img) =>
+            getGalleryImageUrl(img, "grid", FALLBACK_IMAGE),
+          ),
+        ],
+        { limit: 11, timeoutMs: 3500 },
+      );
+
+      setGallery(fetchedGallery);
+      setImages(fetchedImages);
     } catch (err) {
       message.error(
         err.response?.data?.message || "Không tìm thấy album ảnh",
@@ -154,8 +281,11 @@ const GalleryDetail = () => {
 
   if (!gallery) return null;
 
-  const coverImage =
-    gallery.coverImage || images?.[0]?.imageUrl || FALLBACK_IMAGE;
+  const coverImage = getGalleryImageUrl(
+    gallery,
+    "cover",
+    getGalleryImageUrl(images?.[0], "cover", FALLBACK_IMAGE),
+  );
 
   return (
     <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", minHeight: "100vh" }}>
@@ -329,7 +459,7 @@ const GalleryDetail = () => {
           </Col>
 
           {/* Related service package */}
-          {gallery.service_id && (
+          {gallery.service_ids && gallery.service_ids.length > 0 && (
             <Col xs={24}>
               <div 
                 style={{ 
@@ -346,15 +476,21 @@ const GalleryDetail = () => {
                   <span>Gói dịch vụ liên quan</span>
                 </div>
 
-                <div className="font-serif-luxury" style={{ fontSize: "24px", color: "#2F2F2F", fontWeight: "300", marginBottom: "10px" }}>
-                  {gallery.service_id.name}
-                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  {gallery.service_ids.map((service, index) => (
+                    <div key={index}>
+                      <div className="font-serif-luxury" style={{ fontSize: "24px", color: "#2F2F2F", fontWeight: "300", marginBottom: "10px" }}>
+                        {service.name}
+                      </div>
 
-                {gallery.service_id.description && (
-                  <p style={{ color: "#555555", lineHeight: "1.8", fontSize: "14px", fontWeight: "300", margin: 0 }}>
-                    {gallery.service_id.description}
-                  </p>
-                )}
+                      {service.description && (
+                        <p style={{ color: "#555555", lineHeight: "1.8", fontSize: "14px", fontWeight: "300", margin: 0 }}>
+                          {service.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </Col>
           )}
@@ -404,20 +540,36 @@ const GalleryDetail = () => {
           </div>
         ) : (
           <Image.PreviewGroup>
-            <div className="masonry-detail-container">
-              {images.map((img, idx) => (
-                <div key={img.id || idx} className="masonry-detail-item">
-                  <Image
-                    src={img.imageUrl || img.thumbnailLink || FALLBACK_IMAGE}
-                    alt={img.name || `${gallery.title} - ${idx + 1}`}
-                    className="masonry-detail-image"
-                    preview={{
-                      src: img.imageUrl || img.webViewLink,
-                    }}
-                    onError={(e) => {
-                      e.currentTarget.src = img.thumbnailLink || FALLBACK_IMAGE;
-                    }}
-                  />
+            <div
+              className="masonry-detail-container"
+              style={{ "--masonry-columns": masonryColumnCount }}
+            >
+              {masonryColumns.map((column, columnIndex) => (
+                <div className="masonry-detail-column" key={columnIndex}>
+                  {column.map(({ img, idx }) => {
+                    const imageUrl = getGalleryImageUrl(img, "grid", FALLBACK_IMAGE);
+                    const previewUrl = getGalleryImageUrl(img, "preview", imageUrl);
+                    const imageSrcSet = getGalleryImageSrcSet(imageUrl);
+
+                    return (
+                      <div key={img.id || idx} className="masonry-detail-item">
+                        <Image
+                          src={imageUrl}
+                          srcSet={imageSrcSet}
+                          sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, (max-width: 1399px) 33vw, 25vw"
+                          alt={img.name || `${gallery.title} - ${idx + 1}`}
+                          className="masonry-detail-image"
+                          loading={idx < 8 ? "eager" : "lazy"}
+                          fetchPriority={idx < 4 ? "high" : "auto"}
+                          decoding="async"
+                          preview={{
+                            src: previewUrl,
+                          }}
+                          onError={getImageErrorHandler(FALLBACK_IMAGE)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -427,31 +579,22 @@ const GalleryDetail = () => {
 
       <style>{`
         .masonry-detail-container {
-          column-count: 1;
-          column-gap: 24px;
+          display: grid;
+          grid-template-columns: repeat(var(--masonry-columns), minmax(0, 1fr));
+          gap: 24px;
+          align-items: start;
         }
 
-        @media (min-width: 576px) {
-          .masonry-detail-container {
-            column-count: 2;
-          }
-        }
-
-        @media (min-width: 992px) {
-          .masonry-detail-container {
-            column-count: 3;
-          }
-        }
-
-        @media (min-width: 1400px) {
-          .masonry-detail-container {
-            column-count: 4;
-          }
+        .masonry-detail-column {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
         }
 
         .masonry-detail-item {
           break-inside: avoid;
-          margin-bottom: 24px;
+          margin-bottom: 0;
           border-radius: 0px;
           border: 1px solid #E8DED2;
           padding: 10px;
@@ -483,6 +626,13 @@ const GalleryDetail = () => {
 
         .masonry-detail-item:hover .masonry-detail-image {
           transform: scale(1.04) !important;
+        }
+
+        @media (max-width: 575px) {
+          .masonry-detail-container,
+          .masonry-detail-column {
+            gap: 18px;
+          }
         }
 
         @media (max-width: 768px) {

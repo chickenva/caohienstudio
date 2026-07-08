@@ -17,8 +17,8 @@
 
 Cao Hiển Studio la ung dung web full-stack ho tro van hanh studio chup anh. He thong phuc vu hai nhom nguoi dung chinh:
 
-- **Khach hang**: xem gioi thieu studio, goi chup, album, nhiep anh gia, lien he, dat lich, thanh toan coc va theo doi don.
-- **Admin**: quan ly dashboard, khach hang, dich vu, nhiep anh gia, gallery, don dat lich va thanh toan.
+- **Khach hang**: xem gioi thieu studio, goi chup, album, lien he, dat lich, thanh toan coc va theo doi don.
+- **Admin**: quan ly dashboard, khach hang, dich vu, gallery, don dat lich va thanh toan.
 
 Du an da bo sung **AI Chatbot tu van nguoi dung** bang Google Gemini API. Chatbot lay du lieu that tu database de tu van goi chup, thue may anh/thiet bi, chon tho chup, concept, trang phuc, dia diem, checklist truoc buoi chup va ngay tot/phong tuc o muc tham khao.
 
@@ -38,8 +38,8 @@ Du an da bo sung **AI Chatbot tu van nguoi dung** bang Google Gemini API. Chatbo
 - Booking PENDING co thoi han 15 phut, qua han se bi huy de tranh giu lich ao.
 - Khach hang xem don cua minh, huy don PENDING, tao lai link thanh toan va polling trang thai.
 - Admin tao don ho khach hang, chon khach co san hoac tao khach moi/tam.
-- Admin quan ly service, gallery, photographer, customer va booking.
-- Dashboard admin thong ke don, doanh thu, khach hang, nhiep anh gia, dich vu va gallery.
+- Admin quan ly service, gallery, customer va booking.
+- Dashboard admin thong ke don, doanh thu, khach hang, dich vu va gallery.
 - Form lien he luu MongoDB va gui email thong bao.
 - OTP email cho dang ky, quen mat khau, doi email va doi mat khau trong profile.
 - AI Chat Widget noi o giao dien customer.
@@ -123,7 +123,6 @@ File `backend/server.js` hien dang:
   - `/api/galleries`
   - `/api/services`
   - `/api/bookings`
-  - `/api/resources`
   - `/api/contacts`
   - `/api/users`
   - `/api/drive`
@@ -158,8 +157,6 @@ Middleware trong `backend/middleware/authMiddleware.js`:
 | `/faq` | `FAQ` | Cau hoi thuong gap (FAQ) |
 | `/galleries` | `Galleries` | Danh sach album |
 | `/galleries/:id` | `GalleryDetail` | Chi tiet album |
-| `/photographers` | N/A | Chuyen huong (Redirect) den `/services` |
-| `/photographers/:id` | N/A | Chuyen huong (Redirect) den `/services` |
 | `/services` | `Services` | Goi chup |
 | `/services/:id` | `ServiceDetail` | Chi tiet goi chup |
 | `/booking` | `Booking` | Dat lich |
@@ -192,12 +189,7 @@ Middleware trong `backend/middleware/authMiddleware.js`:
 | `/admin/services` | `AdminServices` | Dich vu |
 | `/admin/services/add` | `ServiceForm` | Tao dich vu |
 | `/admin/services/edit/:id` | `ServiceForm` | Sua dich vu |
-| `/admin/photographers` | `AdminPhotographers` | Nhiep anh gia |
-| `/admin/photographers/add` | `PhotographerForm` | Tao tho chup |
-| `/admin/photographers/edit/:id` | `PhotographerForm` | Sua tho chup |
-| `/admin/resources` | `AdminResources` | Thiet bi/tai nguyen |
-| `/admin/resources/add` | `ResourceForm` | Tao thiet bi |
-| `/admin/resources/edit/:id` | `ResourceForm` | Sua thiet bi |
+| `/admin/categories/:type` | `AdminCategories` | Danh muc |
 
 ## 7. Database schema
 

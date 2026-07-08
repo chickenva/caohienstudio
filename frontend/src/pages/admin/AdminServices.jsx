@@ -12,6 +12,7 @@ import {
   Row,
   Col,
   Card,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
@@ -21,35 +22,100 @@ import {
   EyeInvisibleOutlined,
   SearchOutlined,
   CameraOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
-const serviceCategoryLabels = {
-  TRADITIONAL: "TRUYỀN THỐNG",
-  PHOTOJOURNALISM: "PHÓNG SỰ",
-  COMBO: "KẾT HỢP",
-  PRINT: "ẢNH / PHOTOBOOK",
-  OTHER: "DỊCH VỤ KHÁC",
-};
-
-const serviceCategoryOptions = [
-  { value: "TRADITIONAL", label: "Truyền thống" },
-  { value: "PHOTOJOURNALISM", label: "Phóng sự" },
-  { value: "COMBO", label: "Kết hợp" },
-  { value: "PRINT", label: "Ảnh / Photobook" },
-  { value: "OTHER", label: "Khác" },
-];
 
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
   { value: "ACTIVE", label: "Đang hiển thị" },
   { value: "HIDDEN", label: "Đã ẩn" },
 ];
+
+const DragIndexContext = React.createContext({
+  setActivatorNodeRef: null,
+  listeners: null,
+});
+
+const DragHandle = () => {
+  const { setActivatorNodeRef, listeners } = React.useContext(DragIndexContext);
+  return (
+    <Button
+      type="text"
+      size="small"
+      icon={<MenuOutlined />}
+      style={{ cursor: "grab", color: "#999" }}
+      ref={setActivatorNodeRef}
+      {...listeners}
+    />
+  );
+};
+
+const SortableRow = ({ children, ...props }) => {
+  const id = props["data-row-key"];
+  const sortable = useSortable({
+    id: id || "empty-row",
+  });
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = sortable;
+
+  if (!id) {
+    return <tr {...props}>{children}</tr>;
+  }
+
+  const style = {
+    ...props.style,
+    transform: CSS.Transform.toString(transform && { ...transform, scaleY: 1 })?.replace(
+      /translate3d\(([^,]+),/,
+      "translate3d(0,"
+    ),
+    transition,
+    ...(isDragging ? { position: "relative", zIndex: 9999, background: "#fafafa" } : {}),
+  };
+
+  const contextValue = React.useMemo(
+    () => ({ setActivatorNodeRef, listeners }),
+    [setActivatorNodeRef, listeners]
+  );
+
+  return (
+    <DragIndexContext.Provider value={contextValue}>
+      <tr {...props} ref={setNodeRef} style={style} {...attributes}>
+        {children}
+      </tr>
+    </DragIndexContext.Provider>
+  );
+};
 
 const AdminServices = () => {
   const navigate = useNavigate();
@@ -60,10 +126,58 @@ const AdminServices = () => {
   const [searchText, setSearchText] = useState("");
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
+    fetchCategories();
     fetchServices();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/categories?type=SERVICE`);
+      setCategories(res.data.categories || []);
+    } catch (error) {
+      console.error("Lỗi khi tải danh mục dịch vụ:", error);
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const onDragEnd = async ({ active, over }) => {
+    if (active.id !== over?.id) {
+      const activeIndex = services.findIndex((i) => i._id === active.id);
+      const overIndex = services.findIndex((i) => i._id === over?.id);
+      const newServices = arrayMove(services, activeIndex, overIndex);
+      
+      // Calculate new orders. The backend sorted ascending by order, so let's just reassign them.
+      // If we just send back the items with their new order (e.g. index), it's fine.
+      const reorderedItems = newServices.map((item, index) => ({
+        _id: item._id,
+        order: index,
+      }));
+
+      // Update state optimistically
+      setServices(newServices);
+
+      try {
+        await axios.put(
+          `${API_URL}/services/admin/reorder`,
+          { items: reorderedItems },
+          { headers: { Authorization: `Bearer ${getToken()}` } }
+        );
+        message.success("Cập nhật thứ tự thành công");
+      } catch (err) {
+        message.error("Lỗi cập nhật thứ tự, đang tải lại...");
+        fetchServices();
+      }
+    }
+  };
 
   const getToken = () => localStorage.getItem("token");
 
@@ -119,19 +233,34 @@ const AdminServices = () => {
   const filteredServices = services.filter((service) => {
     const matchSearch =
       !searchText ||
-      service.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      (service.description &&
+      (service?.name && service.name.toLowerCase().includes(searchText.toLowerCase())) ||
+      (service?.description &&
         service.description.toLowerCase().includes(searchText.toLowerCase()));
+    const catSlug = typeof service?.category === 'object' ? service.category?.slug : service?.category;
     const matchCategory =
-      categoryFilter.length === 0 || categoryFilter.includes(service.category);
+      categoryFilter.length === 0 || categoryFilter.includes(catSlug);
     const matchStatus =
       statusFilter === "ALL" ||
-      (statusFilter === "ACTIVE" && service.is_active) ||
-      (statusFilter === "HIDDEN" && !service.is_active);
+      (statusFilter === "ACTIVE" && service?.is_active) ||
+      (statusFilter === "HIDDEN" && !service?.is_active);
     return matchSearch && matchCategory && matchStatus;
   });
 
+  const isFiltering = searchText !== "" || categoryFilter.length > 0 || statusFilter !== "ALL";
+
   const columns = [
+    {
+      key: "sort",
+      width: 50,
+      align: "center",
+      render: () => isFiltering ? (
+        <Tooltip title="Vui lòng xóa bộ lọc để sắp xếp">
+          <Button type="text" size="small" icon={<MenuOutlined />} disabled style={{ color: "#d9d9d9" }} />
+        </Tooltip>
+      ) : (
+        <DragHandle />
+      ),
+    },
     {
       title: "ẢNH",
       dataIndex: "thumbnail",
@@ -156,7 +285,7 @@ const AdminServices = () => {
       key: "name",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 700, color: "#262626", fontSize: "14px" }}>{record.name}</div>
+          <div style={{ fontWeight: 700, color: "#262626", fontSize: "14px" }}>{record?.name || "Chưa có tên"}</div>
           <div
             style={{
               fontSize: 12,
@@ -178,24 +307,18 @@ const AdminServices = () => {
       dataIndex: "category",
       key: "category",
       width: 190,
-      render: (category) => (
-        <Tag color="gold" style={{ fontWeight: 500, borderRadius: 4 }}>
-          {serviceCategoryLabels[category] || category || "KHÁC"}
-        </Tag>
-      ),
+      render: (category) => {
+        const catSlug = typeof category === 'object' ? category?.slug : category;
+        const cat = categories.find((c) => c.slug === catSlug);
+        const displayName = cat ? cat.name?.toUpperCase() : (typeof category === 'object' ? category?.name : category) || "KHÁC";
+        return (
+          <Tag color="gold" style={{ fontWeight: 500, borderRadius: 4 }}>
+            {typeof displayName === 'string' ? displayName : "KHÁC"}
+          </Tag>
+        );
+      },
     },
-    {
-      title: "THỨ TỰ",
-      dataIndex: "order",
-      key: "order",
-      width: 100,
-      align: "center",
-      render: (order) => (
-        <Tag color="blue" style={{ fontWeight: 600, borderRadius: 4 }}>
-          {order}
-        </Tag>
-      ),
-    },
+
     {
       title: "GIÁ BÁN",
       dataIndex: "base_price",
@@ -408,7 +531,10 @@ const AdminServices = () => {
               style={{ width: "100%" }}
               value={categoryFilter}
               onChange={setCategoryFilter}
-              options={serviceCategoryOptions}
+              options={categories.map((c) => ({
+                value: c?.slug,
+                label: c?.name,
+              }))}
               maxTagCount="responsive"
               allowClear
               size="large"
@@ -436,19 +562,28 @@ const AdminServices = () => {
         style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
         bodyStyle={{ padding: "0px" }}
       >
-        <Table
-          columns={columns}
-          dataSource={filteredServices}
-          rowKey="_id"
-          loading={loading}
-          bordered={false}
-          scroll={{ x: 1000 }}
-          pagination={{
-            pageSize: 8,
-            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} gói`,
-          }}
-          style={{ borderRadius: 8, overflow: "hidden" }}
-        />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext
+            items={filteredServices.map((i) => i._id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table
+              components={{
+                body: {
+                  row: SortableRow,
+                },
+              }}
+              columns={columns}
+              dataSource={filteredServices}
+              rowKey="_id"
+              loading={loading}
+              bordered={false}
+              scroll={{ x: 1000 }}
+              pagination={false}
+              style={{ borderRadius: 8, overflow: "hidden" }}
+            />
+          </SortableContext>
+        </DndContext>
       </Card>
     </div>
   );

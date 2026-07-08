@@ -6,7 +6,11 @@ const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 // ==========================================
 // ADMIN ROUTES
 // ==========================================
+router.get("/admin/all", verifyAdmin, galleryController.getAllGalleriesAdmin);
+
 router.post("/admin", verifyAdmin, galleryController.createGallery);
+
+router.put("/admin/reorder", verifyAdmin, galleryController.reorderGalleries);
 
 router.put("/admin/:id", verifyAdmin, galleryController.updateGallery);
 

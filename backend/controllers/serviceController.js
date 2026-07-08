@@ -1,6 +1,5 @@
 const Service = require("../models/Service");
 
-const validCategories = ["TRADITIONAL", "PHOTOJOURNALISM", "COMBO", "PRINT", "OTHER"];
 
 const normalizeFeatures = (features) => {
   if (Array.isArray(features)) {
@@ -55,10 +54,6 @@ exports.getAllServices = async (req, res) => {
     const query = { is_active: true };
 
     if (category && category !== "ALL") {
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ message: "Danh muc dich vu khong hop le" });
-      }
-
       query.category = category;
     }
 
@@ -156,9 +151,6 @@ exports.createService = async (req, res) => {
       });
     }
 
-    if (!validCategories.includes(payload.category)) {
-      return res.status(400).json({ message: "Danh muc dich vu khong hop le" });
-    }
 
     if (Number(payload.base_price) < 0 || Number(payload.duration_hours) <= 0) {
       return res.status(400).json({
@@ -213,9 +205,6 @@ exports.updateService = async (req, res) => {
     if (payload.is_active !== undefined) service.is_active = payload.is_active;
 
     if (payload.category !== undefined) {
-      if (!validCategories.includes(payload.category)) {
-        return res.status(400).json({ message: "Danh muc dich vu khong hop le" });
-      }
       service.category = payload.category;
     }
 
@@ -315,6 +304,37 @@ exports.deleteService = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Loi xoa dich vu",
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
+// ADMIN: Cap nhat thu tu hang loat
+// PUT /api/services/admin/reorder
+// ==========================================
+exports.reorderServices = async (req, res) => {
+  try {
+    const { items } = req.body; // array of { _id, order }
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ message: "Du lieu khong hop le" });
+    }
+
+    const bulkOps = items.map((item) => ({
+      updateOne: {
+        filter: { _id: item._id },
+        update: { order: item.order },
+      },
+    }));
+
+    if (bulkOps.length > 0) {
+      await Service.bulkWrite(bulkOps);
+    }
+
+    res.status(200).json({ message: "Cap nhat thu tu thanh cong" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Loi cap nhat thu tu",
       error: error.message,
     });
   }

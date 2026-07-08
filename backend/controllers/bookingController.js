@@ -6,7 +6,7 @@ const User = require("../models/User");
 const crypto = require("crypto");
 const moment = require("moment");
 const bcrypt = require("bcryptjs");
-
+const mailService = require("../services/mailService");
 const BOOKING_HOLD_MINUTES = 15;
 const BOOKING_STATUSES = ["PENDING", "DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELED"];
 
@@ -781,7 +781,10 @@ exports.vnpayReturn = async (req, res) => {
       });
     }
 
-    const booking = await Booking.findById(payment.reference_id);
+    const booking = await Booking.findById(payment.reference_id)
+      .populate("customer_id")
+      .populate("service_id", "name")
+      .populate("extra_service_ids", "name");
 
     if (!booking) {
       return res.status(404).json({
@@ -846,6 +849,10 @@ exports.vnpayReturn = async (req, res) => {
 
       booking.status = "DEPOSITED";
       await booking.save();
+      
+      // Gửi email đặt lịch thành công khi đã cọc thành công
+      await mailService.sendBookingSuccessEmail(booking, booking.customer_id);
+      await mailService.sendBookingSuccessToAdminEmail(booking, booking.customer_id);
 
       return res.status(200).json({
         message: "Giao dịch thành công, đã cập nhật DB",
@@ -930,14 +937,7 @@ exports.createBookingForAdmin = async (req, res) => {
       });
     }
 
-    const bookingStatus = status || "DEPOSITED";
-    const allowedAdminStatuses = ["PENDING", "DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"];
-
-    if (!allowedAdminStatuses.includes(bookingStatus)) {
-      return res.status(400).json({
-        message: "Trạng thái đơn không hợp lệ",
-      });
-    }
+    const bookingStatus = "CONFIRMED";
 
     const service = await Service.findById(service_id);
 
@@ -1106,7 +1106,7 @@ exports.createBookingForAdmin = async (req, res) => {
     const booking = await Booking.create(bookingPayload);
     let payment = null;
 
-    if (["DEPOSITED", "COMPLETED"].includes(bookingStatus)) {
+    if (["DEPOSITED", "CONFIRMED", "COMPLETED"].includes(bookingStatus)) {
       const defaultPaidAmount =
         bookingStatus === "COMPLETED"
           ? finalTotalAmount
@@ -1122,7 +1122,7 @@ exports.createBookingForAdmin = async (req, res) => {
           reference_id: booking._id,
           reference_type: "BOOKING",
           amount: manualPaidAmount,
-          payment_method: payment_method || "MANUAL",
+          payment_method: "MANUAL",
           payment_type: "ADMIN_CREATED",
           status: "SUCCESS",
           paid_at: new Date(),
@@ -1198,7 +1198,9 @@ exports.updateBookingStatus = async (req, res) => {
     }
 
     const booking = await Booking.findById(req.params.id)
+      .populate("customer_id", "full_name email phone")
       .populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("extra_service_ids", "name")
       .populate("photographer_ids", "full_name email phone portfolio.avatar");
 
     if (!booking) {
@@ -1236,6 +1238,9 @@ exports.updateBookingStatus = async (req, res) => {
     }
 
     await booking.save();
+    
+    // Gửi email thông báo thay đổi trạng thái
+    await mailService.sendStatusChangeEmail(booking, booking.customer_id);
 
     // Nếu admin chuyển hoàn thành, tạo payment phần còn lại để đơn hiển thị đã tất toán.
     if (status === "COMPLETED") {

@@ -72,6 +72,12 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ message: "Email hoặc mật khẩu không đúng!" });
 
+    if (!user.is_active) {
+      return res.status(403).json({
+        message: "Tài khoản của bạn đã bị khóa đăng nhập. Vui lòng liên hệ quản trị viên.",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
       return res

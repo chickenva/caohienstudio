@@ -15,7 +15,7 @@ from docx.shared import Cm, Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "output" / "documents"
 ASSET_DIR = OUT_DIR / "assets_tlcn"
-OUT_DOCX = OUT_DIR / "BaoCao_TLCN_CaoHienStudio.docx"
+OUT_DOCX = OUT_DIR / "BaoCao_TLCN_CaoHienStudio_HoanChinh.docx"
 
 PROJECT_TITLE = "XÂY DỰNG WEBSITE QUẢN LÝ VÀ ĐẶT LỊCH DỊCH VỤ CHỤP ẢNH CHO CAO HIỂN STUDIO"
 STUDENT = "HỒ VŨ ANH"
@@ -561,9 +561,9 @@ def add_static_toc(doc):
         ("CHƯƠNG 1. CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG", 3, 0),
         ("CHƯƠNG 2. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG", 6, 0),
         ("CHƯƠNG 3. XÂY DỰNG HỆ THỐNG", 12, 0),
-        ("CHƯƠNG 4. KIỂM THỬ VÀ ĐÁNH GIÁ", 16, 0),
-        ("PHẦN 3. KẾT LUẬN", 19, 0),
-        ("TÀI LIỆU THAM KHẢO", 20, 0),
+        ("CHƯƠNG 4. KIỂM THỬ VÀ ĐÁNH GIÁ", 17, 0),
+        ("PHẦN 3. KẾT LUẬN", 20, 0),
+        ("TÀI LIỆU THAM KHẢO", 21, 0),
     ]
     add_center(doc, "MỤC LỤC", size=16, bold=True, after=12)
     for title, page, indent in entries:
@@ -652,7 +652,7 @@ def add_front_matter(doc, logo):
         doc,
         "DANH MỤC BẢNG",
         [
-            ("Bảng 1.1. Công nghệ sử dụng trong hệ thống", 5),
+            ("Bảng 1.1. Công nghệ sử dụng trong hệ thống", 4),
             ("Bảng 2.1. Tác nhân của hệ thống", 6),
             ("Bảng 2.2. Yêu cầu chức năng theo nhóm người dùng", 6),
             ("Bảng 2.3. Yêu cầu phi chức năng", 7),
@@ -665,9 +665,9 @@ def add_front_matter(doc, logo):
             ("Bảng 3.1. Nhóm chức năng backend", 12),
             ("Bảng 3.2. Trạng thái booking", 13),
             ("Bảng 3.3. Nhóm giao diện frontend", 13),
-            ("Bảng 3.4. Các tích hợp bên ngoài", 14),
+            ("Bảng 3.4. Các tích hợp bên ngoài", 15),
             ("Bảng 3.5. Nhóm dịch vụ tiêu biểu", 15),
-            ("Bảng 4.1. Kịch bản kiểm thử tiêu biểu", 16),
+            ("Bảng 4.1. Kịch bản kiểm thử tiêu biểu", 17),
         ],
     )
 
@@ -688,7 +688,7 @@ def add_body(doc, images):
     add_bullets(doc, [
         "Xây dựng giao diện công khai để khách hàng xem thông tin studio, dịch vụ, bảng giá, album ảnh và liên hệ.",
         "Cho phép khách hàng đăng ký, đăng nhập, cập nhật hồ sơ, đặt lịch chụp và thanh toán cọc thông qua VNPay.",
-        "Cung cấp trang quản trị cho admin để quản lý đơn hàng, khách hàng, dịch vụ, album công khai, nhiếp ảnh gia và số liệu tổng quan.",
+        "Cung cấp trang quản trị cho admin để quản lý đơn hàng, khách hàng, dịch vụ, album công khai, danh mục dịch vụ/album, dữ liệu vận hành và số liệu tổng quan.",
         "Tích hợp các tiện ích hỗ trợ như OTP qua email, Google Drive cho album, dashboard doanh thu và trợ lý tư vấn AI.",
         "Thiết kế hệ thống theo hướng dễ mở rộng, tách biệt frontend/backend và lưu trữ dữ liệu bằng MongoDB.",
     ])
@@ -699,10 +699,10 @@ def add_body(doc, images):
 
     add_section_heading(doc, "1.4. Phương pháp thực hiện")
     add_paragraph(doc, "Đề tài được thực hiện theo hướng phân tích nghiệp vụ trước, sau đó thiết kế kiến trúc, xây dựng từng module và kiểm thử theo kịch bản. Mã nguồn được rà soát theo hai phần chính: backend Node.js/Express chịu trách nhiệm xử lý nghiệp vụ và frontend React/Vite chịu trách nhiệm giao diện người dùng.")
-    add_paragraph(doc, "Trong quá trình phân tích mã nguồn, project có 91 tệp chính sau khi loại trừ thư mục phụ thuộc và build. Backend gồm 36 tệp với 9 controller, 10 route và 8 model chính. Frontend gồm 55 tệp với 36 trang và 9 component/layout chính. Các con số này cho thấy hệ thống đã có cấu trúc module rõ ràng và đủ cơ sở để trình bày như một đề tài TLCN hoàn chỉnh.")
+    add_paragraph(doc, "Trong quá trình phân tích mã nguồn hiện tại, project có 101 tệp chính sau khi loại trừ thư mục phụ thuộc và build. Backend gồm 42 tệp với 10 controller, 11 route và 9 model chính. Frontend gồm 59 tệp với 39 trang và 9 component/layout chính. So với bản phân tích trước, hệ thống đã bổ sung module danh mục động, trang chính sách/hợp đồng, cơ chế email tự động và một số luồng quản trị mới.")
 
     add_section_heading(doc, "1.5. Kết quả dự kiến và kết quả đạt được")
-    add_paragraph(doc, "Kết quả đạt được của đề tài là một website có đầy đủ luồng từ phía khách hàng đến phía quản trị viên. Người dùng có thể xem dịch vụ, xem album, tạo tài khoản, đặt lịch và thanh toán cọc. Quản trị viên có thể quản lý danh mục dịch vụ, album, khách hàng, nhiếp ảnh gia, đơn hàng và theo dõi dashboard tổng quan.")
+    add_paragraph(doc, "Kết quả đạt được của đề tài là một website có đầy đủ luồng từ phía khách hàng đến phía quản trị viên. Người dùng có thể xem dịch vụ, xem album, tạo tài khoản, đặt lịch, đọc hợp đồng/chính sách và thanh toán cọc. Quản trị viên có thể quản lý dịch vụ, album, danh mục động, khách hàng, đơn hàng và theo dõi dashboard tổng quan.")
     add_paragraph(doc, "Ngoài các chức năng nghiệp vụ cơ bản, hệ thống đã tích hợp nhiều dịch vụ hỗ trợ như email OTP, VNPay, Google Drive, Gemini AI, tra cứu thời tiết và gợi ý địa chỉ. Những tích hợp này giúp đề tài có tính thực tiễn, phản ánh gần hơn quy trình vận hành của một studio dịch vụ ảnh cưới và sự kiện.")
 
     add_part(doc, "PHẦN 2. NỘI DUNG")
@@ -758,7 +758,7 @@ def add_body(doc, images):
         [
             ("Khách vãng lai", "Người chưa đăng nhập truy cập website.", "Xem trang chủ, dịch vụ, album, FAQ, gửi liên hệ, đăng ký tài khoản."),
             ("Khách hàng", "Người dùng đã có tài khoản CUSTOMER.", "Đặt lịch, thanh toán cọc, xem đơn của tôi, cập nhật hồ sơ, đổi mật khẩu."),
-            ("Quản trị viên", "Tài khoản ADMIN được phân quyền quản trị.", "Quản lý booking, dịch vụ, gallery, khách hàng, nhiếp ảnh gia và dashboard."),
+            ("Quản trị viên", "Tài khoản ADMIN được phân quyền quản trị.", "Quản lý booking, dịch vụ, gallery, danh mục, khách hàng và dashboard."),
             ("Nhiếp ảnh gia", "Nhân sự có vai trò PHOTOGRAPHER trong hệ thống.", "Được lưu hồ sơ, portfolio, chuyên môn và có thể được phân công vào booking."),
             ("Hệ thống ngoài", "VNPay, Google Drive, Gmail, Gemini, Open-Meteo, Photon.", "Thanh toán, lấy ảnh, gửi OTP, tư vấn AI, thời tiết và gợi ý địa điểm."),
         ],
@@ -772,7 +772,7 @@ def add_body(doc, images):
         [
             ("Khách vãng lai", "Xem trang chủ, giới thiệu, dịch vụ, chi tiết dịch vụ, album, chi tiết album, FAQ và gửi form liên hệ."),
             ("Khách hàng", "Đăng ký bằng OTP, đăng nhập, quên mật khẩu, cập nhật hồ sơ, đặt lịch, xác nhận booking, thanh toán VNPay, xem lịch sử đơn và hủy đơn PENDING."),
-            ("Quản trị viên", "Xem dashboard, tạo đơn hộ khách, cập nhật trạng thái đơn, phân công nhân sự, quản lý dịch vụ, album, khách hàng và nhiếp ảnh gia."),
+            ("Quản trị viên", "Xem dashboard, tạo đơn hộ khách, cập nhật trạng thái đơn, quản lý dịch vụ, album, danh mục và khách hàng; dữ liệu nhân sự vẫn được lưu để phân công khi cần."),
             ("Hệ thống", "Kiểm tra token, kiểm tra quyền, giữ chỗ booking 15 phút, xác thực chữ ký VNPay, gửi OTP, lấy ảnh từ Google Drive và giới hạn tốc độ AI chat."),
         ],
         widths=[4.0, 12.0],
@@ -857,7 +857,8 @@ def add_body(doc, images):
             ("Services", "name, description, category, base_price, duration_hours, thumbnail, features, is_active", "Lưu danh mục gói chụp, quay, combo và in ấn."),
             ("Bookings", "customer_id, service_id, photographer_ids, start_time, end_time, location, total_amount, status", "Lưu đơn đặt lịch và trạng thái thực hiện."),
             ("Payments", "reference_id, amount, payment_method, payment_type, transaction_id, status, paid_at", "Theo dõi giao dịch cọc, thanh toán thủ công và trạng thái thanh toán."),
-            ("PublicGalleries", "title, category, drive_folder_id, coverImage, photographer_id, featured, is_active", "Quản lý album ảnh công khai lấy nguồn từ Google Drive."),
+            ("PublicGalleries", "title, category, drive_folder_id, coverImage, photographer_id, service_ids, featured, is_active, order", "Quản lý album ảnh công khai, liên kết nhiều dịch vụ và lấy nguồn từ Google Drive."),
+            ("Categories", "name, slug, type, description, is_active, order", "Lưu danh mục động cho dịch vụ và album, hỗ trợ lọc/hiển thị/reorder."),
             ("Contacts", "name, phone, email, message, status", "Lưu yêu cầu liên hệ từ khách hàng."),
             ("OTPs", "email, otp, createdAt", "Lưu OTP tạm thời, tự hết hạn sau 300 giây."),
         ],
@@ -874,15 +875,16 @@ def add_body(doc, images):
             ("Booking", "/api/bookings/create-vnpay, /my-bookings, /vnpay-return, /admin/all, /:id/status", "Đặt lịch, thanh toán VNPay, xem đơn và quản trị đơn hàng."),
             ("Services", "/api/services, /api/services/:id, /api/services/admin", "Hiển thị dịch vụ công khai và CRUD dịch vụ cho admin."),
             ("Galleries", "/api/galleries, /api/galleries/:id, /api/galleries/admin", "Hiển thị album công khai và quản lý gallery."),
-            ("Users", "/api/users/photographers, /api/users/admin/customers", "Xem nhiếp ảnh gia, quản lý khách hàng và nhân sự."),
-            ("Drive", "/api/drive/folders/:folderId/images", "Lấy danh sách ảnh từ Google Drive."),
+            ("Users", "/api/users/photographers, /api/users/admin/customers", "Xem nhiếp ảnh gia, quản lý khách hàng và dữ liệu nhân sự ở backend."),
+            ("Categories", "/api/categories, /api/categories/admin, /api/categories/admin/reorder", "Quản lý danh mục động cho dịch vụ và album."),
+            ("Contacts", "/api/contacts/send-otp, /verify-otp, /api/contacts", "Gửi OTP liên hệ, xác thực OTP và lưu yêu cầu tư vấn."),
+            ("Drive", "/api/drive/folders/:folderId/images", "Lấy danh sách ảnh từ Google Drive, chuẩn hóa URL và cache ảnh."),
             ("Dashboard", "/api/dashboard/admin/overview", "Thống kê booking, khách hàng, dịch vụ, gallery và doanh thu."),
             ("AI Chat", "/api/ai-chat", "Tư vấn khách hàng bằng Gemini AI dựa trên dữ liệu dịch vụ và nhiếp ảnh gia."),
         ],
         widths=[3.2, 6.4, 6.4],
     )
 
-    doc.add_page_break()
     add_chapter(doc, "CHƯƠNG 3. XÂY DỰNG HỆ THỐNG")
     add_section_heading(doc, "3.1. Cấu trúc backend")
     add_paragraph(doc, "Backend được tổ chức theo các thư mục controllers, routes, models, middleware và services. File server.js cấu hình Express, CORS, JSON parser, kết nối MongoDB và mount các route chính. Middleware authMiddleware chịu trách nhiệm xác thực token và phân quyền admin hoặc photographer.")
@@ -893,11 +895,13 @@ def add_body(doc, images):
         [
             ("Xác thực", "authController, authRoutes, OTP, User", "Đăng ký, đăng nhập, OTP, quên mật khẩu, cập nhật hồ sơ và đổi mật khẩu."),
             ("Đặt lịch", "bookingController, Booking, Payment", "Tạo booking, kiểm tra trùng lịch, giữ chỗ 15 phút, thanh toán VNPay, cập nhật trạng thái."),
-            ("Dịch vụ", "serviceController, Service", "CRUD dịch vụ, lọc theo category, soft delete bằng is_active."),
-            ("Album", "galleryController, PublicGallery, googleDriveService", "Quản lý gallery, trích xuất folder Drive, lấy ảnh trong thư mục."),
+            ("Dịch vụ", "serviceController, Service", "CRUD dịch vụ, lọc theo category, soft delete bằng is_active và cập nhật thứ tự hiển thị."),
+            ("Danh mục", "categoryController, Category", "Quản lý danh mục động cho SERVICE/GALLERY, bật/tắt và kéo thả reorder."),
+            ("Album", "galleryController, PublicGallery, googleDriveService", "Quản lý gallery, trích xuất folder Drive, lấy ảnh trong thư mục, cache ảnh và cập nhật thứ tự."),
             ("Người dùng", "userController, User", "Quản lý khách hàng và nhiếp ảnh gia, portfolio, bật/tắt tài khoản."),
             ("Dashboard", "dashboardController", "Tổng hợp số lượng booking, trạng thái, doanh thu kỳ vọng và payment đã ghi nhận."),
-            ("Liên hệ", "contactController, Contact", "Nhận form liên hệ và gửi email thông báo cho studio."),
+            ("Liên hệ", "contactController, Contact, OTP", "Gửi OTP liên hệ, nhận form tư vấn và gửi email thông báo cho studio."),
+            ("Tự động hóa email", "cronJobs, mailService", "Gửi email xác nhận, nhắc lịch cho khách/admin và tự chuyển CONFIRMED sang IN_PROGRESS cuối ngày."),
             ("AI chat", "aiChatController", "Tư vấn gói dịch vụ bằng Gemini, giới hạn tốc độ theo IP."),
         ],
         widths=[3.0, 5.0, 8.0],
@@ -931,7 +935,8 @@ def add_body(doc, images):
         [
             ("Xác thực", "Login, Register, ForgotPassword", "Đăng nhập, đăng ký bằng OTP và đặt lại mật khẩu."),
             ("Khách hàng", "Home, About, Services, ServiceDetail, Galleries, GalleryDetail, Booking, BookingConfirm, MyBookings, BookingDetail, Profile, Contact, FAQ", "Xem thông tin, đặt lịch, theo dõi booking và cập nhật tài khoản."),
-            ("Quản trị", "AdminDashboard, AdminOrders, CreateOrder, AdminServices, ServiceForm, AdminGalleries, GalleryForm, AdminPhotographers, PhotographerForm, AdminCustomers, AdminProfile", "Quản lý dữ liệu vận hành studio."),
+            ("Chính sách", "Contract, RefundPolicy", "Hiển thị hợp đồng dịch vụ và chính sách hủy/hoàn cọc để khách xác nhận trước khi đặt lịch."),
+            ("Quản trị", "AdminDashboard, AdminOrders, CreateOrder, AdminServices, ServiceForm, AdminGalleries, GalleryForm, AdminCategories, AdminCustomers, AdminProfile", "Quản lý dữ liệu vận hành studio theo route hiện tại."),
             ("Layout", "CustomerLayout, AdminLayout, Shared/Public/Landing layouts", "Tổ chức giao diện, menu, phân quyền và vùng hiển thị nội dung."),
             ("Tiện ích", "AIChatWidget, Logo", "Tư vấn AI và nhận diện thương hiệu Cao Hiển Studio."),
         ],
@@ -939,9 +944,10 @@ def add_body(doc, images):
     )
 
     add_section_heading(doc, "3.4. Chức năng quản trị")
-    add_paragraph(doc, "Khu vực quản trị cho phép admin theo dõi dashboard, lọc và cập nhật booking, tạo đơn hộ khách, quản lý dịch vụ, album, khách hàng và nhiếp ảnh gia. Các thao tác quan trọng đều gọi API có middleware verifyAdmin để đảm bảo chỉ tài khoản ADMIN mới được phép thực hiện.")
+    add_paragraph(doc, "Khu vực quản trị cho phép admin theo dõi dashboard, lọc và cập nhật booking, tạo đơn hộ khách, quản lý dịch vụ, album, danh mục và khách hàng. Các thao tác quan trọng đều gọi API có middleware verifyAdmin để đảm bảo chỉ tài khoản ADMIN mới được phép thực hiện.")
     add_paragraph(doc, "Trang AdminOrders hiển thị danh sách đơn, trạng thái, thông tin khách hàng, dịch vụ, thời gian và tổng tiền. Admin có thể cập nhật trạng thái theo quy tắc chuyển tiếp được backend kiểm soát. Trang CreateOrder hỗ trợ tạo booking thủ công, phù hợp với trường hợp khách đặt trực tiếp tại studio hoặc qua kênh ngoài website.")
     add_paragraph(doc, "Trang AdminServices và ServiceForm hỗ trợ thêm, sửa, ẩn/hiện dịch vụ. Dịch vụ được phân loại thành TRADITIONAL, PHOTOJOURNALISM, COMBO, PRINT và OTHER. Trang AdminGalleries quản lý album công khai bằng Google Drive folder ID, cho phép chọn album nổi bật và bật/tắt trạng thái hiển thị.")
+    add_paragraph(doc, "Phiên bản hiện tại bổ sung trang AdminCategories cho hai loại danh mục SERVICE và GALLERY. Admin có thể thêm, sửa, xóa, bật/tắt và kéo thả để cập nhật thứ tự hiển thị danh mục. Frontend Services và Galleries gọi API categories để hiển thị bộ lọc động thay vì phụ thuộc hoàn toàn vào danh mục hardcode.")
 
     add_section_heading(doc, "3.5. Tích hợp dịch vụ ngoài")
     add_caption(doc, "Bảng 3.4. Các tích hợp bên ngoài")
@@ -973,6 +979,11 @@ def add_body(doc, images):
         ],
         widths=[4.0, 6.0, 6.0],
     )
+
+    doc.add_page_break()
+    add_section_heading(doc, "3.7. Tự động hóa email và chính sách dịch vụ")
+    add_paragraph(doc, "Hệ thống đã bổ sung mailService và cronJobs để tự động hóa một phần quy trình chăm sóc khách hàng. Khi booking thanh toán thành công, hệ thống gửi email xác nhận cho khách và email báo đơn mới cho admin. Hằng ngày lúc 7:00, cron job gửi nhắc lịch cho khách có lịch chụp vào ngày mai và nhắc admin về lịch chụp trong ngày. Lúc 23:55, hệ thống tự động chuyển các booking CONFIRMED của ngày hiện tại sang IN_PROGRESS và gửi thông báo cho admin.")
+    add_paragraph(doc, "Frontend cũng có hai trang văn bản pháp lý gồm hợp đồng dịch vụ và chính sách hủy/hoàn cọc. Trong luồng Booking, khách cần xác nhận đã đọc và đồng ý với các chính sách này trước khi tiếp tục. Đây là điểm bổ sung quan trọng vì quy trình đặt lịch dịch vụ ảnh cưới cần làm rõ trách nhiệm, tiền cọc, bảo lưu lịch và thanh toán phần còn lại.")
 
     doc.add_page_break()
     add_chapter(doc, "CHƯƠNG 4. KIỂM THỬ VÀ ĐÁNH GIÁ")
@@ -1015,8 +1026,11 @@ def add_body(doc, images):
         "Một số file frontend còn hardcode API URL là http://localhost:5000/api; nên chuyển hoàn toàn sang biến môi trường để dễ deploy.",
         "Frontend có logic mã giảm giá trong Booking/BookingConfirm, nhưng backend hiện chưa tính discount_amount hoặc coupon_code khi tạo thanh toán, có thể làm lệch số tiền hiển thị và số tiền backend tính.",
         "driveController có route tạo folder và upload ảnh, nhưng googleDriveService hiện mới triển khai listImagesInFolder với quyền drive.readonly; cần bổ sung scope và hàm upload nếu muốn quản trị ảnh trực tiếp.",
-        "Một số menu/route quản trị như contacts hoặc revenue có dấu hiệu là placeholder, cần hoàn thiện route tương ứng hoặc ẩn khỏi sidebar.",
+        "Một số file quản lý photographer vẫn còn trong frontend/backend nhưng route admin hiện tại chưa mở lại trong App.jsx; cần quyết định bật lại chức năng hoặc dọn code cũ để tránh lệch tài liệu.",
         "Một số nhãn trạng thái như EXPIRED hoặc PAYMENT_FAILED xuất hiện trong thống kê nhưng chưa nằm trong enum Booking hiện tại; cần thống nhất mô hình trạng thái.",
+        "Booking model vẫn còn resource_ids tham chiếu Resource trong khi module Resource/Rentals đã được gỡ khỏi route chính; cần dọn schema hoặc khôi phục module nếu nghiệp vụ quay lại.",
+        "Trang hợp đồng/chính sách mô tả cọc cố định 30%, trong khi luồng Booking/Backend hỗ trợ deposit_percent 30%, 50% hoặc 100%; cần thống nhất chính sách hiển thị và logic thanh toán.",
+        "Contact API có endpoint gửi/xác thực OTP nhưng submitContact chưa tự kiểm tra OTP trong cùng request; frontend cần đảm bảo flow verify trước submit hoặc backend cần enforce lại.",
         "Project chưa có bộ unit test/integration test tự động, vì vậy nên bổ sung test cho auth, booking, payment callback và các route admin.",
     ])
 
@@ -1027,11 +1041,11 @@ def add_body(doc, images):
     doc.add_page_break()
     add_part(doc, "PHẦN 3. KẾT LUẬN")
     add_section_heading(doc, "3.1. Kết quả đạt được")
-    add_paragraph(doc, "Đề tài đã xây dựng được website quản lý và đặt lịch dịch vụ chụp ảnh cho Cao Hiển Studio với đầy đủ các module trọng tâm. Khách hàng có thể tiếp cận thông tin dịch vụ, xem album, đăng ký tài khoản, đặt lịch và thanh toán cọc. Quản trị viên có thể theo dõi dashboard, quản lý booking, dịch vụ, album, khách hàng và nhiếp ảnh gia.")
+    add_paragraph(doc, "Đề tài đã xây dựng được website quản lý và đặt lịch dịch vụ chụp ảnh cho Cao Hiển Studio với đầy đủ các module trọng tâm. Khách hàng có thể tiếp cận thông tin dịch vụ, xem album, đăng ký tài khoản, đặt lịch và thanh toán cọc. Quản trị viên có thể theo dõi dashboard, quản lý booking, dịch vụ, album, danh mục động và khách hàng.")
     add_paragraph(doc, "Về kỹ thuật, hệ thống áp dụng kiến trúc tách biệt frontend React/Vite và backend Node.js/Express, sử dụng MongoDB để lưu trữ dữ liệu, JWT để xác thực, VNPay để thanh toán, Nodemailer để gửi OTP, Google Drive để hiển thị album và Gemini AI để hỗ trợ tư vấn khách hàng.")
 
     add_section_heading(doc, "3.2. Kiến thức và kinh nghiệm thu được")
-    add_paragraph(doc, "Thông qua đề tài, sinh viên rèn luyện được kỹ năng phân tích nghiệp vụ, thiết kế dữ liệu, xây dựng API, tổ chức giao diện frontend, xử lý xác thực, tích hợp thanh toán và kiểm thử luồng chức năng. Đề tài cũng giúp hiểu rõ hơn cách chuyển một bài toán vận hành thực tế của studio thành các module phần mềm có thể triển khai.")
+    add_paragraph(doc, "Thông qua đề tài, sinh viên rèn luyện được kỹ năng phân tích nghiệp vụ, thiết kế dữ liệu, xây dựng API, tổ chức giao diện frontend, xử lý xác thực, tích hợp thanh toán, tổ chức danh mục động, tự động hóa email và kiểm thử luồng chức năng. Đề tài cũng giúp hiểu rõ hơn cách chuyển một bài toán vận hành thực tế của studio thành các module phần mềm có thể triển khai.")
 
     add_section_heading(doc, "3.3. Kết luận chung")
     add_paragraph(doc, "Website Cao Hiển Studio là một sản phẩm có tính ứng dụng thực tiễn, phù hợp với nhu cầu số hóa quy trình tư vấn, đặt lịch và quản lý dịch vụ chụp ảnh. Mặc dù vẫn còn một số hạn chế cần hoàn thiện, hệ thống đã tạo nền tảng tốt để mở rộng thành sản phẩm triển khai thật cho studio trong tương lai.")

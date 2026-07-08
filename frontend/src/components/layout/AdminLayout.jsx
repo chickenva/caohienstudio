@@ -5,14 +5,12 @@ import {
   DashboardOutlined,
   UserOutlined,
   CameraOutlined,
-  TeamOutlined,
   SolutionOutlined,
   AppstoreOutlined,
   ShoppingCartOutlined,
   LogoutOutlined,
   HomeOutlined,
-  ContactsOutlined,
-  BarChartOutlined,
+
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
@@ -89,6 +87,7 @@ const AdminLayout = () => {
       children: [
         { key: "/admin/services", label: "Danh sách dịch vụ" },
         { key: "/admin/services/add", label: "Thêm dịch vụ" },
+        { key: "/admin/categories/service", label: "Quản lý danh mục" },
       ],
     },
     {
@@ -98,32 +97,13 @@ const AdminLayout = () => {
       children: [
         { key: "/admin/galleries", label: "Danh sách album" },
         { key: "/admin/galleries/create", label: "Tạo album" },
+        { key: "/admin/categories/gallery", label: "Quản lý danh mục" },
       ],
     },
-    {
-      key: "/admin/photographers",
-      icon: <TeamOutlined />,
-      label: "Nhiếp ảnh gia",
-      children: [
-        { key: "/admin/photographers", label: "Danh sách" },
-        { key: "/admin/photographers/add", label: "Thêm mới" },
-      ],
-    },
-
     {
       key: "/admin/customers",
       icon: <SolutionOutlined />,
       label: "Khách hàng",
-    },
-    {
-      key: "/admin/contacts",
-      icon: <ContactsOutlined />,
-      label: "Liên hệ tư vấn",
-    },
-    {
-      key: "/admin/revenue",
-      icon: <BarChartOutlined />,
-      label: "Doanh thu",
     },
   ];
 

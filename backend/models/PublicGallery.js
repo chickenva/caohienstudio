@@ -15,10 +15,9 @@ const publicGallerySchema = new mongoose.Schema(
       default: "",
     },
 
-    // Danh mục album
+    // Danh mục album (sử dụng slug động)
     category: {
       type: String,
-      enum: ["WEDDING", "PORTRAIT", "EVENT", "GRADUATION"],
       required: true,
     },
 
@@ -53,11 +52,13 @@ const publicGallerySchema = new mongoose.Schema(
       ref: "User",
     },
 
-    // Sau này có thể liên kết album với gói dịch vụ
-    service_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
-    },
+    // Các gói dịch vụ liên quan
+    service_ids: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+      }
+    ],
 
     // Album nổi bật ngoài trang chủ / gallery
     featured: {
@@ -65,10 +66,13 @@ const publicGallerySchema = new mongoose.Schema(
       default: false,
     },
 
-    // Ẩn/hiện album trên web
     is_active: {
       type: Boolean,
       default: true,
+    },
+    order: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true },

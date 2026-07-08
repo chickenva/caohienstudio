@@ -11,7 +11,6 @@ const serviceSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["TRADITIONAL", "PHOTOJOURNALISM", "COMBO", "PRINT", "OTHER"],
       default: "OTHER",
     },
     base_price: {

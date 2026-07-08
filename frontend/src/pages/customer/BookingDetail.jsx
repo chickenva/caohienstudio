@@ -507,19 +507,6 @@ const BookingDetail = () => {
                       </div>
                     </div>
 
-                    <Alert
-                      type="warning"
-                      showIcon
-                      message="Theo chính sách của Studio, tiền cọc sẽ KHÔNG ĐƯỢC HOÀN LẠI nếu bạn hủy lịch."
-                      description={
-                        <>
-                          <div style={{ marginBottom: 8 }}>Hành động hủy đơn này không thể hoàn tác.</div>
-                          <div><strong>Gợi ý:</strong> Nếu bạn chỉ muốn dời ngày chụp, vui lòng giữ nguyên đơn và liên hệ trực tiếp với Studio để được hỗ trợ <strong>bảo lưu tiền cọc trong vòng 6 tháng</strong>.</div>
-                        </>
-                      }
-                      style={{ marginBottom: 24, textAlign: "left" }}
-                    />
-
                     <Space style={{ width: "100%", justifyContent: "center" }}>
                       <Button
                         size="large"
@@ -601,6 +588,25 @@ const BookingDetail = () => {
               showIcon
               message="Lịch hẹn đã được xác nhận"
               description="Cao Hiển Studio đã nhận và xác nhận lịch hẹn của bạn. Vui lòng đến đúng giờ để buổi chụp diễn ra tốt đẹp."
+            />
+          </div>
+        )}
+
+        {displayOrderStatus === "DEPOSITED" && (
+          <div
+            style={{
+              marginTop: 30,
+              background: "#fffbe6",
+              padding: "20px",
+              borderRadius: "8px",
+              border: "1px solid #ffe58f",
+            }}
+          >
+            <Alert
+              type="warning"
+              showIcon
+              message="Đơn hàng đã đặt cọc"
+              description="Để hủy đơn hàng đã cọc hoặc dời lịch chụp, vui lòng liên hệ trực tiếp với nhân viên qua Fanpage hoặc Hotline."
             />
           </div>
         )}

@@ -23,13 +23,7 @@ const { TextArea } = Input;
 
 const API_URL = "http://localhost:5000/api";
 
-const serviceCategoryOptions = [
-  { value: "TRADITIONAL", label: "Chụp / Quay truyền thống" },
-  { value: "PHOTOJOURNALISM", label: "Chụp / Quay phóng sự" },
-  { value: "COMBO", label: "Chụp kết hợp" },
-  { value: "PRINT", label: "In ảnh / Photobook" },
-  { value: "OTHER", label: "Khác" },
-];
+
 
 const ServiceForm = () => {
   const [form] = Form.useForm();
@@ -41,10 +35,12 @@ const ServiceForm = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
+  const [categories, setCategories] = useState([]);
 
   const getToken = () => localStorage.getItem("token");
 
   useEffect(() => {
+    fetchCategories();
     if (isEdit) {
       fetchServiceDetail();
     } else {
@@ -52,7 +48,16 @@ const ServiceForm = () => {
       setThumbnailPreview("");
       setInitialLoading(false);
     }
-  }, [id]);
+  }, [id, isEdit]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/categories?type=SERVICE&is_active=true`);
+      setCategories(res.data.categories || []);
+    } catch (error) {
+      message.error("Lỗi tải danh mục");
+    }
+  };
 
   const fetchServiceDetail = async () => {
     setInitialLoading(true);
@@ -157,7 +162,6 @@ const ServiceForm = () => {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
-            category: "TRADITIONAL",
             is_active: true,
           }}
         >
@@ -176,7 +180,13 @@ const ServiceForm = () => {
                 name="category"
                 rules={[{ required: true, message: "Vui lòng chọn danh mục dịch vụ" }]}
               >
-                <Select options={serviceCategoryOptions} />
+                <Select
+                  placeholder="Chọn danh mục"
+                  options={categories.map((c) => ({
+                    value: c.slug,
+                    label: c.name,
+                  }))}
+                />
               </Form.Item>
 
               <Row gutter={16}>
@@ -223,9 +233,11 @@ const ServiceForm = () => {
                 <TextArea rows={6} placeholder="Mỗi dòng là một quyền lợi hoặc nội dung gói" />
               </Form.Item>
 
-              <Form.Item label="Hiển thị trên website" name="is_active" valuePropName="checked">
-                <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
-              </Form.Item>
+              {isEdit && (
+                <Form.Item label="Hiển thị trên website" name="is_active" valuePropName="checked">
+                  <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
+                </Form.Item>
+              )}
 
               <Form.Item label="Là Dịch Vụ Đi Kèm (Add-on)" name="allow_addon" valuePropName="checked">
                 <Switch checkedChildren="Có" unCheckedChildren="Không" />

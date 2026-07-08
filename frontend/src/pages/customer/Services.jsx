@@ -13,29 +13,7 @@ import "../../Home.css";
 const PRIMARY_COLOR = "#BFA16A";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
 
-const CATEGORY_LABELS = {
-  ALL: "Tất cả dịch vụ",
-  TRADITIONAL: "Truyền thống",
-  PHOTOJOURNALISM: "Phóng sự",
-  COMBO: "Kết hợp",
-  PRINT: "Ảnh / Photobook",
-};
 
-const CATEGORY_DESCRIPTIONS = {
-  ALL: "Tổng hợp các gói chụp, quay, in ảnh và photobook hiện có tại Cao Hiển Studio.",
-  TRADITIONAL: "Các gói quay và chụp truyền thống cho lễ cưới, lễ công cô, tiệc nhà hàng và những khoảnh khắc quan trọng trong ngày cưới.",
-  PHOTOJOURNALISM: "Các gói phóng sự ghi lại câu chuyện ngày cưới tự nhiên, cảm xúc và giàu tính tư liệu.",
-  COMBO: "Gói kết hợp giữa phong cách truyền thống và phóng sự, phù hợp khi bạn muốn vừa đủ nghi thức vừa có câu chuyện trọn vẹn.",
-  PRINT: "Dịch vụ in ảnh, hình lớn, photobook và album lưu giữ kỷ niệm sau buổi chụp.",
-};
-
-const categoryOptions = [
-  { key: "ALL", label: "Tất cả" },
-  { key: "TRADITIONAL", label: "Truyền thống" },
-  { key: "PHOTOJOURNALISM", label: "Phóng sự" },
-  { key: "COMBO", label: "Kết hợp" },
-  { key: "PRINT", label: "Ảnh / Photobook" },
-];
 
 const Services = () => {
   const navigate = useNavigate();
@@ -43,17 +21,35 @@ const Services = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [categories, setCategories] = useState([
+    { key: "ALL", label: "Tất cả", description: "Tổng hợp các gói chụp, quay, in ảnh và photobook hiện có tại Cao Hiển Studio." }
+  ]);
+
   const currentCategory = searchParams.get("category") || "ALL";
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
 
-    const fetchServices = async () => {
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const query = currentCategory !== "ALL" ? `?category=${currentCategory}` : "";
-        const res = await axios.get(`http://localhost:5000/api/services${query}`);
-        setServices(Array.isArray(res.data) ? res.data : []);
+        const [catsRes, srvRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/categories?type=SERVICE&is_active=true"),
+          axios.get(`http://localhost:5000/api/services${currentCategory !== "ALL" ? `?category=${currentCategory}` : ""}`)
+        ]);
+
+        const dynamicCategories = (catsRes.data.categories || []).map(c => ({
+          key: c.slug,
+          label: c.name,
+          description: c.description
+        }));
+        
+        setCategories([
+          { key: "ALL", label: "Tất cả", description: "Tổng hợp các gói chụp, quay, in ảnh và photobook hiện có tại Cao Hiển Studio." },
+          ...dynamicCategories
+        ]);
+
+        setServices(Array.isArray(srvRes.data) ? srvRes.data : []);
       } catch (err) {
         message.error("Không thể tải danh sách dịch vụ");
       } finally {
@@ -61,7 +57,7 @@ const Services = () => {
       }
     };
 
-    fetchServices();
+    fetchInitialData();
 
     return () => {
       document.body.style.backgroundColor = "";
@@ -137,8 +133,8 @@ const Services = () => {
             {currentCategory === "ALL" ? (
               <>Đa Dạng{" "}<span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Dịch Vụ</span></>
             ) : (
-              <>{CATEGORY_LABELS[currentCategory]?.split(" ")[0] || "Dịch Vụ"}{" "}
-              <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>{CATEGORY_LABELS[currentCategory]?.split(" ").slice(1).join(" ") || CATEGORY_LABELS[currentCategory]}</span></>
+              <>{(categories.find(c => c.key === currentCategory)?.label || "Dịch Vụ").split(" ")[0]}{" "}
+              <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>{(categories.find(c => c.key === currentCategory)?.label || "Dịch Vụ").split(" ").slice(1).join(" ")}</span></>
             )}
           </h1>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: "0 auto 20px" }}>
@@ -147,7 +143,7 @@ const Services = () => {
             <div style={{ width: 40, height: 1, background: PRIMARY_COLOR }} />
           </div>
           <p style={{ color: "#555555", fontSize: "15.5px", fontWeight: 300, letterSpacing: "0.5px", maxWidth: 760, margin: "0 auto", lineHeight: 1.8 }}>
-            {CATEGORY_DESCRIPTIONS[currentCategory] || CATEGORY_DESCRIPTIONS.ALL}
+            {categories.find(c => c.key === currentCategory)?.description || ""}
           </p>
         </div>
 
@@ -161,7 +157,7 @@ const Services = () => {
             marginBottom: 48,
           }}
         >
-          {categoryOptions.map((item) => {
+          {categories.map((item) => {
             const active = currentCategory === item.key;
             return (
               <button
@@ -219,7 +215,7 @@ const Services = () => {
 
                   <div className="service-card-content">
                     <div style={{ color: PRIMARY_COLOR, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-                      {CATEGORY_LABELS[item.category] || "Dịch vụ"}
+                      {categories.find(c => c.key === item.category)?.label || "Dịch vụ"}
                     </div>
 
                     <h3 className="service-card-title font-serif-luxury" style={{ fontWeight: "400", fontSize: "22px" }}>

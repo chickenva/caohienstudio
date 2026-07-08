@@ -11,18 +11,34 @@ import {
   CalendarOutlined,
   StarFilled,
   SendOutlined,
-  GoldOutlined
+  FormOutlined,
+  CreditCardOutlined,
+  FileImageOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../Home.css";
+import {
+  getGalleryImageSrcSet,
+  getGalleryImageUrl,
+  getImageErrorHandler,
+  preloadImages,
+} from "../../utils/imageUtils";
 
 // Fallback images
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=2070&auto=format&fit=crop";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
-const FALLBACK_PORTRAIT = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop";
+const FALLBACK_PORTRAIT = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop";
 const FALLBACK_EVENT = "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop";
 const FALLBACK_GEAR = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop";
+
+
+const categoryLabels = {
+  WEDDING: "Ảnh cưới",
+  PORTRAIT: "Chân dung",
+  EVENT: "Sự kiện",
+  GRADUATION: "Kỷ yếu",
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -31,7 +47,6 @@ const Home = () => {
   // States for API Data
   const [services, setServices] = useState([]);
   const [galleries, setGalleries] = useState([]);
-  const [rentals, setRentals] = useState([]);
   
   // Loading & Action states
   const [loading, setLoading] = useState(true);
@@ -51,19 +66,22 @@ const Home = () => {
         const endpoints = [
           axios.get("http://localhost:5000/api/services"),
           axios.get("http://localhost:5000/api/galleries"),
-          axios.get("http://localhost:5000/api/resources/rentals?type=ALL")
         ];
 
-        const [servicesRes, galleriesRes, rentalsRes] = await Promise.allSettled(endpoints);
+        const [servicesRes, galleriesRes] = await Promise.allSettled(endpoints);
 
         if (servicesRes.status === "fulfilled") {
           setServices(servicesRes.value.data || []);
         }
         if (galleriesRes.status === "fulfilled") {
-          setGalleries(galleriesRes.value.data || []);
-        }
-        if (rentalsRes.status === "fulfilled") {
-          setRentals(rentalsRes.value.data || []);
+          const fetchedGalleries = galleriesRes.value.data || [];
+          setGalleries(fetchedGalleries);
+          await preloadImages(
+            fetchedGalleries.slice(0, 4).map((item) =>
+              getGalleryImageUrl(item, "cover", FALLBACK_PORTRAIT),
+            ),
+            { limit: 4, timeoutMs: 3200 },
+          );
         }
       } catch (err) {
         console.error("Failed to load some resources", err);
@@ -106,7 +124,7 @@ const Home = () => {
     return () => {
       revealElements.forEach((el) => observer.unobserve(el));
     };
-  }, [loading, services, galleries, rentals]);
+  }, [loading, services, galleries]);
 
   // 3. Handle Contact Submission
   const handleContactSubmit = async (values) => {
@@ -134,7 +152,7 @@ const Home = () => {
     experience: 8,
     services: services.length || 6,
     galleries: galleries.length || 28,
-    rentals: rentals.length || 18,
+    satisfaction: 99,
   };
 
   // Fallback demo data if APIs are empty
@@ -175,15 +193,8 @@ const Home = () => {
     { _id: "demo-gal-4", title: "Luxury Fashion Editorial", category: "EVENT", coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800&auto=format&fit=crop", location: "TP. HCM" }
   ];
 
-  const demoRentals = [
-    { name: "Sony FX3 Cinema Line Camera", type: "Camera", rental_price_per_day: 1200000, thumbnail: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=300" },
-    { name: "Canon RF 50mm f/1.2L USM", type: "Lens", rental_price_per_day: 700000, thumbnail: "https://images.unsplash.com/photo-1617005082133-548c4dd27f35?q=80&w=300" },
-    { name: "Aputure 600d Pro Daylight LED", type: "Light", rental_price_per_day: 800000, thumbnail: "https://images.unsplash.com/photo-1508847154043-be12a62861c1?q=80&w=300" }
-  ];
-
   const displayServices = services.length > 0 ? services.slice(0, 3) : demoServices;
   const displayGalleries = galleries.length > 0 ? galleries.slice(0, 4) : demoGalleries;
-  const displayRentals = rentals.length > 0 ? rentals.slice(0, 3) : demoRentals;
 
   return (
     <div className="home-page-container">
@@ -295,8 +306,8 @@ const Home = () => {
                     <div className="stat-label">Album Hoàn Thành</div>
                   </Col>
                   <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.rentals}</div>
-                    <div className="stat-label">Thiết Bị Cho Thuê</div>
+                    <div className="stat-number">{stats.satisfaction}%</div>
+                    <div className="stat-label">Khách Hàng Hài Lòng</div>
                   </Col>
                 </Row>
               </div>
@@ -421,28 +432,39 @@ const Home = () => {
           ) : (
             <div className="portfolio-masonry">
               {displayGalleries.map((item, index) => {
-                // Asymmetrical columns for elegant grid
-                let colClass = "col-6";
-                if (index === 0) colClass = "col-8";
-                if (index === 1) colClass = "col-4";
-                if (index === 2) colClass = "col-5";
-                if (index === 3) colClass = "col-7";
+                const layoutClass =
+                  index === 0
+                    ? "portfolio-item-featured"
+                    : index <= 2
+                      ? "portfolio-item-side"
+                      : "portfolio-item-wide";
+                const imageUrl = getGalleryImageUrl(
+                  item,
+                  index === 0 ? "cover" : "grid",
+                  FALLBACK_PORTRAIT,
+                );
+                const imageSrcSet = getGalleryImageSrcSet(imageUrl);
 
                 return (
                   <div 
                     key={item._id} 
-                    className={`portfolio-item-luxury ${colClass} scroll-reveal stagger-${index + 1}`}
+                    className={`portfolio-item-luxury ${layoutClass} scroll-reveal stagger-${index + 1}`}
                     onClick={() => navigate(`/galleries/${item._id}`)}
                   >
                     <img 
                       className="portfolio-item-image" 
-                      src={item.coverImage || item.thumbnailLink || FALLBACK_PORTRAIT} 
-                      alt={item.title} 
-                      onError={(e) => { e.currentTarget.src = FALLBACK_PORTRAIT; }}
+                      src={imageUrl}
+                      srcSet={imageSrcSet}
+                      sizes={index === 0 ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 42vw"}
+                      alt={item.title}
+                      loading={index < 2 ? "eager" : "lazy"}
+                      fetchPriority={index < 2 ? "high" : "auto"}
+                      decoding="async"
+                      onError={getImageErrorHandler(FALLBACK_PORTRAIT)}
                     />
                     <div className="portfolio-item-overlay" />
                     <div className="portfolio-item-info">
-                      <span className="portfolio-item-category">{item.category}</span>
+                      <span className="portfolio-item-category">{categoryLabels[item.category] || item.category}</span>
                       <h3 className="portfolio-item-title">{item.title}</h3>
                       {item.location && <p className="portfolio-item-desc"><EnvironmentOutlined style={{ marginRight: "4px" }} /> {item.location}</p>}
                     </div>
@@ -455,65 +477,60 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          6. STUDIO EQUIPMENT & CREATIVE SPACE
+          6. PROFESSIONAL WORKFLOW / STEPS
       ========================================== */}
-      <section style={{ padding: "100px 20px" }}>
+      <section style={{ padding: "100px 20px", background: "#FAF7F2" }} className="full-bleed">
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <Row gutter={[40, 40]} align="middle">
-            <Col xs={24} lg={10} className="scroll-reveal">
-              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
-                Studio Gear & Spaces
-              </span>
-              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "40px", fontWeight: "300", lineHeight: "1.25", marginBottom: "25px", textTransform: "none" }}>
-                Thiết Bị Chuyên Nghiệp <br/>
-                & Phòng Concept Sáng
-              </h2>
-              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "1.8", marginBottom: "25px", fontWeight: "300" }}>
-                Studio sở hữu hệ thống thiết bị quay chụp hiện đại hàng đầu cùng hệ thống phòng studio đa dạng concept, đầy đủ thiết bị chiếu sáng tối tân.
-              </p>
-              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "1.8", marginBottom: "40px", fontWeight: "300" }}>
-                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho ekip quay chụp và khách hàng có nhu cầu sáng tạo riêng.
-              </p>
-              <button className="btn-premium-outline" onClick={() => navigate("/rentals")}>
-                XEM THIẾT BỊ CHO THUÊ <ArrowRightOutlined />
-              </button>
-            </Col>
+          <div style={{ textAlign: "center", marginBottom: "60px" }} className="scroll-reveal">
+            <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" }}>
+              Our Process
+            </span>
+            <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "42px", fontWeight: "300", marginTop: "10px", textTransform: "none" }}>
+              Quy Trình Làm Việc Chuyên Nghiệp
+            </h2>
+            <div style={{ width: "40px", height: "1px", background: "#BFA16A", margin: "20px auto 0 auto" }}></div>
+          </div>
 
-            <Col xs={24} lg={14} className="scroll-reveal stagger-1">
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {displayRentals.map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className="gear-card-luxury"
-                    onClick={() => {
-                      if (item._id) {
-                        navigate(`/rentals/${item._id}`);
-                      } else {
-                        navigate("/rentals");
-                      }
-                    }}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <img 
-                      className="gear-image"
-                      src={item.thumbnail || FALLBACK_GEAR} 
-                      alt={item.name} 
-                      onError={(e) => { e.currentTarget.src = FALLBACK_GEAR; }}
-                    />
-                    <div className="gear-info">
-                      <span className="gear-type">{item.type}</span>
-                      <h4 className="gear-name">{item.name}</h4>
-                      {item.rental_price_per_day && (
-                        <div className="gear-price">
-                          <GoldOutlined style={{ color: "#BFA16A", marginRight: "6px" }} />
-                          Giá thuê: <span className="text-gold" style={{ fontWeight: "600" }}>{formatPrice(item.rental_price_per_day)}</span>/ngày
-                        </div>
-                      )}
+          <Row gutter={[24, 24]}>
+            {[
+              {
+                step: "01",
+                icon: <FormOutlined style={{ fontSize: "28px", color: "#BFA16A" }} />,
+                title: "Tư Vấn & Lên Ý Tưởng",
+                desc: "Đội ngũ Cao Hiển Studio sẽ trao đổi trực tiếp, lắng nghe câu chuyện của bạn để tư vấn concept và gói dịch vụ phù hợp nhất."
+              },
+              {
+                step: "02",
+                icon: <CreditCardOutlined style={{ fontSize: "28px", color: "#BFA16A" }} />,
+                title: "Đăng Ký & Đặt Cọc",
+                desc: "Thực hiện ký hợp đồng điện tử và đặt cọc giữ ngày chụp cực kỳ tiện lợi thông qua hệ thống thanh toán VNPay trực tiếp."
+              },
+              {
+                step: "03",
+                icon: <CameraOutlined style={{ fontSize: "28px", color: "#BFA16A" }} />,
+                title: "Buổi Chụp Hào Hứng",
+                desc: "Buổi chụp hình diễn ra tự nhiên, vui vẻ với sự đồng hành của ekip chuyên nghiệp cùng các thiết bị máy ảnh tối tân."
+              },
+              {
+                step: "04",
+                icon: <FileImageOutlined style={{ fontSize: "28px", color: "#BFA16A" }} />,
+                title: "Retouch & Bàn Giao",
+                desc: "Chúng tôi chỉnh sửa hậu kỳ tỉ mỉ bằng màu ảnh độc quyền tinh tế, bàn giao album đúng hẹn với chất lượng hoàn hảo nhất."
+              }
+            ].map((item, idx) => (
+              <Col xs={24} sm={12} lg={6} key={idx} className={`scroll-reveal stagger-${idx + 1}`}>
+                <div className="glass-panel" style={{ padding: "40px 30px", height: "100%", position: "relative", border: "1px solid #E8DED2", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+                    <div style={{ background: "rgba(191, 161, 106, 0.08)", padding: "12px", borderRadius: "4px" }}>
+                      {item.icon}
                     </div>
+                    <span style={{ fontSize: "24px", fontFamily: "'Playfair Display', serif", color: "rgba(191, 161, 106, 0.35)", fontWeight: "500" }}>{item.step}</span>
                   </div>
-                ))}
-              </div>
-            </Col>
+                  <h4 className="font-serif-luxury" style={{ fontSize: "18px", color: "#2F2F2F", marginBottom: "12px", fontWeight: "500" }}>{item.title}</h4>
+                  <p style={{ color: "#666666", fontSize: "14px", lineHeight: "1.7", margin: 0, fontWeight: "300" }}>{item.desc}</p>
+                </div>
+              </Col>
+            ))}
           </Row>
         </div>
       </section>

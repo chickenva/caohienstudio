@@ -5,21 +5,27 @@ import {
   ArrowRightOutlined,
   CameraOutlined,
   EnvironmentOutlined,
-  StarFilled,
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
+import {
+  FALLBACK_GALLERY_IMAGE,
+  getGalleryImageSrcSet,
+  getGalleryImageUrl,
+  getImageErrorHandler,
+  preloadImages,
+} from "../../utils/imageUtils";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
 const categoryLabels = {
-  ALL: "Tất cả",
   WEDDING: "Ảnh cưới",
   PORTRAIT: "Chân dung",
   EVENT: "Sự kiện",
   GRADUATION: "Kỷ yếu",
 };
+
 
 const Galleries = () => {
   const navigate = useNavigate();
@@ -28,18 +34,46 @@ const Galleries = () => {
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [categories, setCategories] = useState([
+    { key: "ALL", index: "01", label: "TẤT CẢ" }
+  ]);
+
   const currentCategory = searchParams.get("cat") || "ALL";
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
 
-    const fetchGalleries = async () => {
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/galleries?category=${currentCategory}`,
+        const [catsRes, galsRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/categories?type=GALLERY&is_active=true"),
+          axios.get(`http://localhost:5000/api/galleries?category=${currentCategory}`)
+        ]);
+
+        const dynamicCategories = (catsRes.data.categories || []).map((c, i) => ({
+          key: c.slug,
+          index: String(i + 2).padStart(2, '0'),
+          label: c.name.toUpperCase()
+        }));
+
+        setCategories([
+          { key: "ALL", index: "01", label: "TẤT CẢ" },
+          ...dynamicCategories
+        ]);
+
+        const fetchedGalleries = Array.isArray(galsRes.data) ? galsRes.data : [];
+        await preloadImages(
+          fetchedGalleries.slice(0, 8).map((item, index) =>
+            getGalleryImageUrl(
+              item,
+              index === 0 ? "cover" : "grid",
+              FALLBACK_GALLERY_IMAGE,
+            ),
+          ),
+          { limit: 8, timeoutMs: 3200 },
         );
-        setGalleries(Array.isArray(res.data) ? res.data : []);
+        setGalleries(fetchedGalleries);
       } catch (err) {
         message.error("Không thể tải thư viện ảnh");
       } finally {
@@ -47,7 +81,7 @@ const Galleries = () => {
       }
     };
 
-    fetchGalleries();
+    fetchInitialData();
 
     return () => {
       document.body.style.backgroundColor = "";
@@ -85,13 +119,6 @@ const Galleries = () => {
     setSearchParams({ cat: key });
   };
 
-  const categories = [
-    { key: "ALL", index: "01", label: "TẤT CẢ" },
-    { key: "WEDDING", index: "02", label: "ẢNH CƯỚI" },
-    { key: "PORTRAIT", index: "03", label: "CHÂN DUNG" },
-    { key: "EVENT", index: "04", label: "SỰ KIỆN" },
-    { key: "GRADUATION", index: "05", label: "KỶ YẾU" },
-  ];
 
   // Pre-curated high-end demo fallbacks to keep the page visually stunning if API is empty
   const demoGalleries = [
@@ -233,105 +260,49 @@ const Galleries = () => {
         ) : (
           <div className="museum-grid">
             {displayGalleries.map((item, index) => {
-              // 1. Featured Editorial Layout for index 0
-              if (index === 0) {
-                return (
-                  <div
-                    key={item._id}
-                    className="museum-col-12 scroll-reveal"
-                    onClick={() => navigate(`/galleries/${item._id}`)}
-                  >
-                    <div className="museum-card featured-editorial-card">
-                      <Row gutter={[40, 20]} align="middle">
-                        <Col xs={24} md={14}>
-                          <div className="museum-image-wrapper" style={{ height: "420px" }}>
-                            <img src={item.coverImage || item.thumbnailLink || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200"} alt={item.title} />
-                          </div>
-                        </Col>
-                        <Col xs={24} md={10}>
-                          <div className="museum-card-info" style={{ padding: "10px 15px 10px 15px" }}>
-                            <span className="museum-card-category" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <StarFilled style={{ color: "#BFA16A" }} /> FEATURED CURATION
-                            </span>
-                            <h3 className="museum-card-title font-serif-luxury" style={{ fontSize: "34px", fontWeight: "300", margin: "10px 0 20px 0", lineHeight: "1.25" }}>
-                              {item.title}
-                            </h3>
-                            <p className="museum-card-desc" style={{ fontSize: "14px", lineHeight: "1.8", color: "#666666", marginBottom: "30px", WebkitLineClamp: 4 }}>
-                              {item.description || "Bộ tác phẩm đặc tuyển biểu trưng cho nét đẹp tinh khôi, sự lãng mạn và kỹ thuật ánh sáng xuất sắc độc quyền của studio."}
-                            </p>
-                            <div className="museum-card-footer">
-                              <span style={{ fontSize: "12px", color: "#777777" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Việt Nam"}</span>
-                              <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
-                            </div>
-                          </div>
-                        </Col>
-                      </Row>
-                    </div>
-                  </div>
-                );
-              }
-
-              // 2. Artistic Quote banner in the middle of grid
-              const showQuote = index === 3;
-              
-              // Grid columns layout logic
-              let colSize = "museum-col-6";
-              if (index === 1 || index === 2) colSize = "museum-col-6";
-              else if (index % 3 === 0) colSize = "museum-col-4";
-              else colSize = "museum-col-4"; // 4-column cards for details grid rhythm
+              const imageUrl = getGalleryImageUrl(
+                item,
+                index === 0 ? "cover" : "grid",
+                FALLBACK_GALLERY_IMAGE,
+              );
+              const imageSrcSet = getGalleryImageSrcSet(imageUrl);
 
               return (
-                <React.Fragment key={item._id}>
-                  {showQuote && (
-                    <div className="museum-col-12 scroll-reveal">
-                      <div className="museum-quote-banner">
-                        <p className="museum-quote-text">
-                          "Ánh sáng vẽ nên hình hài, cảm xúc vẽ nên linh hồn. <br/>
-                          Chúng tôi không chỉ chụp lại khoảnh khắc, chúng tôi ghi lại câu chuyện cuộc đời bạn."
-                        </p>
-                        <div className="museum-quote-author">⚜ CAO HIỂN STUDIO PHILOSOPHY ⚜</div>
-                      </div>
+                <div
+                  key={item._id}
+                  className={`museum-col-4 scroll-reveal stagger-${(index % 3) + 1}`}
+                  onClick={() => navigate(`/galleries/${item._id}`)}
+                >
+                  <div className="museum-card">
+                    <div className="museum-image-wrapper">
+                      <img
+                        src={imageUrl}
+                        srcSet={imageSrcSet}
+                        sizes="(max-width: 767px) 100vw, (max-width: 991px) 50vw, 380px"
+                        alt={item.title}
+                        loading={index <= 5 ? "eager" : "lazy"}
+                        fetchPriority={index <= 2 ? "high" : "auto"}
+                        decoding="async"
+                        onError={getImageErrorHandler(FALLBACK_GALLERY_IMAGE)}
+                      />
                     </div>
-                  )}
 
-                  <div
-                    className={`${colSize} scroll-reveal stagger-${(index % 3) + 1}`}
-                    onClick={() => navigate(`/galleries/${item._id}`)}
-                  >
-                    <div className="museum-card">
-                      <div className="museum-image-wrapper">
-                        <img
-                          src={
-                            item.coverImage ||
-                            item.thumbnailLink ||
-                            "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200"
-                          }
-                          alt={item.title}
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src =
-                              "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200";
-                          }}
-                        />
-                      </div>
+                    <div className="museum-card-info">
+                      <span className="museum-card-category">
+                        {categoryLabels[item.category] || item.category}
+                      </span>
 
-                      <div className="museum-card-info">
-                        <span className="museum-card-category">
-                          {categoryLabels[item.category] || item.category}
-                        </span>
+                      <h3 className="museum-card-title">{item.title}</h3>
 
-                        <h3 className="museum-card-title">{item.title}</h3>
+                      {item.description && <p className="museum-card-desc">{item.description}</p>}
 
-                        {item.description && <p className="museum-card-desc">{item.description}</p>}
-
-                        <div className="museum-card-footer">
-                          <span style={{ fontSize: "12px", color: "#888888" }}><EnvironmentOutlined style={{ marginRight: "4px", color: "#BFA16A" }} /> {item.location || "Cao Hiển Studio"}</span>
-                          <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
-                        </div>
+                      <div className="museum-card-footer">
+                        <span className="museum-card-location"><EnvironmentOutlined /> {item.location || "Cao Hien Studio"}</span>
+                        <span className="museum-card-action">XEM CHI TI?T <ArrowRightOutlined /></span>
                       </div>
                     </div>
                   </div>
-                </React.Fragment>
+                </div>
               );
             })}
           </div>
@@ -451,13 +422,25 @@ const Galleries = () => {
         }
 
         /* Museum Fine Art Card */
+        .museum-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 28px;
+          align-items: stretch;
+        }
+
+        .museum-col-4 {
+          min-width: 0;
+        }
+
         .museum-card {
           background: #FFFFFF;
           border: 1px solid #E8DED2;
-          padding: 16px;
+          padding: 14px;
           display: flex;
           flex-direction: column;
           height: 100%;
+          min-height: 0;
           transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           cursor: pointer;
           border-radius: 0px;
@@ -465,18 +448,14 @@ const Galleries = () => {
 
         .museum-card:hover {
           border-color: ${PRIMARY_COLOR};
-          transform: translateY(-8px);
-          box-shadow: 0 15px 35px rgba(154, 138, 120, 0.08);
-        }
-
-        .featured-editorial-card {
-          padding: 24px;
+          transform: translateY(-6px);
+          box-shadow: 0 16px 34px rgba(154, 138, 120, 0.09);
         }
 
         .museum-image-wrapper {
           position: relative;
           width: 100%;
-          height: 290px;
+          aspect-ratio: 4 / 3;
           overflow: hidden;
           background: #FAF7F2;
           border: 1px solid #E8DED2;
@@ -487,19 +466,20 @@ const Galleries = () => {
           height: 100%;
           object-fit: cover;
           display: block;
-          transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: transform 1.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .museum-card:hover .museum-image-wrapper img {
-          transform: scale(1.08);
+          transform: scale(1.06);
         }
 
         .museum-card-info {
-          padding-top: 22px;
+          padding: 20px 4px 4px;
           position: relative;
           flex: 1;
           display: flex;
           flex-direction: column;
+          min-height: 205px;
         }
 
         .museum-card-category {
@@ -514,11 +494,15 @@ const Galleries = () => {
 
         .museum-card-title {
           font-family: 'Playfair Display', Georgia, serif;
-          font-size: 21px;
+          font-size: 23px;
           font-weight: 300;
           color: #2F2F2F;
           margin: 0 0 12px 0;
-          line-height: 1.35;
+          line-height: 1.3;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .museum-card-desc {
@@ -537,14 +521,33 @@ const Galleries = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 14px;
           margin-top: auto;
           padding-top: 16px;
           border-top: 1px dashed #E8DED2;
         }
 
+        .museum-card-location {
+          min-width: 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          color: #888888;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+
+        .museum-card-location .anticon {
+          color: #BFA16A;
+          flex: 0 0 auto;
+        }
+
         .museum-card-action {
+          flex: 0 0 auto;
           font-size: 11px;
-          letter-spacing: 1.5px;
+          letter-spacing: 1.3px;
           text-transform: uppercase;
           font-weight: 500;
           color: #2F2F2F;
@@ -558,71 +561,10 @@ const Galleries = () => {
           color: #BFA16A;
         }
 
-        /* Asymmetric grid sizes */
-        .museum-grid {
-          display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          gap: 30px;
-        }
-
-        .museum-col-12 {
-          grid-column: span 12;
-        }
-
-        .museum-col-6 {
-          grid-column: span 6;
-        }
-
-        .museum-col-4 {
-          grid-column: span 4;
-        }
-
-        /* Double border philosophy banner */
-        .museum-quote-banner {
-          border: 1px solid #E8DED2;
-          padding: 60px 40px;
-          position: relative;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.4);
-          margin: 30px 0;
-        }
-
-        .museum-quote-banner::before {
-          content: '';
-          position: absolute;
-          inset: 6px;
-          border: 1px solid #E8DED2;
-          pointer-events: none;
-        }
-
-        .museum-quote-text {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 24px;
-          font-style: italic;
-          color: #2F2F2F;
-          line-height: 1.7;
-          font-weight: 300;
-          margin: 0;
-        }
-
-        .museum-quote-author {
-          font-size: 10.5px;
-          letter-spacing: 2.5px;
-          text-transform: uppercase;
-          color: #BFA16A;
-          margin-top: 20px;
-          font-weight: 600;
-        }
-
         @media (max-width: 991px) {
-          .museum-col-6 {
-            grid-column: span 12;
-          }
-          .museum-col-4 {
-            grid-column: span 6;
-          }
-          .featured-editorial-card {
-            padding: 16px;
+          .museum-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
           }
           .museum-collage-container {
             height: 380px;
@@ -637,17 +579,18 @@ const Galleries = () => {
         }
 
         @media (max-width: 767px) {
-          .museum-col-4 {
-            grid-column: span 12;
+          .museum-grid {
+            grid-template-columns: 1fr;
+            gap: 22px;
+          }
+          .museum-card-info {
+            min-height: 0;
           }
           .catalog-selector {
             justify-content: flex-start;
             overflow-x: auto;
             white-space: nowrap;
             gap: 15px;
-          }
-          .museum-quote-text {
-            font-size: 19px;
           }
         }
       `}</style>

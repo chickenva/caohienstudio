@@ -16,6 +16,8 @@ import {
   List,
   Tag,
   Alert,
+  Checkbox,
+  Switch,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -32,19 +34,7 @@ const { TextArea } = Input;
 
 const API_URL = "http://localhost:5000/api";
 
-const statusOptions = [
-  { value: "PENDING", label: "Chờ thanh toán (sẽ tạo link VNPay)" },
-  { value: "DEPOSITED", label: "Đã đặt cọc / đã xác nhận" },
-  { value: "CONFIRMED", label: "Đã xác nhận (sẵn sàng chụp)" },
-  { value: "IN_PROGRESS", label: "Đang thực hiện" },
-  { value: "COMPLETED", label: "Hoàn thành" },
-];
-
-const paymentMethodOptions = [
-  { value: "MANUAL", label: "Thủ công (tiền mặt / chuyển khoản)" },
-  { value: "VNPAY", label: "VNPay" },
-  { value: "PAYOS", label: "PayOS" },
-];
+// Options removed to hardcode CONFIRMED status and MANUAL payment method
 
 const OrdersCreate = () => {
   const [form] = Form.useForm();
@@ -59,10 +49,12 @@ const OrdersCreate = () => {
   const [mainServices, setMainServices] = useState([]);
   const [addonServices, setAddonServices] = useState([]);
 
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedMainIds, setSelectedMainIds] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState([]);
+  const [isStudio, setIsStudio] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [isRangeMode, setIsRangeMode] = useState(false);
 
   const getToken = () => localStorage.getItem("token");
 
@@ -74,9 +66,13 @@ const OrdersCreate = () => {
     try {
       const serviceRes = await axios.get(`${API_URL}/services`);
 
-      const allServices = Array.isArray(serviceRes.data) ? serviceRes.data : [];
-      setMainServices(allServices.filter(s => !s.allow_addon));
-      setAddonServices(allServices.filter(s => s.allow_addon));
+      const allServices = Array.isArray(serviceRes.data) ? serviceRes.data : (serviceRes.data.services || []);
+      setMainServices(allServices.filter(s => s.category !== "PRINT" &&
+        !["gói lẻ lễ tối", "gói thêm flycam"].some(k => (s.name || "").toLowerCase().includes(k))
+      ));
+      setAddonServices(allServices.filter(s => s.category === "PRINT" ||
+        ["gói lẻ lễ tối", "gói thêm flycam"].some(k => (s.name || "").toLowerCase().includes(k))
+      ));
     } catch (err) {
       message.error("Không thể tải dịch vụ");
     }
@@ -141,71 +137,54 @@ const OrdersCreate = () => {
     });
   };
 
-  const handleServiceChange = (serviceId) => {
-    const service = mainServices.find((item) => item._id === serviceId);
-
-    setSelectedService(service || null);
-
-    let price = service?.base_price || 0;
-    selectedAddons.forEach(id => {
-      const addon = addonServices.find(a => a._id === id);
-      if (addon) price += addon.base_price;
+  const calculateTotalAmount = (mainIds, addonIds) => {
+    let price = 0;
+    mainIds.forEach(id => {
+      const service = mainServices.find(s => s._id === id);
+      if (service) price += service.base_price || 0;
     });
+    addonIds.forEach(id => {
+      const addon = addonServices.find(a => a._id === id);
+      if (addon) price += addon.base_price || 0;
+    });
+    return price;
+  };
 
-    form.setFieldsValue({ total_amount: price });
+  const handleServiceChange = (serviceIds) => {
+    setSelectedMainIds(serviceIds);
+    const price = calculateTotalAmount(serviceIds, selectedAddons);
+    const deposit = Math.round(price * 0.3);
+    form.setFieldsValue({ total_amount: price, paid_amount: deposit });
     setTotalAmount(price);
-
-    if (service) {
-      autoFillEndTime(service);
-    }
+    setPaidAmount(deposit);
   };
 
   const handleAddonsChange = (addonIds) => {
     setSelectedAddons(addonIds);
-
-    let price = selectedService?.base_price || 0;
-    addonIds.forEach(id => {
-      const addon = addonServices.find(a => a._id === id);
-      if (addon) price += addon.base_price;
-    });
-
-    form.setFieldsValue({ total_amount: price });
+    const price = calculateTotalAmount(selectedMainIds, addonIds);
+    const deposit = Math.round(price * 0.3);
+    form.setFieldsValue({ total_amount: price, paid_amount: deposit });
     setTotalAmount(price);
-  };
-
-  const autoFillEndTime = (service = selectedService) => {
-    const date = form.getFieldValue("booking_date");
-    const startTime = form.getFieldValue("start_time");
-
-    if (!date || !startTime || !service) return;
-
-    const startDateTime = dayjs(date)
-      .hour(dayjs(startTime).hour())
-      .minute(dayjs(startTime).minute())
-      .second(0);
-
-    const endDateTime = startDateTime.add(service.duration_hours || 4, "hour");
-
-    form.setFieldsValue({
-      end_time: endDateTime,
-    });
+    setPaidAmount(deposit);
   };
 
   const handleSubmit = async (values) => {
     setLoading(true);
 
     try {
-      const startDateTime = dayjs(values.booking_date)
-        .hour(dayjs(values.start_time).hour())
-        .minute(dayjs(values.start_time).minute())
-        .second(0);
+      const firstService = mainServices.find((item) => item._id === values.service_id[0]);
+      
+      const shootDate = values.shoot_date;
+      const shootTime = values.shoot_time || dayjs().hour(0).minute(0);
+      let startDateTime, endDateTime;
 
-      const endDateTime = values.end_time
-        ? dayjs(values.booking_date)
-            .hour(dayjs(values.end_time).hour())
-            .minute(dayjs(values.end_time).minute())
-            .second(0)
-        : startDateTime.add(selectedService?.duration_hours || 4, "hour");
+      if (isRangeMode && Array.isArray(shootDate)) {
+        startDateTime = dayjs(shootDate[0]).hour(shootTime.hour()).minute(shootTime.minute());
+        endDateTime = dayjs(shootDate[1]).hour(shootTime.hour()).minute(shootTime.minute());
+      } else {
+        startDateTime = dayjs(shootDate).hour(shootTime.hour()).minute(shootTime.minute());
+        endDateTime = startDateTime.add(firstService?.duration_hours || 4, "hour");
+      }
 
       const payload = {
         customer_id: values.customer_id || undefined,
@@ -213,17 +192,17 @@ const OrdersCreate = () => {
         customer_email: values.customer_email,
         customer_phone: values.customer_phone,
 
-        service_id: values.service_id,
-        extra_service_ids: values.extra_service_ids,
+        service_id: values.service_id[0],
+        extra_service_ids: [...values.service_id.slice(1), ...(values.extra_service_ids || [])],
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         location: values.location,
         note: values.note,
 
         total_amount: values.total_amount,
-        status: values.status,
+        status: "CONFIRMED",
         paid_amount: values.paid_amount,
-        payment_method: values.payment_method,
+        payment_method: "MANUAL",
       };
 
       await axios.post(`${API_URL}/bookings/admin/create`, payload, {
@@ -277,8 +256,6 @@ const OrdersCreate = () => {
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          status: "DEPOSITED",
-          payment_method: "MANUAL",
           paid_amount: 0,
         }}
       >
@@ -411,7 +388,7 @@ const OrdersCreate = () => {
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
-                    label="Gói dịch vụ"
+                    label="Gói dịch vụ chính"
                     name="service_id"
                     rules={[
                       {
@@ -421,7 +398,8 @@ const OrdersCreate = () => {
                     ]}
                   >
                     <Select
-                      placeholder="Chọn gói dịch vụ"
+                      mode="multiple"
+                      placeholder="Chọn một hoặc nhiều gói dịch vụ"
                       onChange={handleServiceChange}
                       options={mainServices.map((service) => ({
                         value: service._id,
@@ -450,67 +428,81 @@ const OrdersCreate = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} md={8}>
+                <Col xs={24} md={12}>
                   <Form.Item
-                    label="Ngày chụp"
-                    name="booking_date"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày chụp",
-                      },
-                    ]}
+                    label={
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                        <span>Ngày chụp</span>
+                        <Switch
+                          checkedChildren="Nhiều ngày"
+                          unCheckedChildren="1 ngày"
+                          checked={isRangeMode}
+                          onChange={(checked) => {
+                            setIsRangeMode(checked);
+                            form.setFieldsValue({ shoot_date: null });
+                          }}
+                          style={{ background: isRangeMode ? "#1677ff" : "#ccc", transform: "scale(0.85)", transformOrigin: "right center" }}
+                        />
+                      </div>
+                    }
+                    name="shoot_date"
+                    rules={[{ required: true, message: "Vui lòng chọn ngày chụp" }]}
                   >
-                    <DatePicker
-                      style={{ width: "100%" }}
-                      format="DD/MM/YYYY"
-                      onChange={() => setTimeout(() => autoFillEndTime(), 0)}
-                    />
+                    {isRangeMode ? (
+                      <DatePicker.RangePicker
+                        size="large"
+                        format="DD/MM/YYYY"
+                        placeholder={["Từ ngày", "Đến ngày"]}
+                        style={{ width: "100%" }}
+                      />
+                    ) : (
+                      <DatePicker
+                        size="large"
+                        format="DD/MM/YYYY"
+                        placeholder="Chọn ngày..."
+                        style={{ width: "100%" }}
+                      />
+                    )}
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label="Giờ bắt đầu"
-                    name="start_time"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn giờ bắt đầu",
-                      },
-                    ]}
+                <Col xs={24} md={12}>
+                  <Form.Item 
+                    label="Giờ chụp" 
+                    name="shoot_time"
+                    rules={[{ required: true, message: "Vui lòng chọn giờ chụp" }]}
                   >
                     <TimePicker
-                      style={{ width: "100%" }}
+                      size="large"
                       format="HH:mm"
+                      placeholder="Chọn giờ..."
                       minuteStep={15}
-                      onChange={() => setTimeout(() => autoFillEndTime(), 0)}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label="Giờ kết thúc"
-                    name="end_time"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn giờ kết thúc",
-                      },
-                    ]}
-                  >
-                    <TimePicker
                       style={{ width: "100%" }}
-                      format="HH:mm"
-                      minuteStep={15}
                     />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24}>
                   <Form.Item
-                    label="Địa điểm chụp"
+                    label={
+                      <Space>
+                        <span>Địa điểm chụp</span>
+                        <Checkbox
+                          checked={isStudio}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsStudio(checked);
+                            if (checked) {
+                              form.setFieldsValue({ location: "Cao Hiển Studio" });
+                            } else {
+                              form.setFieldsValue({ location: undefined });
+                            }
+                          }}
+                        >
+                          Chụp tại studio
+                        </Checkbox>
+                      </Space>
+                    }
                     name="location"
                     rules={[
                       {
@@ -519,7 +511,7 @@ const OrdersCreate = () => {
                       },
                     ]}
                   >
-                    <Input placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..." />
+                    <Input disabled={isStudio} placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..." />
                   </Form.Item>
                 </Col>
 
@@ -561,22 +553,15 @@ const OrdersCreate = () => {
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Trạng thái đơn"
-                    name="status"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn trạng thái đơn",
-                      },
-                    ]}
-                  >
-                    <Select options={statusOptions} />
+                  <Form.Item label="Trạng thái đơn">
+                    <Tag color="green" style={{ fontSize: 14, padding: "4px 12px" }}>
+                      Đã xác nhận (CONFIRMED)
+                    </Tag>
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Số tiền đã cọc / đã trả" name="paid_amount">
+                  <Form.Item label="Số tiền khách đã trả (thanh toán thủ công)" name="paid_amount">
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
@@ -587,15 +572,6 @@ const OrdersCreate = () => {
                       addonAfter="VNĐ"
                       onChange={(v) => setPaidAmount(Number(v) || 0)}
                     />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Phương thức thanh toán"
-                    name="payment_method"
-                  >
-                    <Select options={paymentMethodOptions} />
                   </Form.Item>
                 </Col>
 

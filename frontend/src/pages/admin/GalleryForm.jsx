@@ -30,8 +30,8 @@ const GalleryForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
-  const [photographers, setPhotographers] = useState([]);
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const getToken = () => localStorage.getItem("token");
 
@@ -40,25 +40,26 @@ const GalleryForm = () => {
 
     if (isEdit) {
       fetchGalleryDetail();
+    } else {
+      form.resetFields();
     }
-  }, [id]);
+  }, [id, isEdit]);
 
   const fetchOptions = async () => {
     try {
-      const [photographerRes, serviceRes] = await Promise.all([
-        axios.get(`${API_URL}/users/photographers`),
+      const [serviceRes, categoryRes] = await Promise.all([
         axios.get(`${API_URL}/services`),
+        axios.get(`${API_URL}/categories?type=GALLERY&is_active=true`)
       ]);
-
-      setPhotographers(photographerRes.data.photographers || []);
 
       const serviceData = Array.isArray(serviceRes.data)
         ? serviceRes.data
         : serviceRes.data.services || [];
-
       setServices(serviceData);
+      
+      setCategories(categoryRes.data.categories || []);
     } catch (err) {
-      message.error("Không thể tải dữ liệu thợ chụp/dịch vụ");
+      message.error("Không thể tải dữ liệu dịch vụ hoặc danh mục");
     }
   };
 
@@ -77,9 +78,7 @@ const GalleryForm = () => {
         drive_folder_url: gallery.drive_folder_url,
         drive_folder_id: gallery.drive_folder_id,
         coverImage: gallery.coverImage,
-        photographer_id: gallery.photographer_id?._id,
-        service_id: gallery.service_id?._id,
-        featured: gallery.featured,
+        service_ids: gallery.service_ids?.map((s) => s._id) || [],
         is_active: gallery.is_active,
       });
     } catch (err) {
@@ -95,8 +94,7 @@ const GalleryForm = () => {
     try {
       const payload = {
         ...values,
-        photographer_id: values.photographer_id || null,
-        service_id: values.service_id || null,
+        service_ids: values.service_ids || [],
       };
 
       if (isEdit) {
@@ -151,7 +149,6 @@ const GalleryForm = () => {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
-            featured: false,
             is_active: true,
           }}
         >
@@ -174,12 +171,10 @@ const GalleryForm = () => {
               >
                 <Select
                   placeholder="Chọn danh mục"
-                  options={[
-                    { value: "WEDDING", label: "Ảnh cưới" },
-                    { value: "PORTRAIT", label: "Chân dung" },
-                    { value: "EVENT", label: "Sự kiện" },
-                    { value: "GRADUATION", label: "Kỷ yếu" },
-                  ]}
+                  options={categories.map((c) => ({
+                    value: c.slug,
+                    label: c.name,
+                  }))}
                 />
               </Form.Item>
             </Col>
@@ -231,24 +226,12 @@ const GalleryForm = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item label="Nhiếp ảnh gia" name="photographer_id">
-                <Select
-                  allowClear
-                  placeholder="Chọn thợ chụp nếu có"
-                  options={photographers.map((p) => ({
-                    value: p._id,
-                    label: p.full_name,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
-
             <Col xs={24}>
-              <Form.Item label="Gói dịch vụ liên quan" name="service_id">
+              <Form.Item label="Gói dịch vụ liên quan" name="service_ids">
                 <Select
+                  mode="multiple"
                   allowClear
-                  placeholder="Chọn gói dịch vụ nếu có"
+                  placeholder="Chọn các gói dịch vụ nếu có"
                   options={services.map((s) => ({
                     value: s._id,
                     label: s.name,
@@ -266,25 +249,17 @@ const GalleryForm = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Album nổi bật"
-                name="featured"
-                valuePropName="checked"
-              >
-                <Switch checkedChildren="Có" unCheckedChildren="Không" />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Hiển thị trên website"
-                name="is_active"
-                valuePropName="checked"
-              >
-                <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
-              </Form.Item>
-            </Col>
+            {isEdit && (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Hiển thị trên website"
+                  name="is_active"
+                  valuePropName="checked"
+                >
+                  <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Space>

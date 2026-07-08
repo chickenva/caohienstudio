@@ -34,13 +34,12 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminGalleries from "./pages/admin/AdminGalleries";
 import AdminServices from "./pages/admin/AdminServices";
-import AdminPhotographers from "./pages/admin/AdminPhotographers";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 
 import CreateOrder from "./pages/admin/CreateOrder";
-import PhotographerForm from "./pages/admin/PhotographerForm";
 import ServiceForm from "./pages/admin/ServiceForm";
 import GalleryForm from "./pages/admin/GalleryForm";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 // --- Payment VNPay Pages ---
 import VnpayReturn from "./pages/customer/VnpayReturn";
@@ -61,8 +60,6 @@ function App() {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/galleries" element={<Galleries />} />
           <Route path="/galleries/:id" element={<GalleryDetail />} />
-          <Route path="/photographers" element={<Navigate to="/services" replace />} />
-          <Route path="/photographers/:id" element={<Navigate to="/services" replace />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/booking" element={<Booking />} />
@@ -102,10 +99,9 @@ function App() {
           <Route path="services" element={<AdminServices />} />
           <Route path="services/add" element={<ServiceForm />} />
           <Route path="services/edit/:id" element={<ServiceForm />} />
+          
+          <Route path="categories/:type" element={<AdminCategories />} />
 
-          <Route path="photographers" element={<AdminPhotographers />} />
-          <Route path="photographers/add" element={<PhotographerForm />} />
-          <Route path="photographers/edit/:id" element={<PhotographerForm />} />
         </Route>
       </Routes>
     </BrowserRouter>

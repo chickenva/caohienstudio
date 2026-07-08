@@ -1,21 +1,20 @@
 const PublicGallery = require("../models/PublicGallery");
 const googleDriveService = require("../services/googleDriveService");
 
+const PUBLIC_CACHE_HEADER = "public, max-age=60, stale-while-revalidate=300";
+
 const extractDriveFolderId = (input = "") => {
   if (!input) return "";
 
-  // Nếu admin dán thẳng folder ID
   if (!input.includes("drive.google.com")) {
     return input.trim();
   }
 
-  // Link dạng: https://drive.google.com/drive/folders/FOLDER_ID
   const folderMatch = input.match(/\/folders\/([^?]+)/);
   if (folderMatch && folderMatch[1]) {
     return folderMatch[1].trim();
   }
 
-  // Link dạng có id=
   const idMatch = input.match(/[?&]id=([^&]+)/);
   if (idMatch && idMatch[1]) {
     return idMatch[1].trim();
@@ -24,9 +23,80 @@ const extractDriveFolderId = (input = "") => {
   return "";
 };
 
+const normalizeStoredImage = (url, size = "s1800") => {
+  if (!url) return "";
+  return googleDriveService.normalizeDriveImageUrl(url, size);
+};
+
+const buildCoverPayload = (coverImage, images = []) => {
+  const firstImage = images[0] || {};
+  const normalizedCover = normalizeStoredImage(coverImage, "s1800");
+  const bestCover =
+    normalizedCover ||
+    firstImage.coverUrl ||
+    firstImage.imageUrl ||
+    firstImage.gridUrl ||
+    firstImage.thumbnailLink ||
+    "";
+
+  return {
+    coverImage: normalizeStoredImage(bestCover, "s1800") || bestCover,
+    coverThumbUrl:
+      normalizeStoredImage(bestCover, "s480") ||
+      firstImage.thumbUrl ||
+      firstImage.gridUrl ||
+      bestCover,
+    coverGridUrl:
+      normalizeStoredImage(bestCover, "s1200") ||
+      firstImage.gridUrl ||
+      firstImage.coverUrl ||
+      bestCover,
+    coverPreviewUrl:
+      normalizeStoredImage(bestCover, "s2560") ||
+      firstImage.previewUrl ||
+      firstImage.coverUrl ||
+      bestCover,
+  };
+};
+
+const toGalleryObject = (gallery, images = []) => {
+  const galleryObject = gallery.toObject ? gallery.toObject() : { ...gallery };
+  return {
+    ...galleryObject,
+    ...buildCoverPayload(galleryObject.coverImage, images),
+  };
+};
+
+const resolveGalleryCover = async (gallery) => {
+  const galleryObject = gallery.toObject ? gallery.toObject() : { ...gallery };
+
+  if (normalizeStoredImage(galleryObject.coverImage)) {
+    return toGalleryObject(galleryObject);
+  }
+
+  try {
+    const images = await googleDriveService.listImagesInFolder(
+      galleryObject.drive_folder_id,
+    );
+    return toGalleryObject(galleryObject, images);
+  } catch (error) {
+    console.error(
+      `Resolve gallery cover error for gallery ${galleryObject._id}:`,
+      error.message,
+    );
+    return toGalleryObject(galleryObject);
+  }
+};
+
+const hydrateGalleryList = async (galleries) => {
+  return Promise.all(galleries.map((gallery) => resolveGalleryCover(gallery)));
+};
+
 const getCoverFromDrive = async (gallery) => {
-  if (gallery.coverImage) {
-    return gallery.coverImage;
+  const normalizedCover = normalizeStoredImage(gallery.coverImage, "s1800");
+
+  if (normalizedCover) {
+    return normalizedCover;
   }
 
   if (!gallery.drive_folder_id) {
@@ -42,7 +112,7 @@ const getCoverFromDrive = async (gallery) => {
       return "";
     }
 
-    return images[0].thumbnailLink || images[0].imageUrl || "";
+    return images[0].coverUrl || images[0].imageUrl || images[0].gridUrl || "";
   } catch (error) {
     console.error(
       `Get cover from Drive error for gallery ${gallery._id}:`,
@@ -68,25 +138,18 @@ exports.getAllGalleries = async (req, res) => {
 
     const galleries = await PublicGallery.find(query)
       .populate("photographer_id", "full_name portfolio.avatar")
-      .populate("service_id", "name base_price duration_hours")
-      .sort({ featured: -1, createdAt: -1 });
+      .populate("service_ids", "name base_price duration_hours")
+      .sort({ featured: -1, order: 1, createdAt: -1 });
 
-    const result = await Promise.all(
-      galleries.map(async (gallery) => {
-        const item = gallery.toObject();
+    const hydratedGalleries = await hydrateGalleryList(galleries);
 
-        item.coverImage = await getCoverFromDrive(gallery);
-
-        return item;
-      }),
-    );
-
-    res.status(200).json(result);
+    res.set("Cache-Control", PUBLIC_CACHE_HEADER);
+    res.status(200).json(hydratedGalleries);
   } catch (error) {
     console.error("Get galleries error:", error);
 
     res.status(500).json({
-      message: "Lỗi lấy danh sách thư viện",
+      message: "Loi lay danh sach thu vien",
       error: error.message,
     });
   }
@@ -97,11 +160,11 @@ exports.getGalleryById = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id)
       .populate("photographer_id", "full_name email phone portfolio.avatar")
-      .populate("service_id", "name description base_price duration_hours");
+      .populate("service_ids", "name description base_price duration_hours");
 
     if (!gallery || !gallery.is_active) {
       return res.status(404).json({
-        message: "Không tìm thấy album",
+        message: "Khong tim thay album",
       });
     }
 
@@ -109,21 +172,45 @@ exports.getGalleryById = async (req, res) => {
       gallery.drive_folder_id,
     );
 
-    const galleryObject = gallery.toObject();
-
-    if (!galleryObject.coverImage && images.length > 0) {
-      galleryObject.coverImage = images[0].thumbnailLink || images[0].imageUrl;
-    }
-
+    res.set("Cache-Control", PUBLIC_CACHE_HEADER);
     res.status(200).json({
-      gallery: galleryObject,
+      gallery: toGalleryObject(gallery, images),
       images,
     });
   } catch (error) {
     console.error("Get gallery detail error:", error);
 
     res.status(500).json({
-      message: "Lỗi lấy chi tiết album",
+      message: "Loi lay chi tiet album",
+      error: error.message,
+    });
+  }
+};
+
+// ADMIN: GET /api/galleries/admin/all
+exports.getAllGalleriesAdmin = async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    const query = {};
+
+    if (category && category !== "ALL") {
+      query.category = category;
+    }
+
+    const galleries = await PublicGallery.find(query)
+      .populate("photographer_id", "full_name portfolio.avatar")
+      .populate("service_ids", "name base_price duration_hours")
+      .sort({ featured: -1, order: 1, createdAt: -1 });
+
+    const hydratedGalleries = await hydrateGalleryList(galleries);
+
+    res.status(200).json(hydratedGalleries);
+  } catch (error) {
+    console.error("Get all galleries admin error:", error);
+
+    res.status(500).json({
+      message: "Loi lay danh sach thu vien",
       error: error.message,
     });
   }
@@ -141,14 +228,14 @@ exports.createGallery = async (req, res) => {
       drive_folder_id,
       coverImage,
       photographer_id,
-      service_id,
+      service_ids,
       featured,
       is_active,
     } = req.body;
 
     if (!title || !category) {
       return res.status(400).json({
-        message: "Vui lòng nhập tên album và danh mục",
+        message: "Vui long nhap ten album va danh muc",
       });
     }
 
@@ -157,7 +244,7 @@ exports.createGallery = async (req, res) => {
 
     if (!finalDriveFolderId) {
       return res.status(400).json({
-        message: "Vui lòng nhập link hoặc ID folder Google Drive",
+        message: "Vui long nhap link hoac ID folder Google Drive",
       });
     }
 
@@ -167,9 +254,16 @@ exports.createGallery = async (req, res) => {
 
     if (existingGallery) {
       return res.status(400).json({
-        message: "Folder Google Drive này đã được dùng cho album khác",
+        message: "Folder Google Drive nay da duoc dung cho album khac",
       });
     }
+
+    googleDriveService.clearFolderImageCache(finalDriveFolderId);
+
+    const finalCoverImage = await getCoverFromDrive({
+      coverImage,
+      drive_folder_id: finalDriveFolderId,
+    });
 
     const newGallery = await PublicGallery.create({
       title,
@@ -178,22 +272,22 @@ exports.createGallery = async (req, res) => {
       location,
       drive_folder_id: finalDriveFolderId,
       drive_folder_url,
-      coverImage,
+      coverImage: finalCoverImage,
       photographer_id: photographer_id || null,
-      service_id: service_id || null,
-      featured: featured || false,
+      service_ids: service_ids || [],
+      featured: Boolean(featured),
       is_active: is_active !== undefined ? is_active : true,
     });
 
     res.status(201).json({
-      message: "Tạo album thành công",
+      message: "Tao album thanh cong",
       gallery: newGallery,
     });
   } catch (error) {
     console.error("Create gallery error:", error);
 
     res.status(500).json({
-      message: "Lỗi tạo album",
+      message: "Loi tao album",
       error: error.message,
     });
   }
@@ -211,7 +305,7 @@ exports.updateGallery = async (req, res) => {
       drive_folder_id,
       coverImage,
       photographer_id,
-      service_id,
+      service_ids,
       featured,
       is_active,
     } = req.body;
@@ -220,10 +314,11 @@ exports.updateGallery = async (req, res) => {
 
     if (!gallery) {
       return res.status(404).json({
-        message: "Không tìm thấy album",
+        message: "Khong tim thay album",
       });
     }
 
+    const previousDriveFolderId = gallery.drive_folder_id;
     const finalDriveFolderId =
       drive_folder_id || extractDriveFolderId(drive_folder_url);
 
@@ -235,7 +330,7 @@ exports.updateGallery = async (req, res) => {
 
       if (existingGallery) {
         return res.status(400).json({
-          message: "Folder Google Drive này đã được dùng cho album khác",
+          message: "Folder Google Drive nay da duoc dung cho album khac",
         });
       }
 
@@ -246,26 +341,41 @@ exports.updateGallery = async (req, res) => {
     if (description !== undefined) gallery.description = description;
     if (category !== undefined) gallery.category = category;
     if (location !== undefined) gallery.location = location;
-    if (drive_folder_url !== undefined)
+    if (drive_folder_url !== undefined) {
       gallery.drive_folder_url = drive_folder_url;
-    if (coverImage !== undefined) gallery.coverImage = coverImage;
-    if (photographer_id !== undefined)
+    }
+
+    if (previousDriveFolderId) {
+      googleDriveService.clearFolderImageCache(previousDriveFolderId);
+    }
+    if (gallery.drive_folder_id) {
+      googleDriveService.clearFolderImageCache(gallery.drive_folder_id);
+    }
+
+    const finalCoverImage = await getCoverFromDrive({
+      coverImage: coverImage !== undefined ? coverImage : gallery.coverImage,
+      drive_folder_id: gallery.drive_folder_id,
+    });
+    gallery.coverImage = finalCoverImage;
+
+    if (photographer_id !== undefined) {
       gallery.photographer_id = photographer_id || null;
-    if (service_id !== undefined) gallery.service_id = service_id || null;
-    if (featured !== undefined) gallery.featured = featured;
+    }
+    if (service_ids !== undefined) gallery.service_ids = service_ids || [];
+    if (featured !== undefined) gallery.featured = Boolean(featured);
     if (is_active !== undefined) gallery.is_active = is_active;
 
     await gallery.save();
 
     res.status(200).json({
-      message: "Cập nhật album thành công",
+      message: "Cap nhat album thanh cong",
       gallery,
     });
   } catch (error) {
     console.error("Update gallery error:", error);
 
     res.status(500).json({
-      message: "Lỗi cập nhật album",
+      message: "Loi cap nhat album",
       error: error.message,
     });
   }
@@ -278,7 +388,7 @@ exports.toggleGalleryActive = async (req, res) => {
 
     if (!gallery) {
       return res.status(404).json({
-        message: "Không tìm thấy album",
+        message: "Khong tim thay album",
       });
     }
 
@@ -286,12 +396,12 @@ exports.toggleGalleryActive = async (req, res) => {
     await gallery.save();
 
     res.status(200).json({
-      message: gallery.is_active ? "Đã hiển thị album" : "Đã ẩn album",
+      message: gallery.is_active ? "Da hien thi album" : "Da an album",
       gallery,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Lỗi cập nhật trạng thái album",
+      message: "Loi cap nhat trang thai album",
       error: error.message,
     });
   }
@@ -304,18 +414,50 @@ exports.deleteGallery = async (req, res) => {
 
     if (!gallery) {
       return res.status(404).json({
-        message: "Không tìm thấy album",
+        message: "Khong tim thay album",
       });
     }
 
     await PublicGallery.findByIdAndDelete(req.params.id);
 
+    if (gallery.drive_folder_id) {
+      googleDriveService.clearFolderImageCache(gallery.drive_folder_id);
+    }
+
     res.status(200).json({
-      message: "Xóa album thành công",
+      message: "Xoa album thanh cong",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Lỗi xóa album",
+      message: "Loi xoa album",
+      error: error.message,
+    });
+  }
+};
+
+// ADMIN: PUT /api/galleries/admin/reorder
+exports.reorderGalleries = async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ message: "Du lieu khong hop le" });
+    }
+
+    const bulkOps = items.map((item) => ({
+      updateOne: {
+        filter: { _id: item._id },
+        update: { order: item.order },
+      },
+    }));
+
+    if (bulkOps.length > 0) {
+      await PublicGallery.bulkWrite(bulkOps);
+    }
+
+    res.status(200).json({ message: "Cap nhat thu tu thanh cong" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Loi cap nhat thu tu",
       error: error.message,
     });
   }

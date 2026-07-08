@@ -11,6 +11,11 @@ import {
   Typography,
   Alert,
   Divider,
+  Input,
+  DatePicker,
+  Row,
+  Col,
+  Card,
 } from "antd";
 import {
   EyeOutlined,
@@ -19,9 +24,17 @@ import {
   CloseCircleOutlined,
   ExclamationCircleFilled,
   CheckSquareOutlined,
+  SearchOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -47,9 +60,15 @@ const statusConfig = {
 };
 
 export default function AdminOrders() {
+  const [searchParams] = useSearchParams();
+
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);
+
+  // Bộ lọc client-side — khởi tạo từ URL param nếu có
+  const [searchId, setSearchId] = useState(() => searchParams.get("customerName") || "");
+  const [dateRange, setDateRange] = useState(null);
 
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -247,22 +266,6 @@ export default function AdminOrders() {
       ),
     },
     {
-      title: "THỢ CHỤP",
-      dataIndex: "assigned_staff_ids",
-      key: "assigned_staff_ids",
-      render: (staff) => {
-        if (!staff || staff.length === 0) {
-          return <span style={{ color: "#999" }}>Chưa phân công</span>;
-        }
-
-        return staff.map((p) => (
-          <div key={p._id} style={{ fontWeight: 500 }}>
-            {p.full_name}
-          </div>
-        ));
-      },
-    },
-    {
       title: "LỊCH CHỤP",
       key: "shoot_time",
       render: (_, record) => (
@@ -307,6 +310,27 @@ export default function AdminOrders() {
     },
   ];
 
+  // Tính toán danh sách sau khi lọc client-side
+  const filteredBookings = bookings.filter((b) => {
+    // Lọc theo mã đơn (6 ký tự cuối của _id)
+    const matchId =
+      !searchId ||
+      b._id.slice(-6).toUpperCase().includes(searchId.toUpperCase().trim()) ||
+      b.customer_id?.full_name?.toLowerCase().includes(searchId.toLowerCase().trim());
+
+    // Lọc theo khoảng ngày chụp
+    const matchDate =
+      !dateRange ||
+      !dateRange[0] ||
+      !dateRange[1] ||
+      (dayjs(b.start_time).isSameOrAfter(dateRange[0].startOf("day")) &&
+        dayjs(b.start_time).isSameOrBefore(dateRange[1].endOf("day")));
+
+    return matchId && matchDate;
+  });
+
+  const hasActiveFilter = searchId || (dateRange && dateRange[0]) || statusFilter !== "ALL";
+
   return (
     <div>
       {/* Header */}
@@ -329,28 +353,81 @@ export default function AdminOrders() {
           </Text>
         </div>
 
-        <Space>
-          <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={statusOptions}
-            style={{ width: 210 }}
-          />
-
-          <Button icon={<ReloadOutlined />} onClick={fetchBookings}>
-            Làm mới
-          </Button>
-        </Space>
+        <Button icon={<ReloadOutlined />} onClick={fetchBookings}>
+          Làm mới
+        </Button>
       </div>
+
+      {/* ── Filter Panel ── */}
+      <Card
+        bordered={false}
+        style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
+        bodyStyle={{ padding: "16px 24px" }}
+      >
+        <Row gutter={[16, 12]} align="middle">
+          <Col xs={24} md={10}>
+            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
+              <FilterOutlined style={{ marginRight: 6 }} />
+              Tìm theo mã đơn / tên khách
+            </span>
+            <Input
+              placeholder="Nhập mã đơn (VD: A1B2C3) hoặc tên khách hàng..."
+              prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              allowClear
+              size="large"
+              style={{ borderRadius: 6 }}
+            />
+          </Col>
+
+          <Col xs={24} md={7}>
+            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
+              Lọc theo ngày chụp
+            </span>
+            <DatePicker.RangePicker
+              style={{ width: "100%" }}
+              value={dateRange}
+              onChange={setDateRange}
+              format="DD/MM/YYYY"
+              size="large"
+              placeholder={["Từ ngày", "Đến ngày"]}
+              allowClear
+            />
+          </Col>
+
+          <Col xs={24} md={7}>
+            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
+              Lọc theo trạng thái
+            </span>
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
+              style={{ width: "100%" }}
+              size="large"
+            />
+          </Col>
+        </Row>
+
+        {hasActiveFilter && (
+          <div style={{ marginTop: 10, color: "#8c8c8c", fontSize: 13 }}>
+            Hiển thị <strong>{filteredBookings.length}</strong> / {bookings.length} đơn
+          </div>
+        )}
+      </Card>
 
       {/* Bảng danh sách */}
       <Table
         columns={columns}
-        dataSource={bookings}
+        dataSource={filteredBookings}
         rowKey="_id"
         loading={loading}
-        pagination={{ pageSize: 8 }}
-        scroll={{ x: 1200 }}
+        pagination={{
+          pageSize: 8,
+          showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} đơn`,
+        }}
+        scroll={{ x: 1100 }}
         bordered
       />
 
@@ -466,13 +543,6 @@ export default function AdminOrders() {
                 : "Không có"}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Nhân sự phân công">
-              {selectedBooking.assigned_staff_ids?.length > 0
-                ? selectedBooking.assigned_staff_ids
-                  .map((p) => p.full_name)
-                  .join(", ")
-                : "Chưa phân công"}
-            </Descriptions.Item>
 
             <Descriptions.Item label="Thời gian chụp">
               {dayjs(selectedBooking.start_time).format("HH:mm DD/MM/YYYY")} -{" "}

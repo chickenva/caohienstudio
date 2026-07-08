@@ -17,11 +17,11 @@ import {
   ShoppingCartOutlined,
   DollarOutlined,
   UserOutlined,
-  CameraOutlined,
   AppstoreOutlined,
   PictureOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -188,6 +188,7 @@ const AdminDashboard = () => {
         </Space>
       </div>
 
+
       <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
@@ -262,7 +263,6 @@ const AdminDashboard = () => {
           </Card>
         </Col>
       </Row>
-
       <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
@@ -319,20 +319,7 @@ const AdminDashboard = () => {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Nhiếp ảnh gia"
-              value={cards.activePhotographers || 0}
-              prefix={<CameraOutlined />}
-            />
-            <Text type="secondary">
-              Tổng: {cards.totalPhotographers || 0} người
-            </Text>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={12}>
           <Card loading={loading}>
             <Statistic
               title="Gói dịch vụ"
@@ -343,7 +330,7 @@ const AdminDashboard = () => {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={12}>
           <Card loading={loading}>
             <Statistic
               title="Album ảnh"
@@ -353,7 +340,6 @@ const AdminDashboard = () => {
             <Text type="secondary">Album đang hiển thị</Text>
           </Card>
         </Col>
-
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>

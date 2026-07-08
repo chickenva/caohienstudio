@@ -13,6 +13,9 @@ router.get("/admin/all", verifyAdmin, serviceController.getAllServicesForAdmin);
 // Lấy chi tiết dịch vụ cho admin
 router.get("/admin/:id", verifyAdmin, serviceController.getServiceByIdForAdmin);
 
+// Cập nhật thứ tự
+router.put("/admin/reorder", verifyAdmin, serviceController.reorderServices);
+
 // Tạo dịch vụ mới
 router.post("/admin", verifyAdmin, serviceController.createService);
 
