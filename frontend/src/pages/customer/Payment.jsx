@@ -5,7 +5,7 @@ import { LoadingOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 
 const PRIMARY_COLOR = "#9a8a78";
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Trang thanh toán cũ/legacy, giữ lại để tương thích route hiện có.
 const Payment = () => {

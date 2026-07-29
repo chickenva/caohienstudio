@@ -19,7 +19,7 @@ import axios from "axios";
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Form admin tạo/cập nhật album từ Google Drive.
 const GalleryForm = () => {

@@ -18,6 +18,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../Home.css";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 import {
   getGalleryImageSrcSet,
   getGalleryImageUrl,
@@ -65,8 +67,8 @@ const Home = () => {
       setLoading(true);
       try {
         const endpoints = [
-          axios.get("http://localhost:5000/api/services"),
-          axios.get("http://localhost:5000/api/galleries"),
+          axios.get(`${API_URL}/services`),
+          axios.get(`${API_URL}/galleries`),
         ];
 
         const [servicesRes, galleriesRes] = await Promise.allSettled(endpoints);
@@ -131,7 +133,7 @@ const Home = () => {
   const handleContactSubmit = async (values) => {
     setContactLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/contacts", values);
+      await axios.post(`${API_URL}/contacts`, values);
       message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được yêu cầu tư vấn. Nhân viên sẽ liên hệ với bạn trong vòng 24h.");
       contactForm.resetFields();
     } catch (err) {

@@ -18,6 +18,7 @@ import {
   preloadImages,
 } from "../../utils/imageUtils";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
@@ -238,7 +239,7 @@ const GalleryDetail = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/galleries/${id}`,
+        `${API_URL}/galleries/${id}`,
       );
       const fetchedGallery = res.data.gallery;
       const fetchedImages = res.data.images || [];

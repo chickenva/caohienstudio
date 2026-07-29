@@ -7,6 +7,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Trang danh sách nhiếp ảnh gia đang hoạt động.
 const Photographer = () => {
@@ -21,7 +22,7 @@ const Photographer = () => {
       setLoading(true);
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/users/photographers",
+          `${API_URL}/users/photographers`,
         );
         setStaffs(res.data.photographers || []);
       } catch (err) {

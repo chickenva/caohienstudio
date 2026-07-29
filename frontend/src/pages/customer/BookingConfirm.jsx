@@ -6,7 +6,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 const PRIMARY_COLOR = "#BFA16A";
 
 // Trang xác nhận lại thông tin trước khi khách gửi yêu cầu đặt lịch.

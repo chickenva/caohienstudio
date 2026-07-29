@@ -11,6 +11,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Trang hồ sơ nhiếp ảnh gia và điều hướng đặt lịch theo người chụp.
 const PhotographerDetail = () => {
@@ -60,7 +61,7 @@ const PhotographerDetail = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/users/photographers/${id}`,
+        `${API_URL}/users/photographers/${id}`,
       );
       setPhotographer(res.data.photographer);
     } catch (err) {

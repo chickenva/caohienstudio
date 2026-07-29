@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Result, Button, Spin } from "antd";
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+
 // Trang nhận kết quả redirect từ VNPay sau khi khách thanh toán cọc.
 const VnpayReturn = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +27,7 @@ const VnpayReturn = () => {
 
         try {
           await axios.post(
-            "http://localhost:5000/api/bookings/vnpay-return",
+            `${API_URL}/bookings/vnpay-return`,
             vnpayData,
           );
           setPaymentStatus(vnp_ResponseCode === "00" ? "success" : "error");

@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+
 // Trang thông báo đặt lịch thành công trong luồng cũ.
 const BookingSuccess = () => {
   const { id } = useParams();
@@ -12,7 +14,7 @@ const BookingSuccess = () => {
 
   useEffect(() => {
     const fetchDetail = async () => {
-      const res = await axios.get(`http://localhost:5000/api/bookings/${id}`, {
+      const res = await axios.get(`${API_URL}/bookings/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setBooking(res.data);

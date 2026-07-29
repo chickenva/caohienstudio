@@ -30,7 +30,7 @@ import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },

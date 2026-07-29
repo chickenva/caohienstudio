@@ -12,8 +12,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
-
-
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Trang danh sách dịch vụ, lọc theo danh mục và dẫn sang chi tiết/đặt lịch.
 const Services = () => {
@@ -23,10 +22,10 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
 
   const [categories, setCategories] = useState([
-    { key: "ALL", label: "Tất cả", description: "Tổng hợp các gói chụp, quay, in ảnh và photobook hiện có tại Cao Hiển Studio." }
+    { key: "ALL", label: "TẤT CẢ GÓI", description: "Toàn bộ bảng giá dịch vụ chụp ảnh" }
   ]);
 
-  const currentCategory = searchParams.get("category") || "ALL";
+  const currentCategory = searchParams.get("cat") || "ALL";
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
@@ -35,8 +34,8 @@ const Services = () => {
       setLoading(true);
       try {
         const [catsRes, srvRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/categories?type=SERVICE&is_active=true"),
-          axios.get(`http://localhost:5000/api/services${currentCategory !== "ALL" ? `?category=${currentCategory}` : ""}`)
+          axios.get(`${API_URL}/categories?type=SERVICE&is_active=true`),
+          axios.get(`${API_URL}/services${currentCategory !== "ALL" ? `?category=${currentCategory}` : ""}`)
         ]);
 
         const dynamicCategories = (catsRes.data.categories || []).map(c => ({

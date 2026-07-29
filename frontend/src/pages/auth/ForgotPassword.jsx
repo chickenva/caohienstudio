@@ -7,6 +7,8 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+
 // Trang quên mật khẩu, gửi OTP và cập nhật mật khẩu mới.
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/forgot-password",
+        `${API_URL}/auth/forgot-password`,
         { email: values.email },
       );
       setEmail(values.email);
@@ -44,13 +46,13 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       // 1. Verify OTP
-      await axios.post("http://localhost:5000/api/auth/verify-otp", {
+      await axios.post(`${API_URL}/auth/verify-otp`, {
         email,
         otp: values.otp,
       });
 
       // 2. Reset password
-      await axios.post("http://localhost:5000/api/auth/reset-password", {
+      await axios.post(`${API_URL}/auth/reset-password`, {
         email,
         newPassword: values.newPassword,
       });

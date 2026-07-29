@@ -13,6 +13,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 // Trang khách hàng xem và cập nhật thông tin cá nhân có xác thực OTP.
 const Profile = () => {
@@ -39,7 +40,7 @@ const Profile = () => {
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/auth/me", {
+      const res = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -87,7 +88,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.put(
-        "http://localhost:5000/api/auth/update-profile",
+        `${API_URL}/auth/update-profile`,
         values,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -124,7 +125,7 @@ const Profile = () => {
     const token = localStorage.getItem("token");
     axios
       .post(
-        "http://localhost:5000/api/auth/send-update-otp",
+        `${API_URL}/auth/send-update-otp`,
         targetEmail ? { email: targetEmail } : {},
         { headers: { Authorization: `Bearer ${token}` } },
       )
@@ -148,14 +149,14 @@ const Profile = () => {
       const emailCurrent = JSON.parse(localStorage.getItem("user")).email;
       const verifyEmail = pendingData.email || emailCurrent;
 
-      await axios.post("http://localhost:5000/api/auth/verify-otp", {
+      await axios.post(`${API_URL}/auth/verify-otp`, {
         email: verifyEmail,
         otp: otpValue.otp,
       });
 
       if (pendingData.type === "INFO") {
         const res = await axios.put(
-          "http://localhost:5000/api/auth/update-profile",
+          `${API_URL}/auth/update-profile`,
           { ...pendingData, otp: otpValue.otp },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -177,7 +178,7 @@ const Profile = () => {
         setIsInfoChanged(false);
       } else {
         await axios.put(
-          "http://localhost:5000/api/auth/reset-password-profile",
+          `${API_URL}/auth/reset-password-profile`,
           { email: emailCurrent, newPassword: pendingData.newPassword },
           { headers: { Authorization: `Bearer ${token}` } },
         );

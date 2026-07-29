@@ -13,6 +13,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 const CATEGORY_LABELS = {
   TRADITIONAL: "TRUYỀN THỐNG",
@@ -37,7 +38,7 @@ const ServiceDetail = () => {
 
     const fetchDetail = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/services/${id}`);
+        const res = await axios.get(`${API_URL}/services/${id}`);
         setService(res.data);
       } catch (err) {
         message.error("Không tìm thấy thông tin dịch vụ");

@@ -56,7 +56,7 @@ const WELCOME_MESSAGE = {
   timestamp: new Date().toISOString(),
 };
 
-const API_URL = "http://localhost:5000/api/ai-chat";
+const API_URL = `${import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api"}/ai-chat`;
 
 // ==========================================
 // Component chính của widget chat AI

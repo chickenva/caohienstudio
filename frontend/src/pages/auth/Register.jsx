@@ -7,6 +7,8 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+
 // Trang đăng ký tài khoản customer với xác thực OTP email.
 const Register = () => {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const Register = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/send-register-otp",
+        `${API_URL}/auth/send-register-otp`,
         { email: values.email },
       );
       setEmail(values.email);
@@ -42,13 +44,13 @@ const Register = () => {
     setLoading(true);
     try {
       // 1. Gọi API xác thực OTP trước
-      await axios.post("http://localhost:5000/api/auth/verify-otp", {
+      await axios.post(`${API_URL}/auth/verify-otp`, {
         email,
         otp: values.otp,
       });
 
       // 2. Nếu OTP hợp lệ, tự động gọi tiếp API tạo user
-      await axios.post("http://localhost:5000/api/auth/register", {
+      await axios.post(`${API_URL}/auth/register`, {
         email,
         fullName: values.fullName,
         phone: values.phone,

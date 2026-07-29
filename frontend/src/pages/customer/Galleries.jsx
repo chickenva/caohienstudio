@@ -18,6 +18,7 @@ import {
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
+const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
 
 const categoryLabels = {
   WEDDING: "Ảnh cưới",
@@ -48,8 +49,8 @@ const Galleries = () => {
       setLoading(true);
       try {
         const [catsRes, galsRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/categories?type=GALLERY&is_active=true"),
-          axios.get(`http://localhost:5000/api/galleries?category=${currentCategory}`)
+          axios.get(`${API_URL}/categories?type=GALLERY&is_active=true`),
+          axios.get(`${API_URL}/galleries?category=${currentCategory}`)
         ]);
 
         const dynamicCategories = (catsRes.data.categories || []).map((c, i) => ({
