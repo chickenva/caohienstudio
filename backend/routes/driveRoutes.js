@@ -1,3 +1,4 @@
+// Router Google Drive phục vụ quản lý ảnh album.
 const express = require("express");
 const multer = require("multer");
 const driveController = require("../controllers/driveController");

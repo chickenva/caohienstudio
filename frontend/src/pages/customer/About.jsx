@@ -7,6 +7,7 @@ const PRIMARY_COLOR = "#BFA16A";
 const BG_WARM = "#FAF7F2";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
+// Trang giới thiệu studio, phong cách chụp và thông tin thương hiệu.
 const About = () => {
   const navigate = useNavigate();
 

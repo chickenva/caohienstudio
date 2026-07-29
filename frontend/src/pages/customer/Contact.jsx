@@ -40,6 +40,7 @@ const FORECAST_LOCATIONS = [
   "Vĩnh Long", "Vĩnh Phúc", "Yên Bái",
 ];
 
+// Trang liên hệ/tư vấn cho lịch nhiều ngày hoặc nhu cầu chưa chốt đơn.
 const Contact = () => {
   const [form] = Form.useForm();
   const location = useLocation();

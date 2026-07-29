@@ -66,6 +66,7 @@ const DragIndexContext = React.createContext({
   listeners: null,
 });
 
+// Nút kéo thả dòng trong bảng sắp xếp thứ tự.
 const DragHandle = () => {
   const { setActivatorNodeRef, listeners } = React.useContext(DragIndexContext);
   return (
@@ -80,6 +81,7 @@ const DragHandle = () => {
   );
 };
 
+// Bọc một dòng bảng để hỗ trợ kéo thả bằng dnd-kit.
 const SortableRow = ({ children, ...props }) => {
   const id = props["data-row-key"];
   const sortable = useSortable({
@@ -124,6 +126,7 @@ const SortableRow = ({ children, ...props }) => {
   );
 };
 
+// Trang admin quản lý album public liên kết Google Drive.
 const AdminGalleries = () => {
   const navigate = useNavigate();
 

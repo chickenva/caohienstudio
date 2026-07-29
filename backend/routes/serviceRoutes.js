@@ -1,3 +1,4 @@
+// Router dịch vụ: public xem gói, admin quản lý gói.
 const express = require("express");
 const router = express.Router();
 const serviceController = require("../controllers/serviceController");

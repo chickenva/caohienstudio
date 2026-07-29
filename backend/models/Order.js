@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Schema đơn hàng legacy, giữ lại để tương thích dữ liệu/code cũ nếu còn.
 const orderSchema = new mongoose.Schema(
   {
     customerID: {

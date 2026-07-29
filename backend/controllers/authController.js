@@ -9,7 +9,12 @@ const transporter = nodemailer.createTransport({
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
-// Đăng ký tài khoản
+/**
+ * Hàm đăng ký tài khoản mới cho người dùng.
+ * Xử lý: Kiểm tra định dạng dữ liệu, kiểm tra email trùng lặp, mã hóa mật khẩu, tạo user mới và xóa mã OTP đã dùng.
+ * @param {Object} req - Yêu cầu từ client (chứa fullName, phone, email, password)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.register = async (req, res) => {
   try {
     const { fullName, phone, email, password } = req.body; // Lấy fullName
@@ -62,7 +67,12 @@ exports.register = async (req, res) => {
   }
 };
 
-// Đăng nhập
+/**
+ * Hàm xử lý đăng nhập người dùng.
+ * Xử lý: Kiểm tra email tồn tại, kiểm tra trạng thái khóa tài khoản, đối chiếu mật khẩu đã mã hóa, và cấp phát JWT token.
+ * @param {Object} req - Yêu cầu từ client (chứa email, password)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -104,7 +114,12 @@ exports.login = async (req, res) => {
   }
 };
 
-// Đặt lại mật khẩu
+/**
+ * Hàm đặt lại mật khẩu người dùng (thường gọi sau khi xác thực OTP thành công).
+ * Xử lý: Kiểm tra độ mạnh mật khẩu mới, mã hóa, cập nhật vào database và xóa OTP.
+ * @param {Object} req - Yêu cầu từ client (chứa email, newPassword)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.resetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
@@ -131,7 +146,12 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// Gửi OTP Đăng ký (Check email chưa tồn tại)
+/**
+ * Hàm gửi OTP để đăng ký tài khoản.
+ * Xử lý: Đảm bảo email chưa được đăng ký, tạo mã OTP ngẫu nhiên 4 số, lưu vào CSDL và gửi email qua Nodemailer.
+ * @param {Object} req - Yêu cầu từ client (chứa email)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.sendRegisterOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -171,7 +191,12 @@ exports.sendRegisterOtp = async (req, res) => {
   }
 };
 
-// Gửi OTP Quên mật khẩu (Check email phải tồn tại)
+/**
+ * Hàm gửi OTP để khôi phục mật khẩu.
+ * Xử lý: Đảm bảo email đã tồn tại trong hệ thống, tạo OTP 4 số, lưu CSDL và gửi email.
+ * @param {Object} req - Yêu cầu từ client (chứa email)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -213,7 +238,12 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// Xác thực OTP chung
+/**
+ * Hàm xác thực mã OTP.
+ * Xử lý: Kiểm tra xem mã OTP có khớp với email hay không, nếu không khớp hoặc hết hạn thì trả về lỗi.
+ * @param {Object} req - Yêu cầu từ client (chứa email, otp)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -229,7 +259,12 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
-// Gửi OTP để đổi Email hoặc Mật khẩu
+/**
+ * Hàm gửi OTP để đổi Email hoặc số điện thoại.
+ * Xử lý: Tạo và lưu mã OTP cho địa chỉ email cần đổi (hoặc email hiện tại nếu không đổi email), sau đó gửi qua email.
+ * @param {Object} req - Yêu cầu từ client (chứa email mới nếu có)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.sendUpdateOtp = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -269,7 +304,12 @@ exports.sendUpdateOtp = async (req, res) => {
   }
 };
 
-// Lấy thông tin cá nhân (Dùng Middleware verifyToken để lấy req.user.id)
+/**
+ * Hàm lấy thông tin cá nhân của người dùng đang đăng nhập.
+ * Xử lý: Dùng thông tin `req.user.id` từ token, truy vấn CSDL và ẩn trường mật khẩu.
+ * @param {Object} req - Yêu cầu từ client (đã đi qua middleware xác thực)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -279,7 +319,12 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// Cập nhật Profile (Họ tên, SĐT, Email)
+/**
+ * Hàm cập nhật Profile người dùng (Họ tên, SĐT, Email).
+ * Xử lý: Cập nhật các trường được gửi lên. Riêng cập nhật Email bắt buộc phải có mã OTP hợp lệ.
+ * @param {Object} req - Yêu cầu từ client (chứa full_name, phone, email, otp)
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.updateProfile = async (req, res) => {
   try {
     // Nhận dữ liệu từ Frontend (bao gồm cả OTP nếu có)

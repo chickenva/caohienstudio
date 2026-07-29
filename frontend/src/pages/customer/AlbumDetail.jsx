@@ -4,6 +4,7 @@ import { Row, Col, Image } from "antd";
 
 const FONT_SERIF = '"Playfair Display", serif';
 
+// Trang chi tiết album mẫu dùng cho trải nghiệm xem bộ ảnh.
 const AlbumDetail = () => {
   const { slug } = useParams();
 

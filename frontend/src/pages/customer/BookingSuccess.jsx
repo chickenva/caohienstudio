@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 
+// Trang thông báo đặt lịch thành công trong luồng cũ.
 const BookingSuccess = () => {
   const { id } = useParams();
   const navigate = useNavigate();

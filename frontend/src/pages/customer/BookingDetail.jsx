@@ -33,10 +33,12 @@ const { Text, Paragraph } = Typography;
 const API_URL = "http://localhost:5000/api";
 const PRIMARY_COLOR = "#9a8a78";
 
+// Định dạng tiền VND trong chi tiết đơn.
 const formatCurrency = (value) => {
   return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 };
 
+// Nhận diện đơn PENDING legacy đã quá hạn thanh toán.
 const isExpiredPendingBooking = (booking) => {
   if (!booking || booking.status !== "PENDING") return false;
   if (!booking.expires_at) return true;
@@ -45,14 +47,19 @@ const isExpiredPendingBooking = (booking) => {
     dayjs(booking.expires_at).isBefore(dayjs());
 };
 
+// Kiểm tra đơn hiện tại có còn được thanh toán qua VNPay không.
 const isPayableBooking = (booking) => {
+  if (!booking) return false;
+  if (booking.status === "WAITING_PAYMENT") return true;
+
   return (
-    booking?.status === "PENDING" &&
-    booking?.expires_at &&
+    booking.status === "PENDING" &&
+    booking.expires_at &&
     dayjs(booking.expires_at).isAfter(dayjs())
   );
 };
 
+// Quy đổi trạng thái legacy/lỗi thanh toán về trạng thái dễ hiểu để hiển thị.
 const getDisplayOrderStatus = (booking) => {
   if (isExpiredPendingBooking(booking)) {
     return "CANCELED";
@@ -65,6 +72,7 @@ const getDisplayOrderStatus = (booking) => {
   return booking?.status;
 };
 
+// Chuẩn hóa text thanh toán để khách không thấy trạng thái kỹ thuật cũ.
 const getDisplayPaymentStatus = (booking) => {
   if (isExpiredPendingBooking(booking)) {
     return "Chưa thanh toán";
@@ -77,8 +85,12 @@ const getDisplayPaymentStatus = (booking) => {
   return booking?.payment_status_text || "Chưa thanh toán";
 };
 
+// Render tag trạng thái đơn trong màn chi tiết.
 const renderOrderStatus = (status) => {
   const map = {
+    REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
+    CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
+    WAITING_PAYMENT: { color: "gold", text: "Chờ đặt cọc" },
     PENDING: { color: "gold", text: "Chờ thanh toán" },
     DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
     CONFIRMED: { color: "blue", text: "Đã xác nhận" },
@@ -96,6 +108,7 @@ const renderOrderStatus = (status) => {
   return <Tag color={item.color}>{item.text}</Tag>;
 };
 
+// Render tag trạng thái thanh toán trong màn chi tiết.
 const renderPaymentStatus = (text) => {
   const finalText = text === "Đã hết hạn" ? "Chưa thanh toán" : text;
 
@@ -107,14 +120,17 @@ const renderPaymentStatus = (text) => {
   return <Tag color={color}>{finalText || "Chưa thanh toán"}</Tag>;
 };
 
+// Chọn màu cho số tiền đã thanh toán.
 const getPaidAmountColor = (amount) => {
   return Number(amount || 0) > 0 ? "#389e0d" : "#000";
 };
 
+// Chọn màu cảnh báo cho số tiền còn lại.
 const getRemainingAmountColor = (amount) => {
   return Number(amount || 0) > 0 ? "#cf1322" : "#000";
 };
 
+// Trang khách xem chi tiết một đơn, thanh toán lại hoặc hủy khi còn cho phép.
 const BookingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -130,6 +146,7 @@ const BookingDetail = () => {
     fetchBooking();
   }, [id]);
 
+  // Lấy chi tiết booking và lịch sử payment từ backend.
   const fetchBooking = async () => {
     setLoading(true);
 
@@ -151,6 +168,7 @@ const BookingDetail = () => {
     }
   };
 
+  // Tạo lại link VNPay khi đơn đang chờ thanh toán/cọc.
   const handleRepay = async () => {
     setRepayLoading(true);
 
@@ -180,6 +198,7 @@ const BookingDetail = () => {
     }
   };
 
+  // Gửi yêu cầu hủy đơn khi trạng thái còn được phép hủy.
   const handleCancelBooking = async () => {
     setCancelLoading(true);
 
@@ -204,6 +223,7 @@ const BookingDetail = () => {
     }
   };
 
+  // Đặt lại bằng cách mang các gói/địa điểm cũ sang form booking.
   const handleRebook = () => {
     // Map các ID dịch vụ chính (bao gồm cả original_service_ids nếu có)
     const mainServiceIds = booking.original_service_ids?.length
@@ -226,12 +246,15 @@ const BookingDetail = () => {
     });
   };
 
+  // Tính deadline đếm ngược cho đơn PENDING legacy.
   const deadline = useMemo(() => {
     if (!booking?.expires_at) return null;
-    return dayjs(booking.expires_at).valueOf();
+    const expiresAt = dayjs(booking.expires_at);
+    return expiresAt.isAfter(dayjs()) ? expiresAt.valueOf() : null;
   }, [booking]);
 
   const canPay = isPayableBooking(booking);
+  const canCancelBooking = ["REQUESTED", "CONTRACT_SENT", "PENDING"].includes(booking?.status);
   const isPendingExpired = isExpiredPendingBooking(booking);
   const displayOrderStatus = getDisplayOrderStatus(booking);
   const displayPaymentStatus = getDisplayPaymentStatus(booking);
@@ -246,6 +269,7 @@ const BookingDetail = () => {
     );
   }
 
+  // Khi hết giờ thanh toán, gọi backend kiểm tra và cập nhật trạng thái.
   const handleCountdownFinish = async () => {
     message.warning("Đơn hàng đã quá hạn thanh toán. Đang cập nhật trạng thái...");
 
@@ -392,18 +416,28 @@ const BookingDetail = () => {
             <Alert
               type="warning"
               showIcon
-              message="Đơn hàng đang chờ thanh toán"
-              description="Bạn cần hoàn tất thanh toán trong 15 phút để giữ lịch chụp. Nếu quá hạn, đơn sẽ tự chuyển sang trạng thái đã hủy."
+              message={booking.status === "WAITING_PAYMENT" ? "Đơn hàng đang chờ đặt cọc" : "Đơn hàng đang chờ thanh toán"}
+              description={
+                booking.status === "WAITING_PAYMENT"
+                  ? "Bạn cần hoàn tất đặt cọc qua VNPay để xác nhận lịch. Nếu link thanh toán hết hạn, bạn có thể tạo lại link mới."
+                  : "Bạn cần hoàn tất thanh toán trong thời gian giữ chỗ. Nếu quá hạn, đơn có thể bị hủy."
+              }
               style={{ marginBottom: 18 }}
             />
 
             <div style={{ textAlign: "center" }}>
-              <Countdown
-                title="Thời gian thanh toán còn lại"
-                value={deadline}
-                format="mm:ss"
-                onFinish={handleCountdownFinish}
-              />
+              {deadline ? (
+                <Countdown
+                  title="Thời gian thanh toán còn lại"
+                  value={deadline}
+                  format="HH:mm:ss"
+                  onFinish={handleCountdownFinish}
+                />
+              ) : (
+                <div style={{ color: "#8c6d1f", fontWeight: 600 }}>
+                  Bạn có thể tạo lại link thanh toán để tiếp tục đặt cọc.
+                </div>
+              )}
 
               <Space wrap style={{ marginTop: 18 }}>
                 <Button
@@ -429,6 +463,7 @@ const BookingDetail = () => {
                   loading={cancelLoading}
                   onClick={() => setCancelModalOpen(true)}
                   style={{
+                    display: canCancelBooking ? undefined : "none",
                     height: "46px",
                     padding: "0 28px",
                   }}
@@ -438,7 +473,7 @@ const BookingDetail = () => {
 
                 {/* Modal xác nhận hủy đơn */}
                 <Modal
-                  open={cancelModalOpen}
+                  open={canCancelBooking && cancelModalOpen}
                   onCancel={() => setCancelModalOpen(false)}
                   footer={null}
                   centered

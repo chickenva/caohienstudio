@@ -12,6 +12,7 @@ import "../../Home.css";
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
+// Trang hồ sơ nhiếp ảnh gia và điều hướng đặt lịch theo người chụp.
 const PhotographerDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();

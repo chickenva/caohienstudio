@@ -4,11 +4,13 @@ const Service = require("../models/Service");
 const PublicGallery = require("../models/PublicGallery");
 const Payment = require("../models/Payment");
 
+// Lấy mốc đầu tháng hiện tại để tính số liệu dashboard theo tháng.
 const getStartOfMonth = () => {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
 };
 
+// Lấy mốc đầu tháng sau để tạo khoảng thời gian [đầu tháng, đầu tháng sau).
 const getStartOfNextMonth = () => {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -18,6 +20,12 @@ const getStartOfNextMonth = () => {
 // ADMIN: Tổng quan Dashboard
 // GET /api/dashboard/admin/overview
 // ==========================================
+/**
+ * Hàm thống kê tổng quan (Dashboard) cho Admin.
+ * Xử lý: Lấy tổng doanh thu, số khách hàng, tổng số đơn đặt lịch và danh sách đơn mới nhất.
+ * @param {Object} req - Yêu cầu từ Admin
+ * @param {Object} res - Đối tượng phản hồi
+ */
 exports.getAdminOverview = async (req, res) => {
   try {
     const startOfMonth = getStartOfMonth();
@@ -25,8 +33,11 @@ exports.getAdminOverview = async (req, res) => {
 
     const [
       totalBookings,
-      pendingBookings,
-      depositedBookings,
+      requestedBookings,
+      contractSentBookings,
+      waitingPaymentBookings,
+      legacyPendingBookings,
+      legacyDepositedBookings,
       confirmedBookings,
       inProgressBookings,
       completedBookings,
@@ -52,6 +63,9 @@ exports.getAdminOverview = async (req, res) => {
     ] = await Promise.all([
       Booking.countDocuments(),
 
+      Booking.countDocuments({ status: "REQUESTED" }),
+      Booking.countDocuments({ status: "CONTRACT_SENT" }),
+      Booking.countDocuments({ status: "WAITING_PAYMENT" }),
       Booking.countDocuments({ status: "PENDING" }),
       Booking.countDocuments({ status: "DEPOSITED" }),
       Booking.countDocuments({ status: "CONFIRMED" }),
@@ -80,7 +94,7 @@ exports.getAdminOverview = async (req, res) => {
       Booking.aggregate([
         {
           $match: {
-            status: { $in: ["DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"] },
+            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "DEPOSITED"] },
           },
         },
         {
@@ -94,7 +108,7 @@ exports.getAdminOverview = async (req, res) => {
       Booking.aggregate([
         {
           $match: {
-            status: "DEPOSITED",
+            status: { $in: ["WAITING_PAYMENT", "DEPOSITED"] },
           },
         },
         {
@@ -122,7 +136,7 @@ exports.getAdminOverview = async (req, res) => {
       Booking.aggregate([
         {
           $match: {
-            status: { $in: ["DEPOSITED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"] },
+            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "DEPOSITED"] },
             createdAt: {
               $gte: startOfMonth,
               $lt: startOfNextMonth,
@@ -170,6 +184,9 @@ exports.getAdminOverview = async (req, res) => {
     ]);
 
     const bookingStatus = {
+      REQUESTED: 0,
+      CONTRACT_SENT: 0,
+      WAITING_PAYMENT: 0,
       PENDING: 0,
       DEPOSITED: 0,
       CONFIRMED: 0,
@@ -187,8 +204,11 @@ exports.getAdminOverview = async (req, res) => {
     res.status(200).json({
       cards: {
         totalBookings,
-        pendingBookings,
-        depositedBookings,
+        requestedBookings,
+        contractSentBookings,
+        waitingPaymentBookings,
+        pendingBookings: waitingPaymentBookings + legacyPendingBookings,
+        depositedBookings: legacyDepositedBookings,
         confirmedBookings,
         inProgressBookings,
         completedBookings,

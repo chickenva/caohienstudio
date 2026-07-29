@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Schema album public, liên kết folder Google Drive để lấy ảnh.
 const publicGallerySchema = new mongoose.Schema(
   {
     // Tên album hiển thị trên web

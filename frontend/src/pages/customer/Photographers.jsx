@@ -8,6 +8,7 @@ import "../../Home.css";
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
+// Trang danh sách nhiếp ảnh gia đang hoạt động.
 const Photographer = () => {
   const navigate = useNavigate();
   const [staffs, setStaffs] = useState([]);

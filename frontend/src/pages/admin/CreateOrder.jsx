@@ -11,13 +11,10 @@ import {
   Col,
   Space,
   DatePicker,
-  TimePicker,
   InputNumber,
   List,
   Tag,
   Alert,
-  Checkbox,
-  Switch,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -34,8 +31,6 @@ const { TextArea } = Input;
 
 const API_URL = "http://localhost:5000/api";
 
-// Options removed to hardcode CONFIRMED status and MANUAL payment method
-
 const OrdersCreate = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -51,10 +46,10 @@ const OrdersCreate = () => {
 
   const [selectedMainIds, setSelectedMainIds] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState([]);
-  const [isStudio, setIsStudio] = useState(false);
+  // isStudio: xác định shooting_type; mặc định true (Chụp tại Studio)
+  const [isStudio, setIsStudio] = useState(true);
   const [totalAmount, setTotalAmount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
-  const [isRangeMode, setIsRangeMode] = useState(false);
 
   const getToken = () => localStorage.getItem("token");
 
@@ -65,14 +60,27 @@ const OrdersCreate = () => {
   const fetchOptions = async () => {
     try {
       const serviceRes = await axios.get(`${API_URL}/services`);
-
-      const allServices = Array.isArray(serviceRes.data) ? serviceRes.data : (serviceRes.data.services || []);
-      setMainServices(allServices.filter(s => s.category !== "PRINT" &&
-        !["gói lẻ lễ tối", "gói thêm flycam"].some(k => (s.name || "").toLowerCase().includes(k))
-      ));
-      setAddonServices(allServices.filter(s => s.category === "PRINT" ||
-        ["gói lẻ lễ tối", "gói thêm flycam"].some(k => (s.name || "").toLowerCase().includes(k))
-      ));
+      const allServices = Array.isArray(serviceRes.data)
+        ? serviceRes.data
+        : serviceRes.data.services || [];
+      setMainServices(
+        allServices.filter(
+          (s) =>
+            s.category !== "PRINT" &&
+            !["gói lẻ lễ tối", "gói thêm flycam"].some((k) =>
+              (s.name || "").toLowerCase().includes(k),
+            ),
+        ),
+      );
+      setAddonServices(
+        allServices.filter(
+          (s) =>
+            s.category === "PRINT" ||
+            ["gói lẻ lễ tối", "gói thêm flycam"].some((k) =>
+              (s.name || "").toLowerCase().includes(k),
+            ),
+        ),
+      );
     } catch (err) {
       message.error("Không thể tải dịch vụ");
     }
@@ -82,7 +90,9 @@ const OrdersCreate = () => {
     const keyword = form.getFieldValue("customer_search");
 
     if (!keyword || keyword.trim().length < 2) {
-      message.warning("Vui lòng nhập email, số điện thoại hoặc tên khách hàng");
+      message.warning(
+        "Vui lòng nhập email, số điện thoại hoặc tên khách hàng",
+      );
       return;
     }
 
@@ -108,7 +118,9 @@ const OrdersCreate = () => {
         );
       }
     } catch (err) {
-      message.error(err.response?.data?.message || "Không thể tìm khách hàng");
+      message.error(
+        err.response?.data?.message || "Không thể tìm khách hàng",
+      );
     } finally {
       setSearchingCustomer(false);
     }
@@ -139,12 +151,12 @@ const OrdersCreate = () => {
 
   const calculateTotalAmount = (mainIds, addonIds) => {
     let price = 0;
-    mainIds.forEach(id => {
-      const service = mainServices.find(s => s._id === id);
+    mainIds.forEach((id) => {
+      const service = mainServices.find((s) => s._id === id);
       if (service) price += service.base_price || 0;
     });
-    addonIds.forEach(id => {
-      const addon = addonServices.find(a => a._id === id);
+    addonIds.forEach((id) => {
+      const addon = addonServices.find((a) => a._id === id);
       if (addon) price += addon.base_price || 0;
     });
     return price;
@@ -172,19 +184,9 @@ const OrdersCreate = () => {
     setLoading(true);
 
     try {
-      const firstService = mainServices.find((item) => item._id === values.service_id[0]);
-      
-      const shootDate = values.shoot_date;
-      const shootTime = values.shoot_time || dayjs().hour(0).minute(0);
-      let startDateTime, endDateTime;
-
-      if (isRangeMode && Array.isArray(shootDate)) {
-        startDateTime = dayjs(shootDate[0]).hour(shootTime.hour()).minute(shootTime.minute());
-        endDateTime = dayjs(shootDate[1]).hour(shootTime.hour()).minute(shootTime.minute());
-      } else {
-        startDateTime = dayjs(shootDate).hour(shootTime.hour()).minute(shootTime.minute());
-        endDateTime = startDateTime.add(firstService?.duration_hours || 4, "hour");
-      }
+      const shootDateFormatted = values.shoot_date
+        ? values.shoot_date.format("YYYY-MM-DD")
+        : undefined;
 
       const payload = {
         customer_id: values.customer_id || undefined,
@@ -193,14 +195,18 @@ const OrdersCreate = () => {
         customer_phone: values.customer_phone,
 
         service_id: values.service_id[0],
-        extra_service_ids: [...values.service_id.slice(1), ...(values.extra_service_ids || [])],
-        start_time: startDateTime.toISOString(),
-        end_time: endDateTime.toISOString(),
+        extra_service_ids: [
+          ...values.service_id.slice(1),
+          ...(values.extra_service_ids || []),
+        ],
+        shoot_date: shootDateFormatted,
+        shooting_type: isStudio ? "STUDIO" : "OUTDOOR",
+        shooting_session: values.shooting_session,
         location: values.location,
         note: values.note,
 
         total_amount: values.total_amount,
-        status: "CONFIRMED",
+        status: values.status || "REQUESTED",
         paid_amount: values.paid_amount,
         payment_method: "MANUAL",
       };
@@ -221,10 +227,12 @@ const OrdersCreate = () => {
       } else if (err.response?.status === 409) {
         message.error(
           err.response?.data?.message ||
-            "Nhiếp ảnh gia đã có lịch trong khung giờ này",
+            "Studio/Ekip đã có lịch trong buổi này",
         );
       } else {
-        message.error(err.response?.data?.message || "Tạo đơn đặt hộ thất bại");
+        message.error(
+          err.response?.data?.message || "Tạo đơn đặt hộ thất bại",
+        );
       }
     } finally {
       setLoading(false);
@@ -257,6 +265,9 @@ const OrdersCreate = () => {
         onFinish={handleSubmit}
         initialValues={{
           paid_amount: 0,
+          status: "REQUESTED",
+          shooting_type_ui: "STUDIO",
+          location: "Cao Hiển Studio",
         }}
       >
         <Row gutter={24}>
@@ -384,125 +395,87 @@ const OrdersCreate = () => {
           </Col>
 
           <Col xs={24} lg={14}>
+            {/* === Card dịch vụ (giữ nguyên) === */}
             <Card title="2. Thông tin lịch chụp" style={{ marginBottom: 20 }}>
               <Row gutter={16}>
-                <Col xs={24} md={12}>
+                {/* Ngày chụp */}
+                <Col xs={24} md={8}>
                   <Form.Item
-                    label="Gói dịch vụ chính"
-                    name="service_id"
+                    label="Ngày chụp"
+                    name="shoot_date"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn ngày chụp" },
+                    ]}
+                  >
+                    <DatePicker
+                      size="large"
+                      format="DD/MM/YYYY"
+                      placeholder="Chọn ngày..."
+                      style={{ width: "100%" }}
+                      disabledDate={(current) =>
+                        current && current < dayjs().startOf("day")
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                {/* Hình thức chụp */}
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    label="Hình thức chụp"
+                    name="shooting_type_ui"
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        { value: "STUDIO", label: "Tại Studio" },
+                        { value: "OUTDOOR", label: "Ngoại cảnh" },
+                      ]}
+                      onChange={(val) => {
+                        const studio = val === "STUDIO";
+                        setIsStudio(studio);
+                        form.setFieldsValue({
+                          location: studio ? "Cao Hiển Studio" : undefined,
+                        });
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+
+                {/* Buổi chụp */}
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    label="Buổi chụp"
+                    name="shooting_session"
                     rules={[
                       {
                         required: true,
-                        message: "Vui lòng chọn gói dịch vụ",
+                        message: "Vui lòng chọn buổi chụp",
                       },
                     ]}
                   >
                     <Select
-                      mode="multiple"
-                      placeholder="Chọn một hoặc nhiều gói dịch vụ"
-                      onChange={handleServiceChange}
-                      options={mainServices.map((service) => ({
-                        value: service._id,
-                        label: `${service.name} - ${Number(
-                          service.base_price || 0,
-                        ).toLocaleString("vi-VN")}đ`,
-                      }))}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Dịch vụ đi kèm"
-                    name="extra_service_ids"
-                  >
-                    <Select
-                      mode="multiple"
-                      placeholder="Chọn dịch vụ đi kèm (nếu có)"
-                      onChange={handleAddonsChange}
-                      options={addonServices.map((a) => ({
-                        value: a._id,
-                        label: `${a.name} (+${Number(a.base_price || 0).toLocaleString("vi-VN")}đ)`,
-                      }))}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label={
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                        <span>Ngày chụp</span>
-                        <Switch
-                          checkedChildren="Nhiều ngày"
-                          unCheckedChildren="1 ngày"
-                          checked={isRangeMode}
-                          onChange={(checked) => {
-                            setIsRangeMode(checked);
-                            form.setFieldsValue({ shoot_date: null });
-                          }}
-                          style={{ background: isRangeMode ? "#1677ff" : "#ccc", transform: "scale(0.85)", transformOrigin: "right center" }}
-                        />
-                      </div>
-                    }
-                    name="shoot_date"
-                    rules={[{ required: true, message: "Vui lòng chọn ngày chụp" }]}
-                  >
-                    {isRangeMode ? (
-                      <DatePicker.RangePicker
-                        size="large"
-                        format="DD/MM/YYYY"
-                        placeholder={["Từ ngày", "Đến ngày"]}
-                        style={{ width: "100%" }}
-                      />
-                    ) : (
-                      <DatePicker
-                        size="large"
-                        format="DD/MM/YYYY"
-                        placeholder="Chọn ngày..."
-                        style={{ width: "100%" }}
-                      />
-                    )}
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item 
-                    label="Giờ chụp" 
-                    name="shoot_time"
-                    rules={[{ required: true, message: "Vui lòng chọn giờ chụp" }]}
-                  >
-                    <TimePicker
                       size="large"
-                      format="HH:mm"
-                      placeholder="Chọn giờ..."
-                      minuteStep={15}
-                      style={{ width: "100%" }}
+                      placeholder="Chọn buổi..."
+                      options={[
+                        { value: "MORNING", label: "Sáng (08:00 – 12:00)" },
+                        {
+                          value: "AFTERNOON",
+                          label: "Chiều (13:00 – 17:00)",
+                        },
+                        {
+                          value: "FULL_DAY",
+                          label: "Cả ngày (08:00 – 17:00)",
+                        },
+                      ]}
                     />
                   </Form.Item>
                 </Col>
 
+                {/* Địa điểm */}
                 <Col xs={24}>
                   <Form.Item
-                    label={
-                      <Space>
-                        <span>Địa điểm chụp</span>
-                        <Checkbox
-                          checked={isStudio}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setIsStudio(checked);
-                            if (checked) {
-                              form.setFieldsValue({ location: "Cao Hiển Studio" });
-                            } else {
-                              form.setFieldsValue({ location: undefined });
-                            }
-                          }}
-                        >
-                          Chụp tại studio
-                        </Checkbox>
-                      </Space>
-                    }
+                    label="Địa điểm chụp"
                     name="location"
                     rules={[
                       {
@@ -511,10 +484,14 @@ const OrdersCreate = () => {
                       },
                     ]}
                   >
-                    <Input disabled={isStudio} placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..." />
+                    <Input
+                      disabled={isStudio}
+                      placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..."
+                    />
                   </Form.Item>
                 </Col>
 
+                {/* Ghi chú */}
                 <Col xs={24}>
                   <Form.Item label="Ghi chú" name="note">
                     <TextArea
@@ -553,15 +530,38 @@ const OrdersCreate = () => {
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Trạng thái đơn">
-                    <Tag color="green" style={{ fontSize: 14, padding: "4px 12px" }}>
-                      Đã xác nhận (CONFIRMED)
-                    </Tag>
+                  <Form.Item
+                    label="Trạng thái đơn"
+                    name="status"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng chọn trạng thái đơn",
+                      },
+                    ]}
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        {
+                          value: "REQUESTED",
+                          label: "Chờ xử lý (REQUESTED)",
+                        },
+                        {
+                          value: "CONFIRMED",
+                          label:
+                            "Đã xác nhận & Đã thanh toán cọc (CONFIRMED)",
+                        },
+                      ]}
+                    />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Số tiền khách đã trả (thanh toán thủ công)" name="paid_amount">
+                  <Form.Item
+                    label="Số tiền khách đã trả (thanh toán thủ công)"
+                    name="paid_amount"
+                  >
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
@@ -590,27 +590,63 @@ const OrdersCreate = () => {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>TỔNG TIỀN</div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#999",
+                            marginBottom: 2,
+                          }}
+                        >
+                          TỔNG TIỀN
+                        </div>
                         <div style={{ fontWeight: 700, fontSize: 15 }}>
                           {totalAmount.toLocaleString("vi-VN")}đ
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>ĐÃ TRẢ</div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: "#389e0d" }}>
-                          {paidAmount.toLocaleString("vi-VN")}đ
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#999",
+                            marginBottom: 2,
+                          }}
+                        >
+                          {"ĐÃ TRẢ"}
                         </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>CÒN LẠI</div>
                         <div
                           style={{
                             fontWeight: 700,
                             fontSize: 15,
-                            color: totalAmount - paidAmount > 0 ? "#cf1322" : "#389e0d",
+                            color: "#389e0d",
                           }}
                         >
-                          {Math.max(0, totalAmount - paidAmount).toLocaleString("vi-VN")}đ
+                          {paidAmount.toLocaleString("vi-VN")}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#999",
+                            marginBottom: 2,
+                          }}
+                        >
+                          {"CÒN LẠI"}
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 15,
+                            color:
+                              totalAmount - paidAmount > 0
+                                ? "#cf1322"
+                                : "#389e0d",
+                          }}
+                        >
+                          {Math.max(0, totalAmount - paidAmount).toLocaleString(
+                            "vi-VN",
+                          )}
+                          đ
                         </div>
                       </div>
                     </div>

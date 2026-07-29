@@ -1,4 +1,5 @@
 require("dotenv").config();
+// Script seed danh mục dịch vụ/album ban đầu.
 const mongoose = require("mongoose");
 const Category = require("./models/Category");
 

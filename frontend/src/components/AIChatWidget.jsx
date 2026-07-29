@@ -12,8 +12,9 @@ import axios from "axios";
 import "./AIChatWidget.css";
 
 // ==========================================
-// Simple Markdown → HTML renderer
+// Render Markdown đơn giản thành HTML an toàn ở mức cơ bản cho bong bóng chat
 // ==========================================
+// Chuyển một số cú pháp Markdown phổ biến thành HTML.
 function renderMarkdown(text) {
   if (!text) return "";
   let html = text
@@ -38,7 +39,7 @@ function renderMarkdown(text) {
 }
 
 // ==========================================
-// Quick action buttons
+// Các câu hỏi nhanh giúp khách bắt đầu cuộc trò chuyện
 // ==========================================
 const QUICK_ACTIONS = [
   { label: "📸 Gói chụp", message: "Studio có những gói chụp ảnh nào? Giá cả thế nào?" },
@@ -58,8 +59,9 @@ const WELCOME_MESSAGE = {
 const API_URL = "http://localhost:5000/api/ai-chat";
 
 // ==========================================
-// Main Component
+// Component chính của widget chat AI
 // ==========================================
+// Widget chat nổi dùng API AI backend để tư vấn khách hàng.
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -74,13 +76,13 @@ const AIChatWidget = () => {
   const inputRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
-  // Keep ref of isOpen to avoid closure issues in async callbacks
+  // Giữ trạng thái mở chat trong ref để callback async không bị stale state
   const isOpenRef = useRef(isOpen);
   useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // Auto scroll to bottom
+  // Tự cuộn xuống tin nhắn mới nhất
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -91,14 +93,14 @@ const AIChatWidget = () => {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
 
-  // Focus input when chat opens
+  // Focus ô nhập khi mở khung chat
   useEffect(() => {
     if (isOpen && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 350);
     }
   }, [isOpen]);
 
-  // Open/Close handlers
+  // Nhóm hàm mở/đóng khung chat
   const handleOpen = () => {
     setIsOpen(true);
     setIsClosing(false);
@@ -122,7 +124,7 @@ const AIChatWidget = () => {
     }
   };
 
-  // Send message
+  // Gửi tin nhắn user lên backend và thêm câu trả lời AI vào hội thoại
   const sendMessage = async (text) => {
     const trimmed = (text || inputValue).trim();
     if (!trimmed || isLoading) return;
@@ -177,6 +179,7 @@ const AIChatWidget = () => {
     }
   };
 
+  // Gửi tin khi nhấn Enter, xuống dòng khi Shift+Enter.
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -184,11 +187,12 @@ const AIChatWidget = () => {
     }
   };
 
+  // Gửi nội dung mẫu khi khách bấm câu hỏi nhanh.
   const handleQuickAction = (action) => {
     sendMessage(action.message);
   };
 
-  // Format timestamp
+  // Format giờ gửi tin theo ngôn ngữ Việt Nam
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     const d = new Date(timestamp);

@@ -24,6 +24,7 @@ const SIDEBAR_BG = "#f8f5f1";
 const BORDER_COLOR = "#e8e0d8";
 const TEXT_DARK = "#2f2f2f";
 
+// Layout khung admin gồm sidebar, menu quản trị và vùng nội dung.
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();

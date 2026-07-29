@@ -3,6 +3,7 @@ import { Typography, Divider } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
 
+// Trang nội dung chính sách/hợp đồng mẫu hiển thị cho khách.
 const Contract = () => {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: '40px 20px', color: '#000', fontFamily: '"Times New Roman", Times, serif' }}>

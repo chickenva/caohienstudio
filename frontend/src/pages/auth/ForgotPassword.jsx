@@ -7,6 +7,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+// Trang quên mật khẩu, gửi OTP và cập nhật mật khẩu mới.
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);

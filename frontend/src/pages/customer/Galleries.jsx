@@ -27,6 +27,7 @@ const categoryLabels = {
 };
 
 
+// Trang danh sách album public, có lọc danh mục và ảnh bìa từ Drive.
 const Galleries = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -164,11 +165,11 @@ const Galleries = () => {
     }
   ];
 
-  const displayGalleries = galleries.length > 0 
-    ? galleries 
-    : (currentCategory === "ALL" 
-        ? demoGalleries 
-        : demoGalleries.filter(item => item.category === currentCategory));
+  const displayGalleries = galleries.length > 0
+    ? galleries
+    : (currentCategory === "ALL"
+      ? demoGalleries
+      : demoGalleries.filter(item => item.category === currentCategory));
 
   return (
     <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", minHeight: "100vh" }}>
@@ -191,7 +192,7 @@ const Galleries = () => {
               </div>
 
               <h1 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "clamp(42px, 5.5vw, 76px)", fontWeight: "300", lineHeight: "1.15", margin: "0 0 25px 0", letterSpacing: "-1px" }}>
-                Nghệ Thuật <br/>
+                Nghệ Thuật <br />
                 <span className="text-gold" style={{ fontStyle: "italic", fontWeight: "400" }}>Lưu Giữ</span> Ánh Sáng
               </h1>
 
@@ -298,7 +299,7 @@ const Galleries = () => {
 
                       <div className="museum-card-footer">
                         <span className="museum-card-location"><EnvironmentOutlined /> {item.location || "Cao Hien Studio"}</span>
-                        <span className="museum-card-action">XEM CHI TI?T <ArrowRightOutlined /></span>
+                        <span className="museum-card-action">XEM CHI TIẾT <ArrowRightOutlined /></span>
                       </div>
                     </div>
                   </div>

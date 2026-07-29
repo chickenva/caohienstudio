@@ -5,6 +5,7 @@ import { CalendarOutlined, UnorderedListOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
+// Trang thông báo khi thanh toán/đặt lịch bị hủy trong luồng cũ.
 const BookingCancelled = () => {
   const navigate = useNavigate();
   const location = useLocation();

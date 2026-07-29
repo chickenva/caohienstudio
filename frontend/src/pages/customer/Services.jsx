@@ -15,6 +15,7 @@ const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456
 
 
 
+// Trang danh sách dịch vụ, lọc theo danh mục và dẫn sang chi tiết/đặt lịch.
 const Services = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

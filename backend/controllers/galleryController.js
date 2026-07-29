@@ -3,6 +3,7 @@ const googleDriveService = require("../services/googleDriveService");
 
 const PUBLIC_CACHE_HEADER = "public, max-age=60, stale-while-revalidate=300";
 
+// Tách folderId từ link Google Drive hoặc trả lại ID nếu admin nhập trực tiếp.
 const extractDriveFolderId = (input = "") => {
   if (!input) return "";
 
@@ -23,11 +24,13 @@ const extractDriveFolderId = (input = "") => {
   return "";
 };
 
+// Chuẩn hóa link ảnh Drive về thumbnail đủ lớn để frontend hiển thị ổn định.
 const normalizeStoredImage = (url, size = "s1800") => {
   if (!url) return "";
   return googleDriveService.normalizeDriveImageUrl(url, size);
 };
 
+// Tạo bộ URL ảnh bìa nhiều kích thước cho card, grid và preview.
 const buildCoverPayload = (coverImage, images = []) => {
   const firstImage = images[0] || {};
   const normalizedCover = normalizeStoredImage(coverImage, "s1800");
@@ -59,6 +62,7 @@ const buildCoverPayload = (coverImage, images = []) => {
   };
 };
 
+// Chuyển gallery document thành object plain và gắn thông tin ảnh bìa.
 const toGalleryObject = (gallery, images = []) => {
   const galleryObject = gallery.toObject ? gallery.toObject() : { ...gallery };
   return {
@@ -67,6 +71,7 @@ const toGalleryObject = (gallery, images = []) => {
   };
 };
 
+// Tự lấy ảnh đầu tiên từ Drive làm cover nếu album chưa có cover lưu sẵn.
 const resolveGalleryCover = async (gallery) => {
   const galleryObject = gallery.toObject ? gallery.toObject() : { ...gallery };
 
@@ -88,10 +93,12 @@ const resolveGalleryCover = async (gallery) => {
   }
 };
 
+// Bổ sung ảnh bìa cho danh sách album trước khi trả về frontend.
 const hydrateGalleryList = async (galleries) => {
   return Promise.all(galleries.map((gallery) => resolveGalleryCover(gallery)));
 };
 
+// Lấy cover cuối cùng khi admin tạo/cập nhật album từ folder Google Drive.
 const getCoverFromDrive = async (gallery) => {
   const normalizedCover = normalizeStoredImage(gallery.coverImage, "s1800");
 
@@ -123,7 +130,7 @@ const getCoverFromDrive = async (gallery) => {
   }
 };
 
-// GET /api/galleries?category=ALL
+// PUBLIC: Lấy danh sách album đang hiển thị theo danh mục.
 exports.getAllGalleries = async (req, res) => {
   try {
     const { category } = req.query;
@@ -155,7 +162,7 @@ exports.getAllGalleries = async (req, res) => {
   }
 };
 
-// GET /api/galleries/:id
+// PUBLIC: Lấy chi tiết album và danh sách ảnh từ Drive.
 exports.getGalleryById = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id)
@@ -187,7 +194,7 @@ exports.getGalleryById = async (req, res) => {
   }
 };
 
-// ADMIN: GET /api/galleries/admin/all
+// ADMIN: Lấy tất cả album, kể cả album đã ẩn.
 exports.getAllGalleriesAdmin = async (req, res) => {
   try {
     const { category } = req.query;
@@ -216,7 +223,7 @@ exports.getAllGalleriesAdmin = async (req, res) => {
   }
 };
 
-// ADMIN: POST /api/galleries
+// ADMIN: Tạo album mới từ folder Google Drive.
 exports.createGallery = async (req, res) => {
   try {
     const {
@@ -293,7 +300,7 @@ exports.createGallery = async (req, res) => {
   }
 };
 
-// ADMIN: PUT /api/galleries/:id
+// ADMIN: Cập nhật thông tin album và làm mới cover nếu cần.
 exports.updateGallery = async (req, res) => {
   try {
     const {
@@ -381,7 +388,7 @@ exports.updateGallery = async (req, res) => {
   }
 };
 
-// ADMIN: PATCH /api/galleries/:id/toggle-active
+// ADMIN: Ẩn/hiện album trên website khách hàng.
 exports.toggleGalleryActive = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id);
@@ -407,7 +414,7 @@ exports.toggleGalleryActive = async (req, res) => {
   }
 };
 
-// ADMIN: DELETE /api/galleries/:id
+// ADMIN: Xóa album và xóa cache ảnh Drive liên quan.
 exports.deleteGallery = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id);
@@ -435,7 +442,7 @@ exports.deleteGallery = async (req, res) => {
   }
 };
 
-// ADMIN: PUT /api/galleries/admin/reorder
+// ADMIN: Cập nhật thứ tự hiển thị album hàng loạt.
 exports.reorderGalleries = async (req, res) => {
   try {
     const { items } = req.body;

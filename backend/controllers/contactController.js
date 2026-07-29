@@ -95,6 +95,7 @@ exports.submitContact = async (req, res) => {
     }
 
     // Tạo nội dung phần dịch vụ/lịch cho email dạng table row
+    // Format danh sách dịch vụ trong email tư vấn thành từng dòng dễ đọc.
     const formatList = (str) => str ? str.split(", ").map(item => `- ${item}`).join("<br/>") : "";
 
     const extraInfoRows = [

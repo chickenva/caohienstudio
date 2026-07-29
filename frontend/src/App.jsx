@@ -23,6 +23,7 @@ import GalleryDetail from "./pages/customer/GalleryDetail";
 import ServiceDetail from "./pages/customer/ServiceDetail";
 import BookingDetail from "./pages/customer/BookingDetail";
 import BookingConfirm from "./pages/customer/BookingConfirm";
+import ContractReview from "./pages/customer/ContractReview";
 
 // Customer Pages
 import Profile from "./pages/customer/Profile";
@@ -45,6 +46,7 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import VnpayReturn from "./pages/customer/VnpayReturn";
 // ----------------------------------
 
+// Component gốc khai báo toàn bộ route public, customer và admin.
 function App() {
   return (
     <BrowserRouter>
@@ -73,6 +75,7 @@ function App() {
           <Route path="/customer/my-bookings/:id" element={<BookingDetail />} />
 
           <Route path="/vnpay-return" element={<VnpayReturn />} />
+          <Route path="/contract-review/:bookingId" element={<ContractReview />} />
         </Route>
 
         {/* LUỒNG ADMIN */}

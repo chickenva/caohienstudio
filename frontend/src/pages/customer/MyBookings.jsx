@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Tag, Button, message, Space, Select, Card, Row, Col } from "antd";
+import { Table, Tag, Button, message, Space, Select, Card, Row, Col, Alert } from "antd";
 import { useNavigate } from "react-router-dom";
-import { EyeOutlined, CreditCardOutlined, ReloadOutlined, CalendarOutlined } from "@ant-design/icons";
+import { EyeOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
@@ -12,68 +12,36 @@ const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
 const STATUS_OPTIONS = [
   { label: "Tất cả", value: "ALL" },
-  { label: "Chờ thanh toán", value: "PENDING" },
-  { label: "Đã đặt cọc", value: "DEPOSITED" },
+  { label: "Đã gửi yêu cầu", value: "REQUESTED" },
+  { label: "Đã gửi hợp đồng", value: "CONTRACT_SENT" },
+  { label: "Chờ thanh toán", value: "WAITING_PAYMENT" },
   { label: "Đã xác nhận", value: "CONFIRMED" },
   { label: "Đang thực hiện", value: "IN_PROGRESS" },
   { label: "Hoàn thành", value: "COMPLETED" },
   { label: "Đã hủy", value: "CANCELED" },
+  // Legacy (ẩn trong filter nhưng vẫn hiển thị nếu có dữ liệu cũ)
 ];
 
+// Định dạng tiền VND trong bảng đơn của khách.
 const formatCurrency = (value) => {
   return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 };
 
-const isExpiredPendingBooking = (booking) => {
-  if (booking.status !== "PENDING") return false;
-  if (!booking.expires_at) return true;
-
-  return dayjs(booking.expires_at).isSame(dayjs()) ||
-    dayjs(booking.expires_at).isBefore(dayjs());
-};
-
-const isPayableBooking = (booking) => {
-  return (
-    booking.status === "PENDING" &&
-    booking.expires_at &&
-    dayjs(booking.expires_at).isAfter(dayjs())
-  );
-};
-
-const getDisplayOrderStatus = (booking) => {
-  if (isExpiredPendingBooking(booking)) {
-    return "CANCELED";
-  }
-
-  if (booking.status === "EXPIRED" || booking.status === "PAYMENT_FAILED") {
-    return "CANCELED";
-  }
-
-  return booking.status;
-};
-
-const getDisplayPaymentStatus = (booking) => {
-  if (isExpiredPendingBooking(booking)) {
-    return "Chưa thanh toán";
-  }
-
-  if (booking.payment_status_text === "Đã hết hạn") {
-    return "Chưa thanh toán";
-  }
-
-  return booking.payment_status_text || "Chưa thanh toán";
-};
-
+// Render tag trạng thái đơn theo luồng booking mới và dữ liệu legacy.
 const renderOrderStatus = (status) => {
   const map = {
-    PENDING: { color: "gold", text: "Chờ thanh toán" },
-    DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+    // Luồng mới
+    REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
+    CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
+    WAITING_PAYMENT: { color: "gold", text: "Chờ thanh toán" },
     CONFIRMED: { color: "blue", text: "Đã xác nhận" },
     IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
     COMPLETED: { color: "green", text: "Hoàn thành" },
     CANCELED: { color: "red", text: "Đã hủy" },
-
-    // Chống dữ liệu cũ
+    // Legacy
+    PENDING: { color: "gold", text: "Chờ thanh toán" },
+    DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
+    // Fallback
     EXPIRED: { color: "red", text: "Đã hủy" },
     PAYMENT_FAILED: { color: "red", text: "Đã hủy" },
   };
@@ -87,41 +55,32 @@ const renderOrderStatus = (status) => {
   );
 };
 
+// Render tag trạng thái thanh toán từ text backend đã tổng hợp.
 const renderPaymentStatus = (text) => {
-  const finalText = text === "Đã hết hạn" ? "Chưa thanh toán" : text;
-
   let color = "orange";
-
-  if (finalText === "Đã thanh toán") color = "blue";
-  if (finalText === "Đã tất toán") color = "green";
+  if (text === "Đã thanh toán") color = "blue";
+  if (text === "Đã tất toán") color = "green";
 
   return (
     <Tag color={color} style={{ borderRadius: 0, letterSpacing: "1px" }}>
-      {(finalText || "Chưa thanh toán").toUpperCase()}
+      {(text || "Chưa thanh toán").toUpperCase()}
     </Tag>
   );
 };
 
-const getPaidAmountColor = (amount) => {
-  return Number(amount || 0) > 0 ? "#389e0d" : "#000";
-};
-
-const getRemainingAmountColor = (amount) => {
-  return Number(amount || 0) > 0 ? "#cf1322" : "#000";
-};
-
+// Trang khách theo dõi toàn bộ đơn đặt lịch của mình.
 const MyBookings = () => {
   const navigate = useNavigate();
 
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);
-  const [repayLoadingId, setRepayLoadingId] = useState(null);
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
+  // Lấy danh sách booking của user đang đăng nhập.
   const fetchBookings = async () => {
     setLoading(true);
 
@@ -142,60 +101,11 @@ const MyBookings = () => {
     }
   };
 
+  // Lọc đơn theo trạng thái đang chọn trên giao diện.
   const filteredBookings = useMemo(() => {
     if (statusFilter === "ALL") return bookings;
-
-    if (statusFilter === "PENDING") {
-      return bookings.filter(
-        (booking) =>
-          booking.status === "PENDING" && !isExpiredPendingBooking(booking),
-      );
-    }
-
-    if (statusFilter === "CANCELED") {
-      return bookings.filter(
-        (booking) =>
-          getDisplayOrderStatus(booking) === "CANCELED",
-      );
-    }
-
     return bookings.filter((booking) => booking.status === statusFilter);
   }, [bookings, statusFilter]);
-
-  const handleRepay = async (booking) => {
-    if (!isPayableBooking(booking)) {
-      message.warning("Đơn hàng đã quá hạn thanh toán. Vui lòng làm mới danh sách.");
-      fetchBookings();
-      return;
-    }
-
-    setRepayLoadingId(booking._id);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.post(
-        `${API_URL}/bookings/${booking._id}/repay`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (res.data.paymentUrl) {
-        window.location.href = res.data.paymentUrl;
-      } else {
-        message.error("Không tìm thấy link thanh toán");
-      }
-    } catch (err) {
-      message.error(
-        err.response?.data?.message || "Không thể tạo lại link thanh toán",
-      );
-      fetchBookings();
-    } finally {
-      setRepayLoadingId(null);
-    }
-  };
 
   const columns = [
     {
@@ -229,16 +139,29 @@ const MyBookings = () => {
         </div>
       ),
     },
-
     {
-      title: "TRẠNG THÁI ĐƠN",
+      title: "TRẠNG THÁI",
       key: "status",
-      render: (_, record) => renderOrderStatus(getDisplayOrderStatus(record)),
+      render: (_, record) => (
+        <div>
+          {renderOrderStatus(record.status)}
+          {record.status === "CONTRACT_SENT" && (
+            <div style={{ fontSize: 11, color: "#722ed1", marginTop: 4 }}>
+              📄 Hợp đồng đã được gửi đến email
+            </div>
+          )}
+          {record.status === "WAITING_PAYMENT" && (
+            <div style={{ fontSize: 11, color: "#d46b08", marginTop: 4 }}>
+              ⏳ Vui lòng thanh toán để giữ lịch
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "THANH TOÁN",
       key: "payment_status_text",
-      render: (_, record) => renderPaymentStatus(getDisplayPaymentStatus(record)),
+      render: (_, record) => renderPaymentStatus(record.payment_status_text),
     },
     {
       title: "TỔNG GIÁ TRỊ",
@@ -249,59 +172,11 @@ const MyBookings = () => {
       ),
     },
     {
-      title: "ĐÃ THANH TOÁN",
-      dataIndex: "paid_amount",
-      key: "paid_amount",
-      render: (amount) => (
-        <span
-          style={{
-            color: getPaidAmountColor(amount),
-            fontWeight: 600,
-          }}
-        >
-          {formatCurrency(amount)}
-        </span>
-      ),
-    },
-    {
-      title: "CÒN LẠI",
-      dataIndex: "remaining_amount",
-      key: "remaining_amount",
-      render: (amount) => (
-        <span
-          style={{
-            color: getRemainingAmountColor(amount),
-            fontWeight: 600,
-          }}
-        >
-          {formatCurrency(amount)}
-        </span>
-      ),
-    },
-    {
       title: "",
       key: "action",
       align: "right",
       render: (_, record) => (
         <Space>
-          {isPayableBooking(record) && (
-            <Button
-              icon={<CreditCardOutlined />}
-              loading={repayLoadingId === record._id}
-              onClick={() => handleRepay(record)}
-              style={{
-                borderRadius: 0,
-                fontSize: "12px",
-                letterSpacing: "1px",
-                background: PRIMARY_COLOR,
-                color: "#fff",
-                border: "none",
-              }}
-            >
-              THANH TOÁN
-            </Button>
-          )}
-
           <Button
             icon={<EyeOutlined />}
             onClick={() => navigate(`/customer/my-bookings/${record._id}`)}
@@ -319,8 +194,9 @@ const MyBookings = () => {
   ];
 
   const total = bookings.length;
-  const pending = bookings.filter((item) => item.status === "PENDING").length;
-  const deposited = bookings.filter((item) => item.status === "DEPOSITED").length;
+  const requested = bookings.filter((item) => item.status === "REQUESTED").length;
+  const contractSent = bookings.filter((item) => item.status === "CONTRACT_SENT").length;
+  const confirmed = bookings.filter((item) => item.status === "CONFIRMED").length;
   const completed = bookings.filter((item) => item.status === "COMPLETED").length;
 
   return (
@@ -347,9 +223,21 @@ const MyBookings = () => {
           <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Đơn Đặt Lịch</span>
         </h1>
         <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: "0 auto", fontWeight: 300 }}>
-          Theo dõi lịch sử đặt lịch, trạng thái thanh toán và chi tiết từng đơn.
+          Theo dõi trạng thái yêu cầu đặt lịch, hợp đồng và thông tin thanh toán.
         </p>
       </div>
+
+      {/* Alert hướng dẫn nếu có đơn CONTRACT_SENT */}
+      {contractSent > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<FileTextOutlined />}
+          message="Bạn có hợp đồng chờ xác nhận"
+          description="Studio đã gửi hợp đồng xác nhận đến email của bạn. Vui lòng mở email, đọc kỹ hợp đồng và bấm xác nhận để tiến hành đặt cọc giữ lịch."
+          style={{ marginBottom: 24, borderRadius: 8 }}
+        />
+      )}
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} md={6}>
@@ -361,22 +249,22 @@ const MyBookings = () => {
 
         <Col xs={12} md={6}>
           <Card size="small">
-            <div style={{ color: "#888" }}>Chờ thanh toán</div>
-            <strong style={{ fontSize: 24 }}>{pending}</strong>
+            <div style={{ color: "#888" }}>Chờ xử lý</div>
+            <strong style={{ fontSize: 24, color: "orange" }}>{requested}</strong>
           </Card>
         </Col>
 
         <Col xs={12} md={6}>
           <Card size="small">
-            <div style={{ color: "#888" }}>Đã đặt cọc</div>
-            <strong style={{ fontSize: 24 }}>{deposited}</strong>
+            <div style={{ color: "#888" }}>Đã xác nhận</div>
+            <strong style={{ fontSize: 24, color: "#1677ff" }}>{confirmed}</strong>
           </Card>
         </Col>
 
         <Col xs={12} md={6}>
           <Card size="small">
             <div style={{ color: "#888" }}>Hoàn thành</div>
-            <strong style={{ fontSize: 24 }}>{completed}</strong>
+            <strong style={{ fontSize: 24, color: "#52c41a" }}>{completed}</strong>
           </Card>
         </Col>
       </Row>
@@ -408,7 +296,7 @@ const MyBookings = () => {
         rowKey="_id"
         loading={loading}
         pagination={{ pageSize: 5 }}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 900 }}
         style={{
           background: "#fff",
           border: "1px solid #eaeaea",

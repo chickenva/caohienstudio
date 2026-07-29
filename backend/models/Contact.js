@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Schema lưu yêu cầu liên hệ/tư vấn từ khách hàng.
 const contactSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },

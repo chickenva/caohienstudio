@@ -4,6 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const PRIMARY_COLOR = "#9a8a78";
 
+// Component placeholder cho chức năng admin chưa triển khai.
 const AdminPlaceholder = ({ title, description = "Chức năng đang phát triển" }) => {
   const columns = [
     { title: "ID", dataIndex: "id", key: "id" },

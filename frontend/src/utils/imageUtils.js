@@ -10,15 +10,19 @@ const GOOGLE_SIZE_BY_VARIANT = {
 
 const dimensionCache = new Map();
 
+// Nhận diện link CDN googleusercontent để nâng chất lượng ảnh.
 const isGoogleUserContentUrl = (url = "") =>
   /googleusercontent\.com/i.test(url);
 
+// Nhận diện link thumbnail Google Drive do backend trả về.
 const isDriveThumbnailUrl = (url = "") =>
   /drive\.google\.com\/thumbnail/i.test(url);
 
+// Đổi size dạng s1800 sang w1800 theo format thumbnail Drive.
 const getDriveThumbnailSize = (size = "s1800") =>
   size.startsWith("s") ? `w${size.slice(1)}` : size;
 
+// Nâng kích thước ảnh Google/Drive để gallery không bị mờ.
 export const upgradeGoogleImageUrl = (url, size = "s1800") => {
   if (!url) return "";
 
@@ -52,6 +56,7 @@ export const upgradeGoogleImageUrl = (url, size = "s1800") => {
   return trimmedUrl;
 };
 
+// Chọn URL ảnh phù hợp nhất theo ngữ cảnh thumb/grid/cover/preview.
 export const getGalleryImageUrl = (
   item,
   variant = "grid",
@@ -101,6 +106,7 @@ export const getGalleryImageUrl = (
   return upgradeGoogleImageUrl(candidate || fallback, targetSize);
 };
 
+// Tạo srcSet responsive cho ảnh Google/Drive.
 export const getGalleryImageSrcSet = (url) => {
   if (!isGoogleUserContentUrl(url) && !isDriveThumbnailUrl(url)) {
     return undefined;
@@ -114,6 +120,7 @@ export const getGalleryImageSrcSet = (url) => {
   ].join(", ");
 };
 
+// Fallback ảnh nếu ảnh chính lỗi, tránh giao diện bị vỡ.
 export const getImageErrorHandler = (fallback = FALLBACK_GALLERY_IMAGE) => (event) => {
   const image = event.currentTarget;
 
@@ -124,6 +131,7 @@ export const getImageErrorHandler = (fallback = FALLBACK_GALLERY_IMAGE) => (even
   image.removeAttribute("srcset");
 };
 
+// Tải trước một ảnh và lưu kích thước để layout masonry ổn định.
 const preloadSingleImage = (url, timeoutMs) => {
   if (!url || typeof window === "undefined") return Promise.resolve();
 
@@ -164,6 +172,7 @@ const preloadSingleImage = (url, timeoutMs) => {
   });
 };
 
+// Tải trước một nhóm ảnh, giới hạn số lượng để không nghẽn trình duyệt.
 export const preloadImages = async (urls, options = {}) => {
   const { limit = 8, timeoutMs = 2800 } = options;
   const uniqueUrls = [...new Set((urls || []).filter(Boolean))].slice(0, limit);
@@ -171,6 +180,7 @@ export const preloadImages = async (urls, options = {}) => {
   await Promise.all(uniqueUrls.map((url) => preloadSingleImage(url, timeoutMs)));
 };
 
+// Lấy kích thước ảnh có cache để render gallery đúng tỷ lệ.
 export const getImageDimensions = (url, timeoutMs = 4200) => {
   if (!url || typeof window === "undefined") {
     return Promise.resolve({ width: 1, height: 1 });

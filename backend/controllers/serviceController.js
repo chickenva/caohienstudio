@@ -1,6 +1,7 @@
 const Service = require("../models/Service");
 
 
+// Chuẩn hóa danh sách đặc điểm dịch vụ từ textarea hoặc mảng.
 const normalizeFeatures = (features) => {
   if (Array.isArray(features)) {
     return features.map((item) => String(item).trim()).filter(Boolean);
@@ -16,6 +17,7 @@ const normalizeFeatures = (features) => {
   return [];
 };
 
+// Gom dữ liệu body thành payload chung cho thao tác tạo/cập nhật dịch vụ.
 const buildServicePayload = (body) => {
   const {
     name,
@@ -45,7 +47,7 @@ const buildServicePayload = (body) => {
 };
 
 // ==========================================
-// PUBLIC: Lay dich vu dang hoat dong
+// PUBLIC: Lấy dịch vụ đang hoạt động
 // GET /api/services?category=TRADITIONAL
 // ==========================================
 exports.getAllServices = async (req, res) => {
@@ -72,7 +74,7 @@ exports.getAllServices = async (req, res) => {
 };
 
 // ==========================================
-// PUBLIC: Lay chi tiet dich vu dang hoat dong
+// PUBLIC: Lấy chi tiết dịch vụ đang hoạt động
 // GET /api/services/:id
 // ==========================================
 exports.getServiceById = async (req, res) => {
@@ -98,7 +100,7 @@ exports.getServiceById = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Lay tat ca dich vu, ke ca da an
+// ADMIN: Lấy tất cả dịch vụ, kể cả dịch vụ đã ẩn
 // GET /api/services/admin/all
 // ==========================================
 exports.getAllServicesForAdmin = async (req, res) => {
@@ -115,7 +117,7 @@ exports.getAllServicesForAdmin = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Lay chi tiet dich vu cho admin
+// ADMIN: Lấy chi tiết dịch vụ cho admin
 // GET /api/services/admin/:id
 // ==========================================
 exports.getServiceByIdForAdmin = async (req, res) => {
@@ -138,7 +140,7 @@ exports.getServiceByIdForAdmin = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Tao dich vu moi
+// ADMIN: Tạo dịch vụ mới
 // POST /api/services/admin
 // ==========================================
 exports.createService = async (req, res) => {
@@ -185,7 +187,7 @@ exports.createService = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Cap nhat dich vu
+// ADMIN: Cập nhật dịch vụ
 // PUT /api/services/admin/:id
 // ==========================================
 exports.updateService = async (req, res) => {
@@ -255,7 +257,7 @@ exports.updateService = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: An / hien dich vu
+// ADMIN: Ẩn / hiện dịch vụ
 // PATCH /api/services/admin/:id/toggle-active
 // ==========================================
 exports.toggleServiceActive = async (req, res) => {
@@ -282,7 +284,7 @@ exports.toggleServiceActive = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Xoa mem dich vu
+// ADMIN: Xóa mềm dịch vụ
 // DELETE /api/services/admin/:id
 // ==========================================
 exports.deleteService = async (req, res) => {
@@ -310,7 +312,7 @@ exports.deleteService = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN: Cap nhat thu tu hang loat
+// ADMIN: Cập nhật thứ tự hàng loạt
 // PUT /api/services/admin/reorder
 // ==========================================
 exports.reorderServices = async (req, res) => {

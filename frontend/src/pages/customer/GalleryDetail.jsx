@@ -31,6 +31,7 @@ const categoryLabels = {
   GRADUATION: "Kỷ yếu",
 };
 
+// Trang chi tiết album, render ảnh theo layout responsive.
 const GalleryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();

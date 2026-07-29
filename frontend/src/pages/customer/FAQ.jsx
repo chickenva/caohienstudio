@@ -169,6 +169,7 @@ const faqData = [
   }
 ];
 
+// Trang câu hỏi thường gặp về dịch vụ, thanh toán và chuẩn bị chụp.
 const FAQ = () => {
   const location = useLocation();
   const [activeKeys, setActiveKeys] = useState([]);

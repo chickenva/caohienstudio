@@ -1,5 +1,10 @@
+/**
+ * Mongoose Schema: Service (Dịch vụ)
+ * Chức năng: Lưu trữ thông tin gói chụp, giá, hình ảnh demo và cấu hình hiển thị trang chủ.
+ */
 const mongoose = require("mongoose");
 
+// Schema gói dịch vụ chụp/quay/in ấn hiển thị trên website.
 const serviceSchema = new mongoose.Schema(
   {
     name: {

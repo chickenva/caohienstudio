@@ -7,6 +7,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const API_URL = "http://localhost:5000/api";
 
+// Trang thanh toán cũ/legacy, giữ lại để tương thích route hiện có.
 const Payment = () => {
   const { id } = useParams();
   const navigate = useNavigate();

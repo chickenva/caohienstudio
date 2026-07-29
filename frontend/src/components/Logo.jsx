@@ -1,5 +1,6 @@
 import React from "react";
 
+// Component logo dùng lại ở header/layout với tùy chọn kích thước và màu chữ.
 const Logo = ({ size = 36, showText = true, textColor = "#C1A67B", style = {}, ...props }) => {
   const goldColor = "#C1A67B";
 

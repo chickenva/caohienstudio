@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Schema danh mục dùng để lọc dịch vụ và album.
 const categorySchema = new mongoose.Schema(
   {
     name: {

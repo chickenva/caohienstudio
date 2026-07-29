@@ -27,6 +27,7 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
+// Trang admin cập nhật thông tin hồ sơ cá nhân.
 const AdminProfile = () => {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();

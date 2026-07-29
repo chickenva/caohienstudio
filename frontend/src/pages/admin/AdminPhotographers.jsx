@@ -23,6 +23,7 @@ const { Title, Text } = Typography;
 
 const API_URL = "http://localhost:5000/api";
 
+// Trang admin quản lý danh sách nhiếp ảnh gia.
 const AdminPhotographers = () => {
   const navigate = useNavigate();
 

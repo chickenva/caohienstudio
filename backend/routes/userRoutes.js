@@ -1,3 +1,4 @@
+// Router người dùng: nhiếp ảnh gia, khách hàng và tìm kiếm admin.
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");

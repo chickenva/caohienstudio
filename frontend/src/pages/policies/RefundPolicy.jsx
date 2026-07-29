@@ -3,6 +3,7 @@ import { Typography, Divider } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
 
+// Trang chính sách hoàn/hủy và bảo lưu cọc.
 const RefundPolicy = () => {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: '40px 20px', color: '#000', fontFamily: '"Times New Roman", Times, serif' }}>

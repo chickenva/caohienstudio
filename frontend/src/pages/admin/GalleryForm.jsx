@@ -21,6 +21,7 @@ const { TextArea } = Input;
 
 const API_URL = "http://localhost:5000/api";
 
+// Form admin tạo/cập nhật album từ Google Drive.
 const GalleryForm = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();

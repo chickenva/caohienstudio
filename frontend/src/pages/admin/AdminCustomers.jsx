@@ -38,6 +38,7 @@ const statusOptions = [
   { value: "LOCKED", label: "Đã khóa" },
 ];
 
+// Trang admin quản lý danh sách khách hàng và khóa/mở tài khoản.
 const AdminCustomers = () => {
   const navigate = useNavigate();
 

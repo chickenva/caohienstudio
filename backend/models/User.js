@@ -1,5 +1,10 @@
+/**
+ * Mongoose Schema: User (Người dùng)
+ * Chức năng: Quản lý thông tin tài khoản, mật khẩu (đã mã hóa) và phân quyền (ADMIN/CUSTOMER).
+ */
 const mongoose = require("mongoose");
 
+// Schema người dùng cho CUSTOMER, ADMIN và PHOTOGRAPHER.
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },

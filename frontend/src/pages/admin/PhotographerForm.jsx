@@ -34,6 +34,7 @@ const specialtyOptions = [
   "Graduation",
 ];
 
+// Form admin tạo/cập nhật hồ sơ nhiếp ảnh gia.
 const PhotographerForm = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();

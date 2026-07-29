@@ -14,6 +14,7 @@ import "../../Home.css";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+// Trang khách hàng xem và cập nhật thông tin cá nhân có xác thực OTP.
 const Profile = () => {
   const [formInfo] = Form.useForm();
   const [formPass] = Form.useForm();

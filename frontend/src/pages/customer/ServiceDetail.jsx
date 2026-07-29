@@ -22,6 +22,7 @@ const CATEGORY_LABELS = {
   OTHER: "DỊCH VỤ KHÁC",
 };
 
+// Trang chi tiết gói dịch vụ, hiển thị giá, mô tả và nút đặt lịch.
 const ServiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();

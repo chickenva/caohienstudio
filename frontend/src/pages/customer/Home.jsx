@@ -40,6 +40,7 @@ const categoryLabels = {
   GRADUATION: "Kỷ yếu",
 };
 
+// Trang chủ khách hàng hiển thị hero, dịch vụ nổi bật và album tiêu biểu.
 const Home = () => {
   const navigate = useNavigate();
   const [contactForm] = Form.useForm();

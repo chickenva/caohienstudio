@@ -7,13 +7,10 @@ import {
   Input,
   Button,
   message,
-  Modal,
   Result,
   AutoComplete,
-  TimePicker,
   Checkbox,
   Card,
-  Space,
   Switch
 } from "antd";
 import {
@@ -32,6 +29,7 @@ import "../../Home.css";
 
 const API_URL = "http://localhost:5000/api";
 
+// Màn khách hàng chọn dịch vụ, hình thức chụp, ngày và buổi chụp.
 const Booking = () => {
   const [form] = Form.useForm();
   const location = useLocation();
@@ -47,67 +45,37 @@ const Booking = () => {
   // States cho Lịch thông minh và Thời tiết
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+  const [shootingType, setShootingType] = useState(null); // "STUDIO" | "OUTDOOR"
+  const [shootingSession, setShootingSession] = useState(null); // "MORNING" | "AFTERNOON" | "FULL_DAY"
   const [weatherForecast, setWeatherForecast] = useState({});
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [busyBookings, setBusyBookings] = useState([]);
   const [isRangeMode, setIsRangeMode] = useState(false);
   const [rangeStartDate, setRangeStartDate] = useState(null);
   const [rangeEndDate, setRangeEndDate] = useState(null);
-  const [busyBookings, setBusyBookings] = useState([]);
-  const [customTime, setCustomTime] = useState(null);
 
-  // Reset selected date states when mode changes
-  useEffect(() => {
+  // Reset selected date/session khi user chạm lại hình thức chụp
+  /**
+   * Hàm xử lý khi người dùng đổi Hình thức chụp (STUDIO / OUTDOOR).
+   * Xử lý: Reset khu vực, ngày, buổi chụp đã chọn vì lịch của 2 hình thức là độc lập.
+   */
+  const handleShootingTypeChange = (type) => {
+    setShootingType(type);
+    setShootingSession(null);
     setSelectedDate(null);
-    setRangeStartDate(null);
-    setRangeEndDate(null);
-    setSelectedTimeSlot(null);
-    setCustomTime(null);
-    form.setFieldsValue({ appointmentDate: null });
-  }, [isRangeMode, form]);
-
-  // Coupon/Voucher States
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponError, setCouponError] = useState("");
-
-  const handleApplyCoupon = () => {
-    setCouponError("");
-    const code = couponCode.trim().toUpperCase();
-    if (!code) {
-      setCouponError("Vui lòng nhập mã giảm giá");
-      return;
-    }
-    
-    if (code === "GIAM10") {
-      setAppliedCoupon({ code, type: "percent", value: 10 });
-      message.success("Áp dụng mã GIAM10 thành công! Giảm 10%");
-    } else if (code === "LUXURY20") {
-      setAppliedCoupon({ code, type: "percent", value: 20 });
-      message.success("Áp dụng mã LUXURY20 thành công! Giảm 20%");
-    } else if (code === "CAOHIEN50") {
-      setAppliedCoupon({ code, type: "fixed", value: 50000 });
-      message.success("Áp dụng mã CAOHIEN50 thành công! Giảm 50.000đ");
-    } else if (code === "CHAOHE") {
-      setAppliedCoupon({ code, type: "fixed", value: 100000 });
-      message.success("Áp dụng mã CHAOHE thành công! Giảm 100.000đ");
-    } else {
-      setCouponError("Mã giảm giá không hợp lệ hoặc đã hết hạn");
+    form.setFieldsValue({ location: type === "STUDIO" ? "Cao Hiển Studio" : undefined });
+    if (type === "STUDIO") {
+      const vl = FORECAST_LOCATIONS.find(c => c.name === "Vĩnh Long");
+      if (vl) setSelectedWeatherCity(vl);
     }
   };
 
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode("");
-    setCouponError("");
-    message.info("Đã hủy áp dụng mã giảm giá");
-  };
 
   // States & logic cho gợi ý tìm kiếm địa chỉ
   const [addressOptions, setAddressOptions] = useState([]);
   const [searchTimeout, setSearchTimeout] = useState(null);
-  const [isStudio, setIsStudio] = useState(false);
 
+  // Gợi ý địa chỉ ngoại cảnh bằng Photon API theo tỉnh/thành đang chọn.
   const handleAddressSearch = (searchText) => {
     if (!searchText || searchText.trim().length < 3) {
       setAddressOptions([]);
@@ -241,143 +209,59 @@ const Booking = () => {
     "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
   ];
 
-  const TIME_SLOTS = ["08:00", "13:00"];
+  const SESSION_OPTIONS = [
+    { value: "MORNING", label: "Sáng", time: "08:00 - 12:00" },
+    { value: "AFTERNOON", label: "Chiều", time: "13:00 - 17:00" },
+    { value: "FULL_DAY", label: "Cả ngày", time: "08:00 - 17:00" },
+  ];
 
-  // Lấy danh sách lịch bận của studio
+  const SESSION_CONFLICTS = {
+    MORNING: ["MORNING", "FULL_DAY"],
+    AFTERNOON: ["AFTERNOON", "FULL_DAY"],
+    FULL_DAY: ["MORNING", "AFTERNOON", "FULL_DAY"],
+  };
+
+  // Chuyển mã buổi chụp thành nhãn dễ đọc cho khách hàng.
+  const getSessionLabel = (session) => {
+    const option = SESSION_OPTIONS.find(item => item.value === session);
+    return option ? `${option.label} (${option.time})` : "";
+  };
+
+  // Kiểm tra buổi đang chọn có trùng với lịch bận trả về từ backend không.
+  const isSessionBusy = (session) => {
+    const conflictSessions = SESSION_CONFLICTS[session] || [];
+    return busyBookings.some((booking) => conflictSessions.includes(booking.shooting_session));
+  };
+
+  // Lấy danh sách buổi bận theo hình thức chụp đã chọn.
   useEffect(() => {
-    const fetchBusySlots = async () => {
+    /**
+   * Hàm gọi API lấy danh sách các ngày/buổi đã bị khóa lịch.
+   * Xử lý: Dùng để disable các khung giờ không khả dụng trên giao diện.
+   */
+  const fetchBusySlots = async () => {
       try {
-        let params = {};
-        if (isRangeMode) {
-          if (rangeStartDate && rangeEndDate) {
-            params.start_date = rangeStartDate.format("YYYY-MM-DD");
-            params.end_date = rangeEndDate.format("YYYY-MM-DD");
-          } else if (rangeStartDate) {
-            params.date = rangeStartDate.format("YYYY-MM-DD");
-          } else {
-            return;
-          }
-        } else {
-          if (selectedDate) {
-            params.date = selectedDate.format("YYYY-MM-DD");
-          } else {
-            return;
-          }
+        if (!selectedDate || !shootingType || isRangeMode) {
+          setBusyBookings([]);
+          return;
         }
 
+        const params = {
+          date: selectedDate.format("YYYY-MM-DD"),
+          type: shootingType,
+        };
         const res = await axios.get(`${API_URL}/bookings/studio-busy-slots`, { params });
-        setBusyBookings(res.data || []);
+        setBusyBookings(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error("Lỗi lấy lịch bận studio:", err);
+        console.error("Lỗi lấy lịch bận:", err);
+        setBusyBookings([]);
       }
     };
 
     fetchBusySlots();
-  }, [selectedDate, rangeStartDate, rangeEndDate, isRangeMode]);
-
-  // Kiểm tra khung giờ bận
-  const isSlotBusy = (slot) => {
-    const targetDate = isRangeMode ? rangeStartDate : selectedDate;
-    if (!targetDate) return false;
-
-    const [hour, minute] = slot.split(":");
-    const slotStart = targetDate.hour(parseInt(hour)).minute(parseInt(minute)).second(0);
-
-    const serviceVal = form.getFieldValue("serviceId");
-    const serviceIdsList = Array.isArray(serviceVal) ? serviceVal : (serviceVal ? [serviceVal] : []);
-    const selectedServices = mainServices.filter(s => serviceIdsList.includes(s._id));
-    const duration = selectedServices.reduce((sum, s) => sum + (s.duration_hours || 4), 0);
-    
-    let slotEnd;
-    if (isRangeMode) {
-      if (rangeEndDate) {
-        slotEnd = rangeEndDate.hour(17).minute(0).second(0);
-      } else {
-        slotEnd = slotStart.add(duration || 4, "hours");
-      }
-    } else {
-      slotEnd = slotStart.add(duration || 4, "hours");
-    }
-
-    return busyBookings.some((booking) => {
-      const bStart = dayjs(booking.start_time);
-      const bEnd = dayjs(booking.end_time);
-      return slotStart.isBefore(bEnd) && slotEnd.isAfter(bStart);
-    });
-  };
-
-  // Disable hours for TimePicker (Studio works 8h-17h, last slot starts at 16h)
-  const disabledHours = () => {
-    const hours = [];
-    for (let i = 0; i < 24; i++) {
-      if (i < 8 || i > 16) {
-        hours.push(i);
-      }
-    }
-    return hours;
-  };
-
-  // Xử lý tự chọn giờ khác
-  const handleCustomTimeChange = (time) => {
-    if (!time) {
-      setCustomTime(null);
-      setSelectedTimeSlot(null);
-      return;
-    }
-
-    const targetDate = isRangeMode ? rangeStartDate : selectedDate;
-    if (!targetDate) {
-      message.warning("Vui lòng chọn ngày trên lịch trước");
-      setCustomTime(null);
-      return;
-    }
-
-    const hour = time.hour();
-    const minute = time.minute();
-    const slotStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-
-    // Combine date and time
-    const slotStart = targetDate.hour(hour).minute(minute).second(0);
-
-    // Check conflict
-    const serviceVal = form.getFieldValue("serviceId");
-    const serviceIdsList = Array.isArray(serviceVal) ? serviceVal : (serviceVal ? [serviceVal] : []);
-    const selectedServices = mainServices.filter(s => serviceIdsList.includes(s._id));
-    const duration = selectedServices.reduce((sum, s) => sum + (s.duration_hours || 4), 0);
-    
-    let slotEnd;
-    if (isRangeMode) {
-      if (rangeEndDate) {
-        slotEnd = rangeEndDate.hour(17).minute(0).second(0);
-      } else {
-        slotEnd = slotStart.add(duration || 4, "hours");
-      }
-    } else {
-      slotEnd = slotStart.add(duration || 4, "hours");
-    }
-
-    // Check overlap with busyBookings
-    const isConflict = busyBookings.some((booking) => {
-      const bStart = dayjs(booking.start_time);
-      const bEnd = dayjs(booking.end_time);
-      return slotStart.isBefore(bEnd) && slotEnd.isAfter(bStart);
-    });
-
-    if (isConflict) {
-      message.error(`Studio đã có lịch trong khung giờ ${slotStr} này! Vui lòng chọn giờ khác.`);
-      setCustomTime(null);
-      setSelectedTimeSlot(null);
-      form.setFieldsValue({ appointmentDate: null });
-      return;
-    }
-
-    // Chấp nhận giờ chọn tự do
-    setCustomTime(time);
-    setSelectedTimeSlot(slotStr);
-    form.setFieldsValue({ appointmentDate: slotStart });
-  };
-
+  }, [selectedDate, shootingType, isRangeMode]);
   // Helper dịch mã thời tiết WMO
+  // Dịch mã thời tiết WMO thành nội dung tư vấn dễ hiểu.
   const getWeatherDetails = (code) => {
     switch (code) {
       case 0:
@@ -497,6 +381,7 @@ const Booking = () => {
   }, [selectedWeatherCity, currentCalendarMonth]);
 
   // Tạo lưới ngày trong tháng
+  // Tạo các ô lịch của tháng hiện tại, gồm cả ngày đệm đầu/cuối tháng.
   const getCalendarCells = () => {
     const startWeekday = currentCalendarMonth.startOf("month").day();
     const totalDays = currentCalendarMonth.daysInMonth();
@@ -535,6 +420,7 @@ const Booking = () => {
   const selectedWeatherDetails = selectedWeather ? getWeatherDetails(selectedWeather.code) : null;
 
   // Guard: kiểm tra role trước (không early return ở đây vì vi phạm rules of hooks)
+  // Xác định tài khoản admin để chặn admin dùng form đặt lịch khách hàng.
   const isAdmin = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("user") || "null");
@@ -565,7 +451,6 @@ const Booking = () => {
     if (location.state) {
       if (location.state.location) {
         form.setFieldsValue({ location: location.state.location });
-        if (location.state.location === "Cao Hiển Studio") setIsStudio(true);
       }
       if (location.state.weatherCity) {
         const city = FORECAST_LOCATIONS.find(c => c.name === location.state.weatherCity);
@@ -602,6 +487,7 @@ const Booking = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainServices]);
 
+  // Trả thông tin tiền cọc hiển thị ở bước xem lại chi phí.
   const getDepositInfo = () => {
     return {
       percent: "30%",
@@ -614,46 +500,30 @@ const Booking = () => {
   const depositInfo = getDepositInfo();
 
   // Navigation to confirm page instead of creating VNPAY
+  // Đẩy dữ liệu sang trang xác nhận, chưa tạo đơn ở bước này.
+  /**
+   * Hàm gửi form Đặt lịch.
+   * Xử lý: Validate dữ liệu, ghép thông tin thành payload và gọi API tạo booking mới.
+   */
   const onFinish = async (values) => {
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         message.warning("Vui lòng đăng nhập để đặt lịch");
         navigate("/login");
         return;
       }
 
-      let startTime = null;
-      let endTime = null;
-
-      if (isRangeMode) {
-        if (!rangeStartDate || !rangeEndDate) {
-          message.warning("Vui lòng chọn ngày bắt đầu và ngày kết thúc trên lịch");
-          return;
-        }
-        if (!selectedTimeSlot) {
-          message.warning("Vui lòng chọn giờ bắt đầu");
-          return;
-        }
-        const [hour, minute] = selectedTimeSlot.split(":");
-        startTime = rangeStartDate.hour(parseInt(hour)).minute(parseInt(minute)).second(0);
-        endTime = rangeEndDate.hour(17).minute(0).second(0);
-      } else {
-        if (!selectedDate) {
-          message.warning("Vui lòng chọn ngày chụp");
-          return;
-        }
-        if (!selectedTimeSlot) {
-          message.warning("Vui lòng chọn giờ chụp");
-          return;
-        }
-        const [hour, minute] = selectedTimeSlot.split(":");
-        startTime = selectedDate.hour(parseInt(hour)).minute(parseInt(minute)).second(0);
+      if (!shootingType) {
+        message.warning("Vui lòng chọn hình thức chụp (Studio hoặc Ngoại cảnh)");
+        return;
       }
-
-      if (startTime.isBefore(dayjs())) {
-        message.error("Không thể đặt lịch trong quá khứ");
+      if (!selectedDate) {
+        message.warning("Vui lòng chọn ngày chụp trên lịch");
+        return;
+      }
+      if (!shootingSession) {
+        message.warning("Vui lòng chọn buổi chụp (Sáng / Chiều / Cả ngày)");
         return;
       }
 
@@ -665,23 +535,16 @@ const Booking = () => {
 
       const submitData = {
         service_id: selectedMainIds[0],
-        extra_service_ids: [...selectedMainIds.slice(1), ...selectedAddonIds],
-        start_time: startTime.toDate().toISOString(),
-        location: values.location,
-        note: values.note,
-        deposit_percent: depositInfo.value,
-        discount_amount: discountAmount,
-        coupon_code: appliedCoupon?.code || "",
         original_service_ids: selectedMainIds,
+        extra_service_ids: [...selectedMainIds.slice(1), ...(Array.isArray(values.extra_service_ids) ? values.extra_service_ids : [])],
+        shoot_date: selectedDate.format("YYYY-MM-DD"),
+        shooting_type: shootingType,
+        shooting_session: shootingSession,
+        location: shootingType === "STUDIO" ? "Cao Hiển Studio" : values.location,
+        note: values.note,
       };
 
-      if (isRangeMode) {
-        submitData.end_time = endTime.toDate().toISOString();
-      }
-
-      // Navigate to confirmation page
       navigate("/booking/confirm", { state: { bookingData: submitData } });
-
     } catch (err) {
       console.error("Booking submission error:", err);
     }
@@ -690,6 +553,7 @@ const Booking = () => {
   // Calculate services lists
   const allServices = mainServices; // since we stored all services here
 
+  // Lọc danh sách gói chính, loại các gói in ấn/gói đi kèm.
   const getMainServicesToDisplay = () => {
     return allServices.filter(s => {
       if (s.category === "PRINT") return false;
@@ -699,6 +563,7 @@ const Booking = () => {
     });
   };
 
+  // Lọc gói đi kèm theo gói chính đã chọn để tránh khách chọn sai combo.
   const getAddonServicesToDisplay = () => {
     const addons = [];
     const selectedMainIds = Array.isArray(serviceId) ? serviceId : (serviceId ? [serviceId] : []);
@@ -767,15 +632,7 @@ const Booking = () => {
   }, 0);
   const totalPrice = mainPrice + addonsPrice;
 
-  let discountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.type === "percent") {
-      discountAmount = Math.round((totalPrice * appliedCoupon.value) / 100);
-    } else if (appliedCoupon.type === "fixed") {
-      discountAmount = Math.min(appliedCoupon.value, totalPrice);
-    }
-  }
-  const finalPrice = Math.max(0, totalPrice - discountAmount);
+  const finalPrice = Math.max(0, totalPrice);
 
   return (
     <>
@@ -879,6 +736,25 @@ const Booking = () => {
                   
                   <Col xs={24} sm={12} lg={6}>
                     <Form.Item
+                      label="Hình thức chụp"
+                      required
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Select
+                        placeholder="Chọn hình thức chụp..."
+                        size="large"
+                        popupClassName="booking-select-dropdown"
+                        value={shootingType}
+                        onChange={handleShootingTypeChange}
+                      >
+                        <Select.Option value="STUDIO">Tại studio</Select.Option>
+                        <Select.Option value="OUTDOOR">Ngoài trời (Ngoại cảnh)</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} sm={12} lg={6}>
+                    <Form.Item
                       label="Khu vực chụp"
                       required
                       style={{ marginBottom: 0 }}
@@ -895,7 +771,7 @@ const Booking = () => {
                         }
                         size="large"
                         popupClassName="booking-select-dropdown"
-                        disabled={isStudio}
+                        disabled={shootingType === "STUDIO"}
                       >
                         {FORECAST_LOCATIONS.map((city) => (
                           <Select.Option key={city.name} value={city.name}>
@@ -906,50 +782,40 @@ const Booking = () => {
                     </Form.Item>
                   </Col>
 
-                  <Col xs={24} sm={12} lg={6}>
-                    <Form.Item
-                      label={
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span>Địa điểm chi tiết</span>
-                          <Checkbox
-                            className="gold-checkbox"
-                            checked={isStudio}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setIsStudio(checked);
-                              if (checked) {
-                                form.setFieldsValue({ location: "Cao Hiển Studio" });
-                                const vl = FORECAST_LOCATIONS.find(c => c.name === "Vĩnh Long");
-                                if (vl) setSelectedWeatherCity(vl);
-                              } else {
-                                form.setFieldsValue({ location: undefined });
-                              }
-                            }}
-                            style={{ fontSize: 13, fontWeight: "normal", textTransform: "none", color: "#BFA16A" }}
-                          >
-                            Chụp tại studio
-                          </Checkbox>
-                        </div>
-                      }
-                      name="location"
-                      rules={[{ required: true, message: "Vui lòng nhập địa điểm" }]}
-                      style={{ marginBottom: 0 }}
-                    >
-                      <AutoComplete
-                        options={addressOptions}
-                        onSearch={handleAddressSearch}
-                        popupClassName="booking-select-dropdown"
-                        disabled={isStudio}
+                  {shootingType === "OUTDOOR" && (
+                    <Col xs={24} sm={12} lg={6}>
+                      <Form.Item
+                        label="Địa điểm chi tiết"
+                        name="location"
+                        rules={[{ required: shootingType === "OUTDOOR", message: "Vui lòng nhập địa điểm" }]}
+                        style={{ marginBottom: 0 }}
                       >
+                        <AutoComplete
+                          options={addressOptions}
+                          onSearch={handleAddressSearch}
+                          popupClassName="booking-select-dropdown"
+                        >
+                          <Input
+                            size="large"
+                            prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
+                            placeholder="Ví dụ: Công viên Hòa Bình..."
+                          />
+                        </AutoComplete>
+                      </Form.Item>
+                    </Col>
+                  )}
+                  {shootingType === "STUDIO" && (
+                    <Col xs={24} sm={12} lg={6}>
+                      <Form.Item label="Địa điểm" style={{ marginBottom: 0 }}>
                         <Input
                           size="large"
+                          value="Cao Hiển Studio"
+                          disabled
                           prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                          placeholder="Ví dụ: Studio Cao Hiển"
-                          disabled={isStudio}
                         />
-                      </AutoComplete>
-                    </Form.Item>
-                  </Col>
+                      </Form.Item>
+                    </Col>
+                  )}
                 </Row>
               </div>
 
@@ -968,6 +834,11 @@ const Booking = () => {
                     checked={isRangeMode}
                     onChange={(checked) => {
                       setIsRangeMode(checked);
+                      setSelectedDate(null);
+                      setRangeStartDate(null);
+                      setRangeEndDate(null);
+                      setShootingSession(null);
+                      form.setFieldsValue({ appointmentDate: null });
                     }}
                     style={{ background: isRangeMode ? "#BFA16A" : "#ccc" }}
                   />
@@ -1038,42 +909,28 @@ const Booking = () => {
                                       if (!rangeStartDate || (rangeStartDate && rangeEndDate)) {
                                         setRangeStartDate(cell.date);
                                         setRangeEndDate(null);
-                                        setSelectedTimeSlot(null);
+                                        setShootingSession(null);
                                         form.setFieldsValue({ appointmentDate: null });
                                       } else {
                                         if (cell.date.isBefore(rangeStartDate, 'day')) {
                                           setRangeStartDate(cell.date);
                                           setRangeEndDate(null);
+                                          setShootingSession(null);
+                                          form.setFieldsValue({ appointmentDate: null });
                                         } else if (cell.date.isSame(rangeStartDate, 'day')) {
                                           setRangeStartDate(null);
                                           setRangeEndDate(null);
+                                          setShootingSession(null);
+                                          form.setFieldsValue({ appointmentDate: null });
                                         } else {
                                           setRangeEndDate(cell.date);
-                                          if (selectedTimeSlot) {
-                                            const [hour, minute] = selectedTimeSlot.split(":");
-                                            const updatedDateTime = rangeStartDate
-                                              .hour(parseInt(hour))
-                                              .minute(parseInt(minute))
-                                              .second(0);
-                                            form.setFieldsValue({ appointmentDate: updatedDateTime });
-                                          } else {
-                                            form.setFieldsValue({ appointmentDate: rangeStartDate });
-                                          }
+                                          form.setFieldsValue({ appointmentDate: rangeStartDate });
                                         }
                                       }
                                     } else {
                                       setSelectedDate(cell.date);
-                                      setSelectedTimeSlot(null);
-                                      if (selectedTimeSlot) {
-                                        const [hour, minute] = selectedTimeSlot.split(":");
-                                        const updatedDateTime = cell.date
-                                          .hour(parseInt(hour))
-                                          .minute(parseInt(minute))
-                                          .second(0);
-                                        form.setFieldsValue({ appointmentDate: updatedDateTime });
-                                      } else {
-                                        form.setFieldsValue({ appointmentDate: cell.date });
-                                      }
+                                      setShootingSession(null);
+                                      form.setFieldsValue({ appointmentDate: cell.date });
                                     }
                                   }
                                 }}
@@ -1212,66 +1069,36 @@ const Booking = () => {
                           <div className="glass-panel" style={{ padding: 24, borderRadius: 8 }}>
                             <h4 className="font-serif-luxury" style={{ margin: "0 0 14px 0", fontSize: 16, color: "#2F2F2F", display: "flex", alignItems: "center", gap: 8 }}>
                               <CalendarOutlined style={{ color: "#BFA16A" }} />
-                              {isRangeMode ? "Chọn giờ bắt đầu chụp" : "Chọn giờ chụp"}
+                              Chọn buổi chụp
                             </h4>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 10 }}>
-                              {TIME_SLOTS.map((slot) => {
-                                const isSlotSelected = selectedTimeSlot === slot && !customTime;
-                                const isBusy = isSlotBusy(slot);
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                              {SESSION_OPTIONS.map((option) => {
+                                const isSelected = shootingSession === option.value;
+                                const isBusy = !isRangeMode && isSessionBusy(option.value);
                                 return (
                                   <button
                                     type="button"
-                                    key={slot}
-                                    className={`time-slot-btn${isSlotSelected ? " time-slot-active" : ""}${isBusy ? " time-slot-busy" : ""}`}
-                                    disabled={isBusy}
+                                    key={option.value}
+                                    className={`time-slot-btn${isSelected ? " time-slot-active" : ""}${isBusy ? " time-slot-busy" : ""}`}
+                                    disabled={isBusy || (!isRangeMode && !selectedDate)}
                                     onClick={() => {
-                                      setSelectedTimeSlot(slot);
-                                      setCustomTime(null);
-                                      const [hour, minute] = slot.split(":");
-                                      const targetDate = isRangeMode ? rangeStartDate : selectedDate;
-                                      if (targetDate) {
-                                        const updatedDateTime = targetDate
-                                          .hour(parseInt(hour))
-                                          .minute(parseInt(minute))
-                                          .second(0);
-                                        form.setFieldsValue({ appointmentDate: updatedDateTime });
-                                      }
+                                      setShootingSession(option.value);
+                                      form.setFieldsValue({ appointmentDate: isRangeMode ? rangeStartDate : selectedDate });
                                     }}
+                                    style={{ minHeight: 56, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}
                                   >
-                                    {slot === "08:00" ? "Sáng (08:00)" : "Chiều (13:00)"}
+                                    <span>{option.label}</span>
+                                    <small style={{ fontSize: 11, opacity: 0.8 }}>{option.time}</small>
+                                    {isBusy && <small style={{ fontSize: 11 }}>Đã bận</small>}
                                   </button>
                                 );
                               })}
                             </div>
 
-                            <div style={{ borderTop: "1px dashed #E8DED2", paddingTop: 16, marginTop: 16 }}>
-                              <div style={{ fontSize: 13, color: "#555", marginBottom: 8, fontWeight: 500 }}>
-                                Hoặc chọn khung giờ khác:
-                              </div>
-                              <TimePicker
-                                format="HH:mm"
-                                placeholder="Chọn giờ bất kỳ (24h)..."
-                                minuteStep={15}
-                                disabled={isRangeMode ? (!rangeStartDate || !rangeEndDate) : !selectedDate}
-                                value={customTime}
-                                onChange={handleCustomTimeChange}
-                                style={{ width: "100%", height: 44, borderRadius: 8, borderColor: "#E8DED2", fontSize: 15 }}
-                                popupClassName="booking-select-dropdown"
-                              />
-                            </div>
-
-                            {selectedTimeSlot && (
+                            {shootingSession && (
                               <div style={{ marginTop: 14, fontSize: 13, color: "#BFA16A", fontWeight: "bold", textAlign: "center", background: "rgba(191, 161, 106, 0.06)", padding: "10px 12px", border: "1px dashed rgba(191, 161, 106, 0.25)" }}>
-                                {isRangeMode ? (
-                                  <span>
-                                    ✓ Đã chọn: {rangeStartDate?.format("DD/MM/YYYY")} ({selectedTimeSlot}) đến {rangeEndDate ? rangeEndDate.format("DD/MM/YYYY") : "..."}
-                                  </span>
-                                ) : (
-                                  <span>
-                                    ✓ Đã chọn: {selectedDate?.format("DD/MM/YYYY")} lúc {selectedTimeSlot}
-                                  </span>
-                                )}
+                                ✓ Đã chọn: {(isRangeMode ? rangeStartDate : selectedDate)?.format("DD/MM/YYYY")} - {getSessionLabel(shootingSession)}
                               </div>
                             )}
                           </div>
@@ -1338,66 +1165,7 @@ const Booking = () => {
                           </div>
                         )}
                         
-                        {/* Coupon Code Section */}
-                        <div style={{ margin: "20px 0 16px" }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <Input
-                              placeholder="Mã giảm giá (VD: GIAM10, CAOHIEN50)..."
-                              value={couponCode}
-                              onChange={(e) => setCouponCode(e.target.value)}
-                              disabled={!!appliedCoupon}
-                              size="middle"
-                              style={{
-                                borderRadius: "8px",
-                                borderColor: couponError ? "#cf1322" : "#E8DED2",
-                                background: "#FAFAFA",
-                                fontFamily: "'Outfit', sans-serif"
-                              }}
-                            />
-                            {appliedCoupon ? (
-                              <Button 
-                                type="default" 
-                                danger
-                                onClick={handleRemoveCoupon}
-                                style={{ borderRadius: "8px", fontFamily: "'Outfit', sans-serif" }}
-                              >
-                                Hủy
-                              </Button>
-                            ) : (
-                              <Button 
-                                type="primary" 
-                                onClick={handleApplyCoupon}
-                                style={{ 
-                                  background: "#BFA16A", 
-                                  borderColor: "#BFA16A", 
-                                  borderRadius: "8px",
-                                  fontFamily: "'Outfit', sans-serif"
-                                }}
-                              >
-                                Áp dụng
-                              </Button>
-                            )}
-                          </div>
-                          {couponError && (
-                            <div style={{ color: "#cf1322", fontSize: 12, marginTop: 4, paddingLeft: 4 }}>
-                              {couponError}
-                            </div>
-                          )}
-                          {appliedCoupon && (
-                            <div style={{ color: "#389e0d", fontSize: 12, marginTop: 4, paddingLeft: 4 }}>
-                              ✓ Đã áp dụng mã <strong>{appliedCoupon.code}</strong> (Giảm {appliedCoupon.type === "percent" ? `${appliedCoupon.value}%` : `${appliedCoupon.value.toLocaleString("vi-VN")}đ`})
-                            </div>
-                          )}
-                        </div>
-
                         <div style={{ height: 1, background: "#E8DED2", margin: "16px 0" }}></div>
-                        
-                        {discountAmount > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, color: "#cf1322" }}>
-                            <span style={{ fontSize: 14 }}>Giảm giá ({appliedCoupon?.code}):</span>
-                            <span style={{ fontWeight: 500 }}>-{discountAmount.toLocaleString("vi-VN")}đ</span>
-                          </div>
-                        )}
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 16, fontWeight: 600 }}>Tổng cộng:</span>
@@ -1462,21 +1230,7 @@ const Booking = () => {
                   </Col>
                 </Row>
 
-                <Form.Item
-                  name="agreement"
-                  valuePropName="checked"
-                  rules={[
-                    {
-                      validator: (_, value) =>
-                        value ? Promise.resolve() : Promise.reject(new Error('Vui lòng đồng ý với các điều khoản và chính sách của chúng tôi.')),
-                    },
-                  ]}
-                  style={{ marginTop: 24, marginBottom: 0 }}
-                >
-                  <Checkbox className="gold-checkbox">
-                    Tôi đã đọc và đồng ý với <a href="/contract" target="_blank" style={{ color: "#BFA16A", textDecoration: "underline" }}>Hợp đồng dịch vụ</a> và <a href="/refund-policy" target="_blank" style={{ color: "#BFA16A", textDecoration: "underline" }}>Chính sách hủy/hoàn cọc</a> của Cao Hiển Studio.
-                  </Checkbox>
-                </Form.Item>
+
 
                 <div style={{ marginTop: 32 }}>
                   {isRangeMode ? (
@@ -1497,7 +1251,7 @@ const Booking = () => {
                             weatherCity: selectedWeatherCity.name,
                             location: locationVal || "",
                             startDate: rangeStartDate ? rangeStartDate.format("YYYY-MM-DD") : "",
-                            startTime: selectedTimeSlot || "",
+                            startTime: shootingSession || "",
                             endDate: rangeEndDate ? rangeEndDate.format("YYYY-MM-DD") : "",
                             isMultiDay: true,
                           }

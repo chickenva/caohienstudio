@@ -1,5 +1,6 @@
 const googleDriveService = require("../services/googleDriveService");
 
+// Admin tạo folder Google Drive mới trong folder gốc đã cấu hình.
 exports.createFolder = async (req, res) => {
   try {
     const { name, parentFolderId } = req.body;
@@ -38,6 +39,7 @@ exports.createFolder = async (req, res) => {
   }
 };
 
+// Lấy danh sách ảnh trong một folder Drive để quản lý album.
 exports.listImages = async (req, res) => {
   try {
     const { folderId } = req.params;
@@ -64,6 +66,7 @@ exports.listImages = async (req, res) => {
   }
 };
 
+// Upload nhiều ảnh lên folder Drive rồi trả metadata cho frontend.
 exports.uploadImages = async (req, res) => {
   try {
     const { folderId } = req.params;

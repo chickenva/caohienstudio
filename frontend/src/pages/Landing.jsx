@@ -9,6 +9,7 @@ const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
 
+// Landing page giới thiệu nhanh thương hiệu và điều hướng vào website.
 const Landing = () => {
   const navigate = useNavigate();
 

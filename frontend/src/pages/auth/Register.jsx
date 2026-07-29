@@ -7,6 +7,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+// Trang đăng ký tài khoản customer với xác thực OTP email.
 const Register = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Schema lưu giao dịch thanh toán cho booking qua VNPay hoặc thao tác thủ công.
 const paymentSchema = new mongoose.Schema(
   {
     reference_id: {

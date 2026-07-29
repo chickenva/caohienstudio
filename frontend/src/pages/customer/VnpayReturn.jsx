@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Result, Button, Spin } from "antd";
 import axios from "axios";
 
+// Trang nhận kết quả redirect từ VNPay sau khi khách thanh toán cọc.
 const VnpayReturn = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const VnpayReturn = () => {
   const [paymentStatus, setPaymentStatus] = useState("processing");
 
   useEffect(() => {
+    // Gửi toàn bộ params VNPay về backend để xác thực chữ ký và cập nhật booking.
     const handleReturn = async () => {
       try {
         const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
@@ -21,14 +23,15 @@ const VnpayReturn = () => {
           return;
         }
 
-        if (vnp_ResponseCode === "00") {
+        try {
           await axios.post(
             "http://localhost:5000/api/bookings/vnpay-return",
             vnpayData,
           );
-
-          setPaymentStatus("success");
-        } else {
+          setPaymentStatus(vnp_ResponseCode === "00" ? "success" : "error");
+        } catch (apiErr) {
+          // Backend vẫn có thể đã cập nhật Payment FAILED rồi trả 400 cho giao dịch thất bại.
+          console.error("VNPay backend update error:", apiErr);
           setPaymentStatus("error");
         }
       } catch (err) {

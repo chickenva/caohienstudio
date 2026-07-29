@@ -25,6 +25,7 @@ const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 const FONT_SANS = '"Outfit", "Helvetica Neue", Arial, sans-serif';
 
+// Layout khách hàng gồm header, menu, nút về đầu trang và outlet nội dung.
 const CustomerLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();

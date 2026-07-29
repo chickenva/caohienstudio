@@ -28,6 +28,7 @@ const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
 
+// Layout chia sẻ phong cách header/navigation cho các trang chung.
 const SharedLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();

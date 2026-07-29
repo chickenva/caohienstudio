@@ -1,3 +1,4 @@
+// Script seed dữ liệu dịch vụ mẫu theo nghiệp vụ studio.
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const Service = require("./models/Service");

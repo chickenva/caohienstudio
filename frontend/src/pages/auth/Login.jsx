@@ -6,6 +6,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
+// Trang đăng nhập, lưu token và điều hướng theo role user.
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

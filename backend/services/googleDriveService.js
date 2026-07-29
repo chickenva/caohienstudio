@@ -5,6 +5,7 @@ const DRIVE_IMAGE_CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_DRIVE_IMAGE_CACHE_ITEMS = 120;
 const driveImageCache = new Map();
 
+// Khởi tạo Google Drive client bằng service account trong biến môi trường.
 const getDriveClient = () => {
   const auth = new google.auth.GoogleAuth({
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
@@ -17,11 +18,14 @@ const getDriveClient = () => {
   });
 };
 
+// Nhận diện link ảnh CDN googleusercontent để resize thumbnail.
 const isGoogleUserContentUrl = (url = "") =>
   /googleusercontent\.com/i.test(url);
 
+// Nhận diện link web Google Drive dạng share/view.
 const isDriveWebUrl = (url = "") => /drive\.google\.com/i.test(url);
 
+// Tách fileId từ link Google Drive dạng /file/d hoặc ?id=.
 const extractDriveFileId = (input = "") => {
   if (!input || /\/folders\//i.test(input)) return "";
 
@@ -35,15 +39,18 @@ const extractDriveFileId = (input = "") => {
   return "";
 };
 
+// Tạo link xem trực tiếp ảnh Drive từ fileId.
 const buildDirectUrl = (fileId) => {
   return `https://drive.google.com/uc?export=view&id=${fileId}`;
 };
 
+// Tạo link thumbnail Drive với kích thước mong muốn.
 const buildDriveThumbnailUrl = (fileId, size = "w1600") => {
   if (!fileId) return "";
   return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${size}`;
 };
 
+// Chuẩn hóa mọi kiểu link Drive/CDN về URL ảnh có kích thước phù hợp.
 const normalizeDriveImageUrl = (url, size = "s1600") => {
   if (!url) return "";
 
@@ -73,6 +80,7 @@ const normalizeDriveImageUrl = (url, size = "s1600") => {
   return trimmedUrl;
 };
 
+// Lấy danh sách ảnh từ cache nếu còn hạn.
 const getCachedImages = (folderId) => {
   const cached = driveImageCache.get(folderId);
 
@@ -86,6 +94,7 @@ const getCachedImages = (folderId) => {
   return cached.images;
 };
 
+// Lưu danh sách ảnh vào cache và giới hạn số folder cache.
 const setCachedImages = (folderId, images) => {
   if (driveImageCache.size >= MAX_DRIVE_IMAGE_CACHE_ITEMS) {
     const firstKey = driveImageCache.keys().next().value;
@@ -98,6 +107,7 @@ const setCachedImages = (folderId, images) => {
   });
 };
 
+// Map file Drive sang object ảnh nhiều kích thước cho frontend.
 const mapDriveImageFile = (file) => {
   const width = Number(file.imageMediaMetadata?.width) || null;
   const height = Number(file.imageMediaMetadata?.height) || null;
@@ -143,12 +153,25 @@ const mapDriveImageFile = (file) => {
 exports.extractDriveFileId = extractDriveFileId;
 exports.normalizeDriveImageUrl = normalizeDriveImageUrl;
 
+// Xóa cache của một folder khi album thay đổi.
+/**
+ * Hàm xóa cache danh sách ảnh của một thư mục Drive.
+ * Xử lý: Xóa dữ liệu cache trong bộ nhớ (Memory Cache) để tải lại ảnh mới nhất.
+ * @param {String} folderId - ID của thư mục trên Drive
+ */
 exports.clearFolderImageCache = (folderId) => {
   if (folderId) {
     driveImageCache.delete(folderId);
   }
 };
 
+// Liệt kê ảnh trong folder Drive, có cache để giảm số lần gọi API.
+/**
+ * Hàm lấy danh sách hình ảnh từ thư mục Google Drive.
+ * Xử lý: Gọi API Drive, kết hợp cache để tăng tốc độ phản hồi. Hỗ trợ phân trang.
+ * @param {String} folderId - ID của thư mục trên Drive
+ * @param {Object} options - Các tham số lọc và phân trang
+ */
 exports.listImagesInFolder = async (folderId, options = {}) => {
   if (!folderId) return [];
 

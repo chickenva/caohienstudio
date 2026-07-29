@@ -32,6 +32,9 @@ const { Title, Text } = Typography;
 const API_URL = "http://localhost:5000/api";
 
 const statusConfig = {
+  REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
+  CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
+  WAITING_PAYMENT: { color: "gold", text: "Chờ đặt cọc" },
   PENDING: { color: "gold", text: "Chờ thanh toán" },
   DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
   CONFIRMED: { color: "blue", text: "Đã xác nhận" },
@@ -43,8 +46,10 @@ const statusConfig = {
   PAYMENT_FAILED: { color: "volcano", text: "Thanh toán lỗi" },
 };
 
+// Định dạng số tiền trong các card doanh thu dashboard.
 const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 
+// Dashboard admin tổng hợp đơn, doanh thu, khách hàng, dịch vụ và album.
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
@@ -55,8 +60,10 @@ const AdminDashboard = () => {
     fetchOverview();
   }, []);
 
+  // Lấy JWT admin để gọi API dashboard.
   const getToken = () => localStorage.getItem("token");
 
+  // Lấy toàn bộ số liệu tổng quan từ backend.
   const fetchOverview = async () => {
     setLoading(true);
 
@@ -206,24 +213,24 @@ const AdminDashboard = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Chờ thanh toán"
-              value={cards.pendingBookings || 0}
+              title="Yêu cầu mới"
+              value={cards.requestedBookings || 0}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: "#d48806" }}
             />
-            <Text type="secondary">Đơn đang chờ khách thanh toán cọc</Text>
+            <Text type="secondary">Đơn khách vừa gửi, chờ admin xử lý</Text>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Đã đặt cọc"
-              value={cards.depositedBookings || 0}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#13c2c2" }}
+              title="Chờ hợp đồng/đặt cọc"
+              value={(cards.contractSentBookings || 0) + (cards.waitingPaymentBookings || 0)}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: "#722ed1" }}
             />
-            <Text type="secondary">Đơn đã đặt cọc chờ xác nhận</Text>
+            <Text type="secondary">Đơn đã gửi hợp đồng hoặc chờ khách đặt cọc</Text>
           </Card>
         </Col>
 
@@ -272,7 +279,7 @@ const AdminDashboard = () => {
               formatter={formatMoney}
               prefix={<DollarOutlined />}
             />
-            <Text type="secondary">Từ đơn đã cọc và hoàn thành</Text>
+            <Text type="secondary">Từ đơn đã xác nhận và hoàn thành</Text>
           </Card>
         </Col>
 
@@ -300,7 +307,7 @@ const AdminDashboard = () => {
               prefix={<DollarOutlined />}
               valueStyle={{ color: "#0958d9" }}
             />
-            <Text type="secondary">Tính theo đơn đã cọc/hoàn thành</Text>
+            <Text type="secondary">Tính theo đơn đã xác nhận/hoàn thành</Text>
           </Card>
         </Col>
 

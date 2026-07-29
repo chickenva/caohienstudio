@@ -1,7 +1,9 @@
+// Entry point backend: cấu hình Express, route, static files, MongoDB và cron jobs.
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const galleryRoutes = require("./routes/galleryRoutes");
@@ -19,6 +21,9 @@ const setupCronJobs = require("./jobs/cronJobs");
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Serve thư mục public (bao gồm file PDF hợp đồng)
+app.use("/public", express.static(path.join(__dirname, "public")));
 
 // Connect DB
 mongoose

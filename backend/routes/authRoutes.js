@@ -1,3 +1,4 @@
+// Router xác thực: đăng ký, đăng nhập, OTP và hồ sơ cá nhân.
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");

@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
  * Nếu user là admin, redirect về admin dashboard
  * Nếu user là customer, redirect về customer page
  */
+// Bảo vệ route theo token và role trước khi render trang con.
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const user = localStorage.getItem("user");
 

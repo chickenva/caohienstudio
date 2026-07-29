@@ -1,3 +1,4 @@
+// Router album: public xem album, admin quản lý gallery.
 const express = require("express");
 const router = express.Router();
 const galleryController = require("../controllers/galleryController");
