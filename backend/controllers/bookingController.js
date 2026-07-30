@@ -10,14 +10,14 @@
  *
  * LUỒNG LEGACY (backward-compat): PENDING → DEPOSITED → CONFIRMED → COMPLETED | CANCELED
  */
-const Booking  = require("../models/Booking");
-const Service  = require("../models/Service");
-const Payment  = require("../models/Payment");
-const User     = require("../models/User");
+const Booking = require("../models/Booking");
+const Service = require("../models/Service");
+const Payment = require("../models/Payment");
+const User = require("../models/User");
 
-const crypto      = require("crypto");
-const moment      = require("moment");
-const bcrypt      = require("bcryptjs");
+const crypto = require("crypto");
+const moment = require("moment");
+const bcrypt = require("bcryptjs");
 const mailService = require("../services/mailService");
 const { generateContractPdf, generateQrDataUrl } = require("../utils/contractPdf");
 
@@ -192,16 +192,16 @@ const STUDIO_LOCATION = "Cao Hiển Studio";
 
 // Map buổi chụp sang giờ bắt đầu/kết thúc (giờ địa phương VN, UTC+7)
 const SESSION_TIME_MAP = {
-  MORNING:   { startHour: 8, startMin: 0, endHour: 12, endMin: 0 },
+  MORNING: { startHour: 8, startMin: 0, endHour: 12, endMin: 0 },
   AFTERNOON: { startHour: 13, startMin: 0, endHour: 17, endMin: 0 },
-  FULL_DAY:  { startHour: 8, startMin: 0, endHour: 17, endMin: 0 },
+  FULL_DAY: { startHour: 8, startMin: 0, endHour: 17, endMin: 0 },
 };
 
 // Các buổi bị trùng nhau theo logic conflict
 const SESSION_CONFLICT_MAP = {
-  MORNING:   ["MORNING", "FULL_DAY"],
+  MORNING: ["MORNING", "FULL_DAY"],
   AFTERNOON: ["AFTERNOON", "FULL_DAY"],
-  FULL_DAY:  ["MORNING", "AFTERNOON", "FULL_DAY"],
+  FULL_DAY: ["MORNING", "AFTERNOON", "FULL_DAY"],
 };
 
 // Tính start_time và end_time cố định từ ngày chụp + buổi chụp (UTC)
@@ -269,7 +269,7 @@ const findOutdoorSessionConflict = async ({ shootDateStr, session, excludeBookin
 const buildDateQuery = (shootDateStr) => {
   // shootDate là YYYY-MM-DD VN time → range UTC
   const dayStart = moment.utc(shootDateStr).utcOffset(7, true).startOf("day").utc().toDate();
-  const dayEnd   = moment.utc(shootDateStr).utcOffset(7, true).endOf("day").utc().toDate();
+  const dayEnd = moment.utc(shootDateStr).utcOffset(7, true).endOf("day").utc().toDate();
   return {
     start_time: { $gte: dayStart, $lte: dayEnd },
   };
@@ -361,7 +361,7 @@ const generateVnpayUrl = (req, payment) => {
   const vnpUrl =
     process.env.VNPAY_URL ||
     "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-  const returnUrl = process.env.VNPAY_RETURN_URL || process.env.VNP_RETURNURL;
+  const returnUrl = process.env.VNPAY_RETURN_URL;
 
   let vnpParams = {
     vnp_Version: "2.1.0",
@@ -480,7 +480,7 @@ exports.createBookingRequest = async (req, res) => {
       });
     }
 
-    const service = await Service.findById(service_id);
+    const service = await Service.findById(service_id); ``
     if (!service || !service.is_active) {
       return res.status(404).json({ message: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng cung cấp" });
     }
@@ -892,15 +892,15 @@ exports.sendContract = async (req, res) => {
     const shootDateStr = moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD");
     const scheduleConflict = booking.shooting_type === "STUDIO"
       ? await findStudioSessionConflict({
-          shootDateStr,
-          session: booking.shooting_session,
-          excludeBookingId: booking._id,
-        })
+        shootDateStr,
+        session: booking.shooting_session,
+        excludeBookingId: booking._id,
+      })
       : await findOutdoorSessionConflict({
-          shootDateStr,
-          session: booking.shooting_session,
-          excludeBookingId: booking._id,
-        });
+        shootDateStr,
+        session: booking.shooting_session,
+        excludeBookingId: booking._id,
+      });
 
     if (scheduleConflict) {
       const conflictMessage = booking.shooting_type === "STUDIO"
