@@ -1,10 +1,14 @@
+/**
+ * BookingSuccess.jsx
+ * Trang thông báo đặt lịch thành công.
+ */
 import React, { useEffect, useState } from "react";
 import { Result, Button, Card, Descriptions, Divider } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang thông báo đặt lịch thành công trong luồng cũ.
 const BookingSuccess = () => {
@@ -73,3 +77,4 @@ const BookingSuccess = () => {
 };
 
 export default BookingSuccess;
+

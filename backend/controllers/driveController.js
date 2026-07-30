@@ -1,14 +1,21 @@
+/**
+ * driveController.js
+ * Quản lý folder và ảnh trên Google Drive phục vụ album gallery.
+ * Dùng service account (googleDriveService) để giao tiếp với Drive API.
+ */
 const googleDriveService = require("../services/googleDriveService");
 
-// Admin tạo folder Google Drive mới trong folder gốc đã cấu hình.
+/**
+ * [POST] /api/drive/folders
+ * Admin tạo folder mới trong folder gốc đã cấu hình (GOOGLE_DRIVE_ROOT_FOLDER_ID).
+ * Có thể chỉ định parentFolderId khác nếu muốn tạo subfolder.
+ */
 exports.createFolder = async (req, res) => {
   try {
     const { name, parentFolderId } = req.body;
 
     if (!name) {
-      return res.status(400).json({
-        message: "Vui lòng nhập tên folder",
-      });
+      return res.status(400).json({ message: "Vui lòng nhập tên folder" });
     }
 
     const targetParentFolderId =
@@ -20,10 +27,7 @@ exports.createFolder = async (req, res) => {
       });
     }
 
-    const folder = await googleDriveService.createFolder(
-      name,
-      targetParentFolderId,
-    );
+    const folder = await googleDriveService.createFolder(name, targetParentFolderId);
 
     return res.status(201).json({
       message: "Tạo folder Google Drive thành công",
@@ -31,7 +35,6 @@ exports.createFolder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Drive folder error:", error);
-
     return res.status(500).json({
       message: "Lỗi tạo folder Google Drive",
       error: error.message,
@@ -39,15 +42,17 @@ exports.createFolder = async (req, res) => {
   }
 };
 
-// Lấy danh sách ảnh trong một folder Drive để quản lý album.
+/**
+ * [GET] /api/drive/folders/:folderId/images
+ * Lấy danh sách ảnh trong một folder Drive.
+ * Kết quả được cache server-side 5 phút để giảm số lần gọi API.
+ */
 exports.listImages = async (req, res) => {
   try {
     const { folderId } = req.params;
 
     if (!folderId) {
-      return res.status(400).json({
-        message: "Thiếu folderId",
-      });
+      return res.status(400).json({ message: "Thiếu folderId" });
     }
 
     const images = await googleDriveService.listImagesInFolder(folderId);
@@ -58,7 +63,6 @@ exports.listImages = async (req, res) => {
     });
   } catch (error) {
     console.error("List Drive images error:", error);
-
     return res.status(500).json({
       message: "Lỗi lấy danh sách ảnh Google Drive",
       error: error.message,
@@ -66,31 +70,27 @@ exports.listImages = async (req, res) => {
   }
 };
 
-// Upload nhiều ảnh lên folder Drive rồi trả metadata cho frontend.
+/**
+ * [POST] /api/drive/folders/:folderId/images
+ * Admin upload nhiều ảnh lên folder Drive, trả về metadata từng ảnh.
+ * Sử dụng multer (upload.array) để nhận file từ multipart form-data.
+ */
 exports.uploadImages = async (req, res) => {
   try {
     const { folderId } = req.params;
 
     if (!folderId) {
-      return res.status(400).json({
-        message: "Thiếu folderId",
-      });
+      return res.status(400).json({ message: "Thiếu folderId" });
     }
 
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        message: "Vui lòng chọn ít nhất 1 ảnh",
-      });
+      return res.status(400).json({ message: "Vui lòng chọn ít nhất 1 ảnh" });
     }
 
     const uploadedImages = [];
 
     for (const file of req.files) {
-      const uploaded = await googleDriveService.uploadImageToFolder(
-        file,
-        folderId,
-      );
-
+      const uploaded = await googleDriveService.uploadImageToFolder(file, folderId);
       uploadedImages.push(uploaded);
     }
 
@@ -100,7 +100,6 @@ exports.uploadImages = async (req, res) => {
     });
   } catch (error) {
     console.error("Upload Drive images error:", error);
-
     return res.status(500).json({
       message: "Lỗi upload ảnh Google Drive",
       error: error.message,

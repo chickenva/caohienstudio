@@ -1,3 +1,7 @@
+/**
+ * Home.jsx
+ * Trang chủ website: hero, dịch vụ, album nổi bật và CTA liên hệ.
+ */
 import React, { useState, useEffect } from "react";
 import { Row, Col, Button, Form, Input, message, Spin } from "antd";
 import {
@@ -19,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../Home.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 import {
   getGalleryImageSrcSet,
   getGalleryImageUrl,
@@ -737,3 +741,4 @@ const Home = () => {
 };
 
 export default Home;
+

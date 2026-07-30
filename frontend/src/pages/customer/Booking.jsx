@@ -1,3 +1,7 @@
+/**
+ * Booking.jsx
+ * Trang đặt lịch chụp: chọn dịch vụ, buổi, ngày và địa điểm.
+ */
 import React, { useState, useEffect } from "react";
 import {
   Form,
@@ -27,7 +31,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Màn khách hàng chọn dịch vụ, hình thức chụp, ngày và buổi chụp.
 const Booking = () => {

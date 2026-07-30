@@ -1,3 +1,7 @@
+/**
+ * FAQ.jsx
+ * Trang hỏi đáp thường gặp về dịch vụ studio.
+ */
 import React, { useEffect, useState } from "react";
 import { Collapse, Row, Col, Typography } from "antd";
 import { useLocation } from "react-router-dom";

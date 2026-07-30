@@ -1,3 +1,7 @@
+/**
+ * LandingLayout.jsx
+ * Layout đơn giản cho trang Landing (không có footer/header phức tạp).
+ */
 import React from "react";
 import { Outlet } from "react-router-dom";
 

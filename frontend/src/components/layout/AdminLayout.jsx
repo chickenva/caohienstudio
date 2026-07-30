@@ -1,3 +1,7 @@
+/**
+ * AdminLayout.jsx
+ * Layout tổng cho Admin: sidebar điều hướng, header và vùng nội dung.
+ */
 import React, { useEffect, useMemo, useState } from "react";
 import { Layout, Menu, Button, message, Avatar, Dropdown, Divider, Tooltip } from "antd";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";

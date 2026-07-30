@@ -1,5 +1,11 @@
+/**
+ * mailService.js
+ * Tập hợp tất cả email transactional của hệ thống Cao Hiển Studio:
+ *  - Xác nhận đặt lịch, nhắc lịch chụp, gửi hợp đồng PDF, thanh toán VNPay...
+ * Sử dụng Nodemailer + Gmail transport, template HTML đồng nhất với thương hiệu.
+ */
 const nodemailer = require("nodemailer");
-const moment = require("moment");
+const moment     = require("moment");
 
 // Cấu hình transporter
 const transporter = nodemailer.createTransport({

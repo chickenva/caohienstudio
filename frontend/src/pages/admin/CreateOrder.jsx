@@ -1,3 +1,7 @@
+/**
+ * CreateOrder.jsx
+ * Admin tạo đơn đặt lịch hộ khách hàng từ trang quản lý.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Form,
@@ -29,7 +33,7 @@ import dayjs from "dayjs";
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const OrdersCreate = () => {
   const [form] = Form.useForm();
@@ -675,3 +679,4 @@ const OrdersCreate = () => {
 };
 
 export default OrdersCreate;
+

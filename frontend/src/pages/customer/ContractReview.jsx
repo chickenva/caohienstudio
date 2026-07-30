@@ -1,3 +1,7 @@
+/**
+ * ContractReview.jsx
+ * Trang xem hợp đồng online qua token bảo mật (không cần login).
+ */
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -21,7 +25,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#BFA16A";
 
 // Định dạng tiền VND trên trang hợp đồng.
@@ -472,3 +476,4 @@ const ContractReview = () => {
   );
 };
 export default ContractReview;
+

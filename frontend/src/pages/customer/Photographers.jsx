@@ -1,3 +1,7 @@
+/**
+ * Photographers.jsx
+ * Trang danh sách nhiếp ảnh gia.
+ */
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Spin, message, Row, Col } from "antd";
@@ -7,7 +11,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang danh sách nhiếp ảnh gia đang hoạt động.
 const Photographer = () => {
@@ -331,3 +335,4 @@ const Photographer = () => {
 };
 
 export default Photographer;
+

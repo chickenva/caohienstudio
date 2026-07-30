@@ -1,3 +1,7 @@
+/**
+ * AlbumDetail.jsx
+ * Trang chi tiết album: xem đầy đủ ảnh từ Google Drive.
+ */
 import React from "react";
 import { useParams } from "react-router-dom";
 import { Row, Col, Image } from "antd";

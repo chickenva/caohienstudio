@@ -1,3 +1,7 @@
+/**
+ * ForgotPassword.jsx
+ * Trang quên mật khẩu: nhập email -> OTP -> đặt lại mật khẩu.
+ */
 import React, { useState } from "react";
 import { Form, Input, Button, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +11,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang quên mật khẩu, gửi OTP và cập nhật mật khẩu mới.
 const ForgotPassword = () => {
@@ -342,3 +346,4 @@ const ForgotPassword = () => {
 };
 
 export default ForgotPassword;
+

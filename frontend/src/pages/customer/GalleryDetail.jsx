@@ -1,3 +1,7 @@
+/**
+ * GalleryDetail.jsx
+ * Trang chi tiết album ảnh với lightbox xem từng ảnh.
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Spin, message, Image, Empty, Row, Col } from "antd";
@@ -18,7 +22,7 @@ import {
   preloadImages,
 } from "../../utils/imageUtils";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
@@ -648,3 +652,4 @@ const GalleryDetail = () => {
 };
 
 export default GalleryDetail;
+

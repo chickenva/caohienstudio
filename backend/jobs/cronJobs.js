@@ -1,22 +1,30 @@
-const cron = require("node-cron");
-const moment = require("moment");
-const Booking = require("../models/Booking");
+/**
+ * cronJobs.js
+ * Thiết lập các tác vụ tự động chạy theo lịch (cron) của hệ thống.
+ * Hiện tại chỉ có 1 job: gửi email nhắc nhở lịch chụp hàng ngày lúc 7:00 sáng.
+ */
+const cron        = require("node-cron");
+const moment      = require("moment");
+const Booking     = require("../models/Booking");
 const mailService = require("../services/mailService");
 
-// Đăng ký các tác vụ tự động chạy theo lịch của hệ thống.
+/**
+ * Đăng ký và khởi động toàn bộ cron jobs của hệ thống.
+ * Gọi hàm này một lần duy nhất khi server khởi động.
+ */
 const setupCronJobs = () => {
-  // 1. Chạy vào 7:00 Sáng mỗi ngày: Gửi email nhắc nhở lịch chụp
+  // Job 1: 7:00 sáng mỗi ngày — gửi email nhắc nhở lịch chụp
   cron.schedule("0 7 * * *", async () => {
-    console.log("[CRON] Bắt đầu chạy job gửi email nhắc nhở vào lúc 7:00 Sáng...");
+    console.log("[CRON] Bắt đầu chạy job gửi email nhắc nhở vào lúc 7:00 sáng...");
     try {
-      const todayStart = moment().startOf("day").toDate();
-      const todayEnd = moment().endOf("day").toDate();
+      const todayStart    = moment().startOf("day").toDate();
+      const todayEnd      = moment().endOf("day").toDate();
       const tomorrowStart = moment().add(1, "days").startOf("day").toDate();
-      const tomorrowEnd = moment().add(1, "days").endOf("day").toDate();
+      const tomorrowEnd   = moment().add(1, "days").endOf("day").toDate();
 
-      // a. Nhắc khách hàng (ngày chụp là ngày mai)
+      // a. Nhắc khách hàng: lịch chụp là ngày mai
       const tomorrowBookings = await Booking.find({
-        status: "CONFIRMED",
+        status:     "CONFIRMED",
         start_time: { $gte: tomorrowStart, $lte: tomorrowEnd },
       }).populate("customer_id");
 
@@ -25,9 +33,9 @@ const setupCronJobs = () => {
       }
       console.log(`[CRON] Đã gửi nhắc nhở cho ${tomorrowBookings.length} khách hàng có lịch chụp ngày mai.`);
 
-      // b. Nhắc Admin (ngày chụp là hôm nay)
+      // b. Nhắc Admin: lịch chụp là hôm nay
       const todayBookings = await Booking.find({
-        status: "CONFIRMED",
+        status:     "CONFIRMED",
         start_time: { $gte: todayStart, $lte: todayEnd },
       });
 

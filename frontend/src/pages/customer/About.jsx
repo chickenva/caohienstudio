@@ -1,3 +1,7 @@
+/**
+ * About.jsx
+ * Trang giới thiệu studio: câu chuyện, phong cách và đội ngũ.
+ */
 import React from "react";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";

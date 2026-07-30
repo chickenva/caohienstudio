@@ -1,3 +1,7 @@
+/**
+ * PhotographerForm.jsx
+ * Form tạo/chỉnh sửa tài khoản và portfolio nhiếp ảnh gia.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Form,
@@ -21,7 +25,7 @@ import axios from "axios";
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const specialtyOptions = [
   "Wedding",
@@ -444,3 +448,4 @@ const PhotographerForm = () => {
 };
 
 export default PhotographerForm;
+

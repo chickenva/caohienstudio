@@ -1,3 +1,9 @@
+/**
+ * imageUtils.js
+ * Tiện ích xử lý và chuẩn hóa URL ảnh Google Drive/CDN cho frontend.
+ * Hỗ trợ nâng chất lượng ảnh (upgrade size), tải lười (lazy load),
+ * phát hiện màu chủ đạo và sinh palette cho thumbnail gallery.
+ */
 export const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop";
 

@@ -1,3 +1,7 @@
+/**
+ * AdminGalleries.jsx
+ * Quản lý album ảnh: tạo/sửa/xóa album liên kết Google Drive.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Table,
@@ -52,7 +56,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const { Title, Text } = Typography;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 
 const statusOptions = [
@@ -622,3 +626,4 @@ const AdminGalleries = () => {
 };
 
 export default AdminGalleries;
+

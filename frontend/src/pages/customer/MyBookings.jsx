@@ -1,3 +1,7 @@
+/**
+ * MyBookings.jsx
+ * Trang lịch sử đặt lịch của khách hàng đã đăng nhập.
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import { Table, Tag, Button, message, Space, Select, Card, Row, Col, Alert } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +10,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 

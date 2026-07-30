@@ -1,3 +1,7 @@
+/**
+ * AIChatWidget.jsx
+ * Widget chatbot AI nổi góc màn hình, tích hợp Gemini API qua backend.
+ */
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   SendOutlined,
@@ -56,7 +60,7 @@ const WELCOME_MESSAGE = {
   timestamp: new Date().toISOString(),
 };
 
-const API_URL = `${import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api"}/ai-chat`;
+const API_URL = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api")}/ai-chat`;
 
 // ==========================================
 // Component chính của widget chat AI
@@ -360,3 +364,4 @@ const AIChatWidget = () => {
 };
 
 export default AIChatWidget;
+

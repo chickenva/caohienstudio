@@ -1,3 +1,7 @@
+/**
+ * Services.jsx
+ * Trang danh sách gói dịch vụ, lọc theo danh mục.
+ */
 import React, { useState, useEffect } from "react";
 import { Row, Col, Spin, message, Empty } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -12,7 +16,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang danh sách dịch vụ, lọc theo danh mục và dẫn sang chi tiết/đặt lịch.
 const Services = () => {
@@ -294,3 +298,4 @@ const Services = () => {
 };
 
 export default Services;
+

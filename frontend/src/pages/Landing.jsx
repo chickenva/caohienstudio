@@ -1,3 +1,7 @@
+/**
+ * Landing.jsx
+ * Trang giới thiệu studio: hero, dịch vụ nổi bật, album và CTA.
+ */
 import React from "react";
 import { Button } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";

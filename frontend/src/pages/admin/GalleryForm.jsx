@@ -1,3 +1,7 @@
+/**
+ * GalleryForm.jsx
+ * Form tạo/chỉnh sửa album gallery — nhập link Drive, danh mục, ảnh bìa.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Form,
@@ -19,7 +23,7 @@ import axios from "axios";
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Form admin tạo/cập nhật album từ Google Drive.
 const GalleryForm = () => {
@@ -282,3 +286,4 @@ const GalleryForm = () => {
 };
 
 export default GalleryForm;
+

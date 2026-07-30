@@ -1,18 +1,29 @@
+/**
+ * aiChatController.js
+ * Chatbot AI tư vấn khách hàng dùng Google Gemini.
+ * Context dịch vụ, thợ chụp và album được lấy thực tế từ DB mỗi lần gọi.
+ * Có rate limiting in-memory (20 tin/phút/IP) để tránh lạm dụng API.
+ */
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const Service = require("../models/Service");
-const User = require("../models/User");
+const Service      = require("../models/Service");
+const User         = require("../models/User");
 const PublicGallery = require("../models/PublicGallery");
 
 // ==========================================
-// Rate limiting (in-memory, simple)
+// RATE LIMITING (IN-MEMORY)
 // ==========================================
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 phút
-const RATE_LIMIT_MAX = 20; // 20 messages / phút / IP
 
-// Giới hạn số tin nhắn theo IP để tránh spam API Gemini.
+const rateLimitMap       = new Map();
+const RATE_LIMIT_WINDOW  = 60 * 1000; // 1 phút
+const RATE_LIMIT_MAX     = 20;         // 20 tin nhắn / phút / IP
+
+/**
+ * Kiểm tra IP có vượt giới hạn gửi tin nhắn chưa.
+ * @param {string} ip - Địa chỉ IP client
+ * @returns {boolean} true nếu được phép, false nếu vượt giới hạn
+ */
 function checkRateLimit(ip) {
-  const now = Date.now();
+  const now   = Date.now();
   const entry = rateLimitMap.get(ip);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
@@ -20,15 +31,13 @@ function checkRateLimit(ip) {
     return true;
   }
 
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
 
   entry.count++;
   return true;
 }
 
-// Dọn dẹp rate limit map mỗi 5 phút
+// Dọn dẹp rate limit map mỗi 5 phút để tránh memory leak
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitMap.entries()) {
@@ -39,9 +48,14 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // ==========================================
-// Lấy dữ liệu studio từ database
+// STUDIO CONTEXT
 // ==========================================
-// Lấy dữ liệu thật từ DB để AI tư vấn theo dịch vụ/album hiện có.
+
+/**
+ * Lấy dữ liệu thực từ DB để xây dựng context cho AI tư vấn:
+ * danh sách dịch vụ, thợ chụp và album đang hoạt động.
+ * @returns {{ servicesText, photographersText, galleriesText }}
+ */
 async function getStudioContext() {
   try {
     const [services, photographers, galleries] = await Promise.all([
@@ -50,41 +64,45 @@ async function getStudioContext() {
       PublicGallery.find({ is_active: true }).lean(),
     ]);
 
-    // Format dịch vụ
     const servicesText = services.length > 0
       ? services.map((s) =>
-        `- ${s.name}: ${s.base_price?.toLocaleString("vi-VN")}đ, thời lượng ${s.duration_hours} giờ${s.description ? ` – ${s.description}` : ""}`
-      ).join("\n")
+          `- ${s.name}: ${s.base_price?.toLocaleString("vi-VN")}đ, thời lượng ${s.duration_hours} giờ${s.description ? ` – ${s.description}` : ""}`
+        ).join("\n")
       : "Chưa có thông tin dịch vụ.";
 
-    // Format thợ chụp
     const photographersText = photographers.length > 0
       ? photographers.map((p) => {
-        const portfolio = p.portfolio || {};
-        return `- ${p.full_name}${portfolio.years_of_experience ? ` (${portfolio.years_of_experience} năm kinh nghiệm)` : ""}${portfolio.specialties?.length ? `, chuyên: ${portfolio.specialties.join(", ")}` : ""}${portfolio.bio ? ` – ${portfolio.bio}` : ""}`;
-      }).join("\n")
+          const portfolio = p.portfolio || {};
+          return `- ${p.full_name}${portfolio.years_of_experience ? ` (${portfolio.years_of_experience} năm kinh nghiệm)` : ""}${portfolio.specialties?.length ? `, chuyên: ${portfolio.specialties.join(", ")}` : ""}${portfolio.bio ? ` – ${portfolio.bio}` : ""}`;
+        }).join("\n")
       : "Chưa có thông tin thợ chụp.";
 
-    // Format album
     const galleriesText = galleries.length > 0
-      ? galleries.map(g => `- Album "${g.title}" (Concept: ${g.category}, Địa điểm: ${g.location || 'Cao Hiển Studio'})${g.description ? ` - ${g.description}` : ''}`).join('\n')
+      ? galleries.map((g) =>
+          `- Album "${g.title}" (Concept: ${g.category}, Địa điểm: ${g.location || "Cao Hiển Studio"})${g.description ? ` - ${g.description}` : ""}`
+        ).join("\n")
       : "Chưa có thông tin album.";
 
     return { servicesText, photographersText, galleriesText };
   } catch (error) {
     console.error("Lỗi lấy dữ liệu studio context:", error.message);
     return {
-      servicesText: "Không thể tải thông tin dịch vụ lúc này.",
+      servicesText:      "Không thể tải thông tin dịch vụ lúc này.",
       photographersText: "Không thể tải thông tin thợ chụp lúc này.",
-      galleriesText: "Không thể tải thông tin album lúc này.",
+      galleriesText:     "Không thể tải thông tin album lúc này.",
     };
   }
 }
 
 // ==========================================
-// System prompt tiếng Việt
+// SYSTEM PROMPT
 // ==========================================
-// Ghép system prompt tiếng Việt, chính sách và dữ liệu studio cho Gemini.
+
+/**
+ * Ghép system prompt tiếng Việt gồm thông tin studio, FAQ và quy tắc trả lời.
+ * @param {{ servicesText, photographersText, galleriesText }} context
+ * @returns {string}
+ */
 function buildSystemPrompt(context) {
   return `Bạn là "Trợ lý Cao Hiển" – tư vấn viên AI thân thiện và chuyên nghiệp của Cao Hiển Photography Studio (CAOHIENPHOTOGRAPHY), một studio chụp ảnh cao cấp tại TP. Hồ Chí Minh, Việt Nam.
 
@@ -121,13 +139,13 @@ ${context.galleriesText}
    - File ảnh chỉnh sửa: 05 ngày kể từ ngày chụp.
    - In ảnh: 07 ngày kể từ khi chọn xong ảnh.
 
-4. **File ảnh chỉnh sửa là gì?**: Ảnh đã được lọc (bỏ ảnh trùng/lỗi), chỉnh màu/sáng hài hòa theo phong cách tiệm (truyền thống thì trong trẻo, phóng sự thì mang chất riêng/cảm xúc). Không giao ảnh thô.
+4. **File ảnh chỉnh sửa là gì?**: Ảnh đã được lọc (bỏ ảnh trùng/lỗi), chỉnh màu/sáng hài hòa theo phong cách tiệm. Không giao ảnh thô.
 
 5. **Tại sao gói chụp không bao gồm in ảnh?**: Để giảm chi phí ban đầu, tránh in thừa/lãng phí. Khách hàng xem ảnh xong có thể tự do chọn kích thước, số lượng ảnh ưng ý để in sau.
 
 6. **Chính sách Đặt cọc & Thanh toán (Hợp đồng)**:
    - Khách hàng cần thanh toán cọc 30% tổng giá trị đơn để giữ lịch chính thức.
-   - Khách hàng sẽ thanh toán phần còn lại (70% giá trị hợp đồng và chi phí phát sinh nếu có) sau 3 đến 4 ngày kể từ ngày hoàn tất buổi chụp (lúc nhận bàn giao toàn bộ sản phẩm).
+   - Khách hàng sẽ thanh toán phần còn lại (70%) sau 3 đến 4 ngày kể từ ngày hoàn tất buổi chụp.
 
 7. **Chính sách Hủy & Dời lịch (Bảo lưu)**:
    - Hủy hợp đồng: Nếu khách hàng đơn phương hủy lịch chụp vì bất kỳ lý do gì, số tiền cọc 30% sẽ KHÔNG được hoàn lại.
@@ -138,7 +156,7 @@ ${context.galleriesText}
    - Ngoại thành & Tỉnh: Cần Giờ, Củ Chi, Long An, Tây Ninh, Đà Lạt, Vũng Tàu, Phan Thiết...
    - Tại Studio: phòng chụp Cao Hiển Studio.
 
-9. **Chuẩn bị trước buổi chụp (Checklist)**: Ngủ đủ giấc, uống đủ nước, chuẩn bị trang phục ủi phẳng, xác nhận lịch thợ chụp/makeup, mang đồ ăn nhẹ.
+9. **Chuẩn bị trước buổi chụp**: Ngủ đủ giấc, uống đủ nước, chuẩn bị trang phục ủi phẳng, xác nhận lịch thợ chụp/makeup, mang đồ ăn nhẹ.
 
 10. **Xem ngày tốt/phong tục**: Tư vấn các tháng đẹp chụp cưới, tuổi hợp, ngày cưới lịch âm. Lưu ý: luôn nhấn mạnh đây chỉ là tham khảo theo phong tục dân gian.
 
@@ -154,11 +172,19 @@ ${context.galleriesText}
 }
 
 // ==========================================
-// POST /api/ai-chat - Nhận câu hỏi khách hàng và trả lời bằng Gemini.
+// CHAT ENDPOINT
 // ==========================================
+
+/**
+ * [POST] /api/ai-chat
+ * Nhận tin nhắn từ client, thử gọi Gemini theo thứ tự model ưu tiên,
+ * và trả về câu trả lời bằng tiếng Việt.
+ *
+ * Body: { message: string, history: Array<{ role, content }> }
+ */
 exports.chat = async (req, res) => {
   try {
-    // Rate limit check
+    // Kiểm tra rate limit theo IP
     const clientIp = req.ip || req.connection?.remoteAddress || "unknown";
     if (!checkRateLimit(clientIp)) {
       return res.status(429).json({
@@ -169,9 +195,7 @@ exports.chat = async (req, res) => {
     const { message, history } = req.body;
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return res.status(400).json({
-        message: "Vui lòng nhập nội dung câu hỏi.",
-      });
+      return res.status(400).json({ message: "Vui lòng nhập nội dung câu hỏi." });
     }
 
     if (message.trim().length > 1000) {
@@ -180,69 +204,55 @@ exports.chat = async (req, res) => {
       });
     }
 
-    // Kiểm tra API key
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
         message: "Chức năng AI chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
       });
     }
 
-    // Lấy context từ database
+    // Lấy dữ liệu studio để ghép vào system prompt
     const studioContext = await getStudioContext();
-    const systemPrompt = buildSystemPrompt(studioContext);
+    const systemPrompt  = buildSystemPrompt(studioContext);
 
-    // Khởi tạo Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Thử các model theo thứ tự ưu tiên
+    // Thử các model theo thứ tự ưu tiên; model mới nhất/stable nhất trước
     const modelNames = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash"];
-    let lastError = null;
+    let lastError    = null;
 
     for (const modelName of modelNames) {
       try {
         console.log(`🤖 Trying model: ${modelName}`);
+
         const model = genAI.getGenerativeModel({
-          model: modelName,
+          model:             modelName,
           systemInstruction: systemPrompt,
         });
 
-        // Build conversation history cho Gemini
+        // Chuyển đổi lịch sử chat sang định dạng Gemini
+        // Chỉ giữ 10 cặp (20 message) gần nhất để tiết kiệm token
         const chatHistory = [];
         if (Array.isArray(history)) {
-          // Chỉ giữ 10 cặp tin nhắn gần nhất để tiết kiệm token
           const recentHistory = history.slice(-20);
           for (const msg of recentHistory) {
             if (msg.role === "user" && msg.content) {
-              chatHistory.push({
-                role: "user",
-                parts: [{ text: msg.content }],
-              });
+              chatHistory.push({ role: "user",  parts: [{ text: msg.content }] });
             } else if (msg.role === "assistant" && msg.content) {
-              chatHistory.push({
-                role: "model",
-                parts: [{ text: msg.content }],
-              });
+              chatHistory.push({ role: "model", parts: [{ text: msg.content }] });
             }
           }
         }
 
-        // Tạo chat session và gửi tin nhắn
-        const chat = model.startChat({
-          history: chatHistory,
-        });
-
+        const chat   = model.startChat({ history: chatHistory });
         const result = await chat.sendMessage(message.trim());
-        const reply = result.response.text();
+        const reply  = result.response.text();
 
-        return res.status(200).json({
-          reply,
-          timestamp: new Date().toISOString(),
-        });
+        return res.status(200).json({ reply, timestamp: new Date().toISOString() });
       } catch (modelError) {
         console.error(`❌ Model ${modelName} failed:`, modelError.message);
         lastError = modelError;
 
-        // Nếu lỗi API key → không cần thử model khác
+        // Lỗi API key → không cần thử model khác
         if (
           modelError.message?.includes("API_KEY_INVALID") ||
           modelError.message?.includes("API key not valid") ||
@@ -250,20 +260,16 @@ exports.chat = async (req, res) => {
         ) {
           break;
         }
-        // Tiếp tục thử model khác
-        continue;
       }
     }
 
-    // Nếu tất cả model đều fail
+    // Tất cả model đều thất bại → xử lý lỗi cụ thể
     const errorMsg = lastError?.message || "Unknown error";
     console.error("❌ AI Chat Error (all models failed):", errorMsg);
-    console.error("❌ Full error:", JSON.stringify(lastError, Object.getOwnPropertyNames(lastError), 2));
 
-    // Xử lý lỗi cụ thể từ Gemini
     if (errorMsg.includes("API_KEY") || errorMsg.includes("API key not valid") || errorMsg.includes("invalid")) {
       return res.status(500).json({
-        message: "API key không hợp lệ. Vui lòng kiểm tra lại GEMINI_API_KEY trong file .env. API key Gemini thường bắt đầu bằng 'AIza...'",
+        message: "API key không hợp lệ. Vui lòng kiểm tra lại GEMINI_API_KEY trong file .env.",
       });
     }
 
@@ -284,7 +290,6 @@ exports.chat = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ AI Chat Critical Error:", error.message);
-    console.error("❌ Stack:", error.stack);
     res.status(500).json({
       message: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ studio qua hotline 0979 7676 02.",
     });

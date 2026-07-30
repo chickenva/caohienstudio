@@ -1,3 +1,8 @@
+/**
+ * App.jsx
+ * Root component và cấu hình routing toàn ứng dụng.
+ * Phân tách routes theo nhóm: Public (Landing/Auth), Customer (đã đăng nhập) và Admin.
+ */
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import CustomerLayout from "./components/layout/CustomerLayout";

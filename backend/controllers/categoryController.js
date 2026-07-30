@@ -1,10 +1,18 @@
+/**
+ * categoryController.js
+ * Quản lý danh mục dịch vụ (SERVICE) và album (GALLERY).
+ * Hỗ trợ CRUD và sắp xếp thứ tự hiển thị hàng loạt.
+ */
 const Category = require("../models/Category");
 
-// [GET] /api/categories?type=SERVICE
+/**
+ * [GET] /api/categories?type=SERVICE&is_active=true
+ * Lấy danh sách danh mục, có thể lọc theo type và trạng thái.
+ */
 exports.getCategories = async (req, res) => {
   try {
     const { type, is_active } = req.query;
-    let filter = {};
+    const filter = {};
 
     if (type) {
       filter.type = type;
@@ -21,19 +29,26 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-// [POST] /api/categories/admin
+/**
+ * [POST] /api/categories/admin
+ * Tạo danh mục mới. Kiểm tra slug không được trùng trong cùng type.
+ */
 exports.createCategory = async (req, res) => {
   try {
     const { name, slug, type, description, is_active } = req.body;
 
     if (!name || !slug || !type) {
-      return res.status(400).json({ message: "Vui lòng cung cấp đủ tên, mã (slug) và loại danh mục" });
+      return res.status(400).json({
+        message: "Vui lòng cung cấp đủ tên, mã (slug) và loại danh mục",
+      });
     }
 
-    // Kiểm tra trùng slug trong cùng type
+    // Kiểm tra slug trùng trong cùng type
     const existing = await Category.findOne({ slug, type });
     if (existing) {
-      return res.status(400).json({ message: "Mã danh mục (slug) này đã tồn tại cho loại này" });
+      return res.status(400).json({
+        message: "Mã danh mục (slug) này đã tồn tại cho loại này",
+      });
     }
 
     const category = new Category({
@@ -51,7 +66,10 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// [PUT] /api/categories/admin/:id
+/**
+ * [PUT] /api/categories/admin/:id
+ * Cập nhật thông tin danh mục. Nếu đổi slug, kiểm tra trùng lặp trước.
+ */
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -62,16 +80,18 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy danh mục" });
     }
 
-    // Nếu đổi slug, kiểm tra trùng lặp
+    // Nếu đổi slug, kiểm tra xem slug mới có bị trùng không
     if (slug && slug !== category.slug) {
       const existing = await Category.findOne({ slug, type: category.type });
       if (existing) {
-        return res.status(400).json({ message: "Mã danh mục (slug) này đã tồn tại" });
+        return res.status(400).json({
+          message: "Mã danh mục (slug) này đã tồn tại",
+        });
       }
       category.slug = slug;
     }
 
-    if (name) category.name = name;
+    if (name !== undefined) category.name = name;
     if (description !== undefined) category.description = description;
     if (is_active !== undefined) category.is_active = is_active;
 
@@ -82,14 +102,15 @@ exports.updateCategory = async (req, res) => {
   }
 };
 
-// [DELETE] /api/categories/admin/:id
+/**
+ * [DELETE] /api/categories/admin/:id
+ * Xóa cứng danh mục. Lưu ý: các item tham chiếu bằng slug sẽ không hiển thị trên bộ lọc.
+ * Cân nhắc dùng soft delete (is_active = false) thay thế nếu cần bảo toàn dữ liệu.
+ */
 exports.deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Ghi chú: Chúng ta có thể kiểm tra xem danh mục này có đang được sử dụng bởi Service hay Gallery nào không
-    // Tạm thời cho phép xóa, các item tham chiếu bằng slug sẽ không hiển thị trên bộ lọc. Hoặc ở đây chỉ nên dùng soft delete (is_active = false)
-    
+
     const category = await Category.findByIdAndDelete(id);
     if (!category) {
       return res.status(404).json({ message: "Không tìm thấy danh mục để xóa" });
@@ -101,10 +122,15 @@ exports.deleteCategory = async (req, res) => {
   }
 };
 
-// [PUT] /api/categories/admin/reorder
+/**
+ * [PUT] /api/categories/admin/reorder
+ * Cập nhật thứ tự hiển thị hàng loạt bằng bulkWrite.
+ * @param {Array} items - Mảng { _id, order }
+ */
 exports.reorderCategories = async (req, res) => {
   try {
-    const { items } = req.body; // array of { _id, order }
+    const { items } = req.body;
+
     if (!Array.isArray(items)) {
       return res.status(400).json({ message: "Dữ liệu không hợp lệ" });
     }

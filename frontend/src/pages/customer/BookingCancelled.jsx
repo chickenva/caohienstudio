@@ -1,3 +1,7 @@
+/**
+ * BookingCancelled.jsx
+ * Trang thông báo hủy đặt lịch thành công.
+ */
 import React from "react";
 import { Result, Button, Typography } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";

@@ -1,3 +1,7 @@
+/**
+ * AdminDashboard.jsx
+ * Dashboard tổng quan: số liệu đơn, doanh thu, khách hàng, album.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Row,
@@ -29,7 +33,7 @@ import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const statusConfig = {
   REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
@@ -410,3 +414,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

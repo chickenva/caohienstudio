@@ -1,3 +1,7 @@
+/**
+ * PublicLayout.jsx
+ * Layout công khai: header, navigation và footer cho trang xem dịch vụ/album.
+ */
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button, Space, Dropdown, Avatar } from "antd";

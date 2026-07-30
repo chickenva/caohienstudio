@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// Tách JWT token ra khỏi header Authorization dạng "Bearer <token>".
 const getTokenFromHeader = (req) => {
   const authHeader = req.header("Authorization");
 
@@ -15,9 +16,10 @@ const getTokenFromHeader = (req) => {
   return parts[1];
 };
 
-// ==========================================
-// Kiểm tra user đã đăng nhập chưa
-// ==========================================
+/**
+ * Middleware xác thực JWT — kiểm tra người dùng đã đăng nhập chưa.
+ * Nếu token hợp lệ, gắn thông tin user vào req.user và gọi next().
+ */
 exports.verifyToken = (req, res, next) => {
   const token = getTokenFromHeader(req);
 
@@ -38,10 +40,11 @@ exports.verifyToken = (req, res, next) => {
   }
 };
 
-// ==========================================
-// Kiểm tra quyền ADMIN
-// Lấy user thật từ DB để tránh lỗi token thiếu role
-// ==========================================
+/**
+ * Middleware xác thực quyền ADMIN.
+ * Lấy user thực từ DB (thay vì chỉ dùng payload token) để đảm bảo
+ * role luôn được kiểm tra theo dữ liệu hiện tại, tránh dùng token cũ.
+ */
 exports.verifyAdmin = async (req, res, next) => {
   const token = getTokenFromHeader(req);
 
@@ -53,7 +56,6 @@ exports.verifyAdmin = async (req, res, next) => {
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-
     const userId = verified.id || verified._id;
 
     if (!userId) {
@@ -99,9 +101,10 @@ exports.verifyAdmin = async (req, res, next) => {
   }
 };
 
-// ==========================================
-// Dự phòng sau này nếu có dashboard photographer
-// ==========================================
+/**
+ * Middleware xác thực quyền ADMIN hoặc PHOTOGRAPHER.
+ * Dự phòng cho dashboard nhiếp ảnh gia trong tương lai.
+ */
 exports.verifyAdminOrPhotographer = async (req, res, next) => {
   const token = getTokenFromHeader(req);
 
@@ -113,7 +116,6 @@ exports.verifyAdminOrPhotographer = async (req, res, next) => {
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-
     const userId = verified.id || verified._id;
 
     if (!userId) {

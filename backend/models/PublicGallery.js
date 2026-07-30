@@ -1,80 +1,59 @@
+/**
+ * Mongoose Schema: PublicGallery (Album ảnh công khai)
+ * Lưu thông tin album ảnh liên kết với folder Google Drive.
+ * Ảnh bìa được tự động lấy từ ảnh đầu tiên trong folder nếu không có coverImage.
+ */
 const mongoose = require("mongoose");
 
-// Schema album public, liên kết folder Google Drive để lấy ảnh.
 const publicGallerySchema = new mongoose.Schema(
   {
-    // Tên album hiển thị trên web
+    // Tên album hiển thị trên website
     title: {
-      type: String,
+      type:     String,
       required: true,
-      trim: true,
+      trim:     true,
     },
 
-    // Mô tả album, sau này admin có thể bổ sung
-    description: {
-      type: String,
-      default: "",
-    },
+    description: { type: String, default: "" },
 
-    // Danh mục album (sử dụng slug động)
-    category: {
-      type: String,
-      required: true,
-    },
+    // Danh mục album (slug từ bảng Category)
+    category: { type: String, required: true },
 
-    // Địa điểm chụp, sau này dùng cho trang chi tiết album
-    location: {
-      type: String,
-      default: "",
-    },
+    // Địa điểm chụp
+    location: { type: String, default: "" },
 
-    // Folder Google Drive chứa ảnh của album
+    // ID folder Google Drive chứa ảnh của album
     drive_folder_id: {
-      type: String,
+      type:     String,
       required: true,
-      trim: true,
+      trim:     true,
     },
 
-    drive_folder_url: {
-      type: String,
-      default: "",
-    },
+    // Link đầy đủ folder Google Drive (để admin tiện mở)
+    drive_folder_url: { type: String, default: "" },
 
     // Ảnh bìa tùy chọn.
-    // Nếu để trống, backend sẽ lấy ảnh đầu tiên trong folder Google Drive làm cover.
-    coverImage: {
-      type: String,
-      default: "",
-    },
+    // Nếu để trống, backend sẽ lấy ảnh đầu tiên trong folder Drive.
+    coverImage: { type: String, default: "" },
 
-    // Sau này có thể liên kết album với thợ chụp
+    // Nhiếp ảnh gia phụ trách album (tùy chọn)
     photographer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref:  "User",
     },
 
-    // Các gói dịch vụ liên quan
+    // Các gói dịch vụ liên quan đến album
     service_ids: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Service",
-      }
+      { type: mongoose.Schema.Types.ObjectId, ref: "Service" },
     ],
 
-    // Album nổi bật ngoài trang chủ / gallery
-    featured: {
-      type: Boolean,
-      default: false,
-    },
+    // Đánh dấu album nổi bật trên trang chủ/gallery
+    featured: { type: Boolean, default: false },
 
-    is_active: {
-      type: Boolean,
-      default: true,
-    },
-    order: {
-      type: Number,
-      default: 0,
-    },
+    is_active: { type: Boolean, default: true },
+
+    // Thứ tự hiển thị — số nhỏ hơn ưu tiên trước
+    order: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

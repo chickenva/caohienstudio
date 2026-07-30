@@ -1,13 +1,22 @@
+/**
+ * contactController.js
+ * Xử lý yêu cầu liên hệ/tư vấn từ khách hàng qua form website.
+ * Luồng: Gửi OTP → Xác thực OTP → Submit form (lưu DB + gửi mail về studio).
+ */
 const nodemailer = require("nodemailer");
-const Contact = require("../models/Contact");
-const OTP = require("../models/OTP");
+const Contact   = require("../models/Contact");
+const OTP       = require("../models/OTP");
 
+// Khởi tạo transporter Gmail dùng chung cho toàn bộ controller
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
-// Gửi OTP xác thực email cho khách chưa đăng nhập
+/**
+ * [POST] /api/contacts/send-otp
+ * Gửi OTP xác thực email cho khách chưa đăng nhập trước khi gửi form liên hệ.
+ */
 exports.sendContactOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -20,22 +29,18 @@ exports.sendContactOtp = async (req, res) => {
     await new OTP({ email, otp: otpCode }).save();
 
     await transporter.sendMail({
-      from: `"Cao Hien Studio" <no-reply@caohien.com>`,
-      to: email,
+      from:    `"Cao Hien Studio" <no-reply@caohien.com>`,
+      to:      email,
       subject: "Mã xác thực gửi liên hệ - Cao Hiển Studio",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
           <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
-          
           <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
           <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để hoàn tất yêu cầu liên hệ của bạn.</p>
-          
           <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
             <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
           </div>
-          
           <p style="font-size: 15px; color: #555; margin-bottom: 40px;">Mã này sẽ hết hạn trong 5 phút.</p>
-          
           <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
         </div>
       `,
@@ -48,13 +53,18 @@ exports.sendContactOtp = async (req, res) => {
   }
 };
 
-// Xác thực OTP liên hệ
+/**
+ * [POST] /api/contacts/verify-otp
+ * Xác thực mã OTP liên hệ — kiểm tra khớp email + otp trong DB.
+ */
 exports.verifyContactOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const record = await OTP.findOne({ email, otp });
     if (!record) {
-      return res.status(400).json({ message: "Mã OTP không chính xác hoặc đã hết hạn!" });
+      return res.status(400).json({
+        message: "Mã OTP không chính xác hoặc đã hết hạn!",
+      });
     }
     res.status(200).json({ message: "Mã OTP hợp lệ!" });
   } catch (error) {
@@ -62,7 +72,15 @@ exports.verifyContactOtp = async (req, res) => {
   }
 };
 
-// Gửi liên hệ (có thể kèm thông tin dịch vụ, lịch)
+// Chuyển chuỗi danh sách dịch vụ (phân cách bằng ", ") thành từng dòng HTML
+const formatList = (str) =>
+  str ? str.split(", ").map((item) => `- ${item}`).join("<br/>") : "";
+
+/**
+ * [POST] /api/contacts/
+ * Gửi liên hệ: lưu vào DB, xóa OTP và gửi email thông báo về studio.
+ * Kèm thông tin dịch vụ, lịch, địa điểm nếu khách điền đầy đủ form.
+ */
 exports.submitContact = async (req, res) => {
   try {
     const {
@@ -78,47 +96,44 @@ exports.submitContact = async (req, res) => {
       });
     }
 
-    // 1. Lưu vào Database
+    // Lưu liên hệ vào Database
     const newContact = await Contact.create({
       name, phone, email, message,
-      service_names: service_names || "",
-      addon_names: addon_names || "",
-      location_area: location_area || "",
+      service_names:   service_names   || "",
+      addon_names:     addon_names     || "",
+      location_area:   location_area   || "",
       location_detail: location_detail || "",
-      shoot_date: shoot_date || "",
-      shoot_time: shoot_time || "",
+      shoot_date:      shoot_date      || "",
+      shoot_time:      shoot_time      || "",
     });
 
-    // Xóa OTP sau khi submit thành công (nếu có)
+    // Xóa OTP sau khi submit thành công
     if (email) {
       await OTP.deleteMany({ email });
     }
 
-    // Tạo nội dung phần dịch vụ/lịch cho email dạng table row
-    // Format danh sách dịch vụ trong email tư vấn thành từng dòng dễ đọc.
-    const formatList = (str) => str ? str.split(", ").map(item => `- ${item}`).join("<br/>") : "";
-
+    // Tạo các dòng thông tin dịch vụ/lịch cho email HTML
     const extraInfoRows = [
-      service_names ? `<tr><td style="padding: 8px 0; color: #666; width: 140px; vertical-align: top;">Gói dịch vụ chính:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${formatList(service_names)}</td></tr>` : "",
-      addon_names ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Gói đi kèm:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${formatList(addon_names)}</td></tr>` : "",
-      location_area ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Khu vực chụp:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${location_area}</td></tr>` : "",
+      service_names   ? `<tr><td style="padding: 8px 0; color: #666; width: 140px; vertical-align: top;">Gói dịch vụ chính:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${formatList(service_names)}</td></tr>` : "",
+      addon_names     ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Gói đi kèm:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${formatList(addon_names)}</td></tr>` : "",
+      location_area   ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Khu vực chụp:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${location_area}</td></tr>` : "",
       location_detail ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Địa điểm chi tiết:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${location_detail}</td></tr>` : "",
-      shoot_date ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Ngày dự kiến:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${shoot_date}${shoot_time ? ` lúc ${shoot_time}` : ""}</td></tr>` : "",
+      shoot_date      ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Ngày dự kiến:</td><td style="padding: 8px 0; font-weight: 500; color: #222;">${shoot_date}${shoot_time ? ` lúc ${shoot_time}` : ""}</td></tr>` : "",
     ].filter(Boolean).join("");
 
-    const extraInfoSection = extraInfoRows 
+    const extraInfoSection = extraInfoRows
       ? `
         <h3 style="font-size: 16px; color: #BFA16A; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 25px; margin-bottom: 10px;">Dịch Vụ Quan Tâm</h3>
         <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
           ${extraInfoRows}
         </table>
-      ` 
+      `
       : "";
 
-    // 2. Gửi mail về studio
+    // Gửi email thông báo về hòm thư studio
     await transporter.sendMail({
-      from: `"Cao Hien Studio Website" <${process.env.EMAIL_USER}>`,
-      to: process.env.CONTACT_RECEIVER_EMAIL || process.env.EMAIL_USER,
+      from:    `"Cao Hien Studio Website" <${process.env.EMAIL_USER}>`,
+      to:      process.env.CONTACT_RECEIVER_EMAIL || process.env.EMAIL_USER,
       subject: `Khách hàng mới cần tư vấn: ${name}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 30px 15px;">
@@ -132,7 +147,7 @@ exports.submitContact = async (req, res) => {
             <div style="padding: 30px;">
               <p style="font-size: 15px; color: #555; margin-top: 0; margin-bottom: 25px;">Hệ thống vừa nhận được một yêu cầu tư vấn mới từ khách hàng trên website. Dưới đây là thông tin chi tiết:</p>
 
-              <!-- Customer Info -->
+              <!-- Thông tin khách hàng -->
               <h3 style="font-size: 16px; color: #BFA16A; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 0; margin-bottom: 10px;">Thông Tin Khách Hàng</h3>
               <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
                 <tr>
@@ -155,10 +170,9 @@ exports.submitContact = async (req, res) => {
 
               ${extraInfoSection}
 
-              <!-- Message -->
+              <!-- Lời nhắn -->
               <h3 style="font-size: 16px; color: #BFA16A; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px;">Nội Dung Lời Nhắn</h3>
               <div style="background-color: #f7f7f7; padding: 15px; border-radius: 6px; color: #444; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${message || "<i>Không có lời nhắn</i>"}</div>
-              
             </div>
 
             <!-- Footer -->
@@ -182,4 +196,3 @@ exports.submitContact = async (req, res) => {
     });
   }
 };
-

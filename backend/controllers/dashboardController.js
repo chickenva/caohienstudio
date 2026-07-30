@@ -1,36 +1,37 @@
-const Booking = require("../models/Booking");
-const User = require("../models/User");
-const Service = require("../models/Service");
+/**
+ * dashboardController.js
+ * Cung cấp dữ liệu thống kê tổng quan cho Admin Dashboard.
+ * Tổng hợp số liệu đơn đặt lịch, doanh thu, khách hàng, dịch vụ và album.
+ */
+const Booking      = require("../models/Booking");
+const User         = require("../models/User");
+const Service      = require("../models/Service");
 const PublicGallery = require("../models/PublicGallery");
-const Payment = require("../models/Payment");
+const Payment      = require("../models/Payment");
 
-// Lấy mốc đầu tháng hiện tại để tính số liệu dashboard theo tháng.
+// Lấy mốc đầu tháng hiện tại (để lọc dữ liệu trong tháng)
 const getStartOfMonth = () => {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
 };
 
-// Lấy mốc đầu tháng sau để tạo khoảng thời gian [đầu tháng, đầu tháng sau).
+// Lấy mốc đầu tháng sau (tạo khoảng [đầu tháng, đầu tháng sau))
 const getStartOfNextMonth = () => {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth() + 1, 1);
 };
 
-// ==========================================
-// ADMIN: Tổng quan Dashboard
-// GET /api/dashboard/admin/overview
-// ==========================================
 /**
- * Hàm thống kê tổng quan (Dashboard) cho Admin.
- * Xử lý: Lấy tổng doanh thu, số khách hàng, tổng số đơn đặt lịch và danh sách đơn mới nhất.
- * @param {Object} req - Yêu cầu từ Admin
- * @param {Object} res - Đối tượng phản hồi
+ * [GET] /api/dashboard/admin/overview
+ * Thống kê tổng quan Dashboard Admin: số lượng đơn theo trạng thái,
+ * doanh thu (kỳ vọng/thực nhận), khách hàng, thợ chụp, dịch vụ, album và đơn mới nhất.
  */
 exports.getAdminOverview = async (req, res) => {
   try {
-    const startOfMonth = getStartOfMonth();
+    const startOfMonth     = getStartOfMonth();
     const startOfNextMonth = getStartOfNextMonth();
 
+    // Chạy tất cả query song song để tối ưu thời gian phản hồi
     const [
       totalBookings,
       requestedBookings,
@@ -74,11 +75,9 @@ exports.getAdminOverview = async (req, res) => {
       Booking.countDocuments({ status: "CANCELED" }),
       Booking.countDocuments({ status: "EXPIRED" }),
 
+      // Số đơn tạo trong tháng hiện tại
       Booking.countDocuments({
-        createdAt: {
-          $gte: startOfMonth,
-          $lt: startOfNextMonth,
-        },
+        createdAt: { $gte: startOfMonth, $lt: startOfNextMonth },
       }),
 
       User.countDocuments({ role: "CUSTOMER" }),
@@ -88,112 +87,69 @@ exports.getAdminOverview = async (req, res) => {
       User.countDocuments({ role: "PHOTOGRAPHER", is_active: true }),
 
       Service.countDocuments({ is_active: true }),
-
       PublicGallery.countDocuments({ is_active: true }),
 
+      // Doanh thu kỳ vọng: tổng giá trị đơn CONFIRMED/IN_PROGRESS/COMPLETED/DEPOSITED
+      Booking.aggregate([
+        { $match: { status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "DEPOSITED"] } } },
+        { $group: { _id: null, total: { $sum: "$total_amount" } } },
+      ]),
+
+      // Doanh thu từ đơn đang chờ xác nhận (WAITING_PAYMENT, DEPOSITED legacy)
+      Booking.aggregate([
+        { $match: { status: { $in: ["WAITING_PAYMENT", "DEPOSITED"] } } },
+        { $group: { _id: null, total: { $sum: "$total_amount" } } },
+      ]),
+
+      // Doanh thu đã hoàn thành
+      Booking.aggregate([
+        { $match: { status: "COMPLETED" } },
+        { $group: { _id: null, total: { $sum: "$total_amount" } } },
+      ]),
+
+      // Doanh thu kỳ vọng trong tháng hiện tại
       Booking.aggregate([
         {
           $match: {
             status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "DEPOSITED"] },
+            createdAt: { $gte: startOfMonth, $lt: startOfNextMonth },
           },
         },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total_amount" },
-          },
-        },
+        { $group: { _id: null, total: { $sum: "$total_amount" } } },
       ]),
 
-      Booking.aggregate([
-        {
-          $match: {
-            status: { $in: ["WAITING_PAYMENT", "DEPOSITED"] },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total_amount" },
-          },
-        },
-      ]),
-
-      Booking.aggregate([
-        {
-          $match: {
-            status: "COMPLETED",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total_amount" },
-          },
-        },
-      ]),
-
-      Booking.aggregate([
-        {
-          $match: {
-            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "DEPOSITED"] },
-            createdAt: {
-              $gte: startOfMonth,
-              $lt: startOfNextMonth,
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$total_amount" },
-          },
-        },
-      ]),
-
+      // Doanh thu thực nhận: tổng các giao dịch SUCCESS từ bảng Payment
       Payment.aggregate([
-        {
-          $match: {
-            status: "SUCCESS",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-            count: { $sum: 1 },
-          },
-        },
+        { $match: { status: "SUCCESS" } },
+        { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
       ]),
 
+      // 6 đơn mới nhất (có populate đầy đủ)
       Booking.find()
-        .populate("customer_id", "full_name email phone")
-        .populate("service_id", "name base_price duration_hours")
+        .populate("customer_id",    "full_name email phone")
+        .populate("service_id",     "name base_price duration_hours")
         .populate("photographer_ids", "full_name email")
         .sort({ createdAt: -1 })
         .limit(6),
 
+      // Phân bố đơn theo trạng thái
       Booking.aggregate([
-        {
-          $group: {
-            _id: "$status",
-            count: { $sum: 1 },
-          },
-        },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
     ]);
 
+    // Map kết quả aggregate trạng thái vào object dễ dùng hơn
     const bookingStatus = {
-      REQUESTED: 0,
-      CONTRACT_SENT: 0,
+      REQUESTED:      0,
+      CONTRACT_SENT:  0,
       WAITING_PAYMENT: 0,
-      PENDING: 0,
-      DEPOSITED: 0,
-      CONFIRMED: 0,
-      IN_PROGRESS: 0,
-      COMPLETED: 0,
-      CANCELED: 0,
-      EXPIRED: 0,
+      PENDING:        0,
+      DEPOSITED:      0,
+      CONFIRMED:      0,
+      IN_PROGRESS:    0,
+      COMPLETED:      0,
+      CANCELED:       0,
+      EXPIRED:        0,
       PAYMENT_FAILED: 0,
     };
 
@@ -207,7 +163,7 @@ exports.getAdminOverview = async (req, res) => {
         requestedBookings,
         contractSentBookings,
         waitingPaymentBookings,
-        pendingBookings: waitingPaymentBookings + legacyPendingBookings,
+        pendingBookings:   waitingPaymentBookings + legacyPendingBookings,
         depositedBookings: legacyDepositedBookings,
         confirmedBookings,
         inProgressBookings,
@@ -227,22 +183,19 @@ exports.getAdminOverview = async (req, res) => {
       },
 
       revenue: {
-        expectedRevenue: revenueAgg[0]?.total || 0,
-        depositedRevenue: depositedRevenueAgg[0]?.total || 0,
-        completedRevenue: completedRevenueAgg[0]?.total || 0,
-        monthlyRevenue: monthlyRevenueAgg[0]?.total || 0,
-
-        actualPaidRevenue: paymentSuccessAgg[0]?.total || 0,
-        successfulPaymentCount: paymentSuccessAgg[0]?.count || 0,
+        expectedRevenue:         revenueAgg[0]?.total          || 0,
+        depositedRevenue:        depositedRevenueAgg[0]?.total || 0,
+        completedRevenue:        completedRevenueAgg[0]?.total || 0,
+        monthlyRevenue:          monthlyRevenueAgg[0]?.total   || 0,
+        actualPaidRevenue:       paymentSuccessAgg[0]?.total   || 0,
+        successfulPaymentCount:  paymentSuccessAgg[0]?.count   || 0,
       },
 
       bookingStatus,
-
       recentBookings,
     });
   } catch (error) {
     console.error("Dashboard overview error:", error);
-
     res.status(500).json({
       message: "Lỗi lấy dữ liệu dashboard",
       error: error.message,

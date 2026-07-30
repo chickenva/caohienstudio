@@ -1,3 +1,7 @@
+/**
+ * Payment.jsx
+ * Trang thanh toán cọc qua VNPay.
+ */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Statistic, Spin, message, Button } from "antd";
@@ -5,7 +9,7 @@ import { LoadingOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 
 const PRIMARY_COLOR = "#9a8a78";
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang thanh toán cũ/legacy, giữ lại để tương thích route hiện có.
 const Payment = () => {
@@ -170,3 +174,4 @@ const Payment = () => {
 };
 
 export default Payment;
+

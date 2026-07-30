@@ -1,3 +1,7 @@
+/**
+ * Profile.jsx
+ * Trang hồ sơ cá nhân khách hàng: xem/sửa thông tin.
+ */
 import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Modal, message } from "antd";
 import {
@@ -13,7 +17,7 @@ import "../../Home.css";
 
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang khách hàng xem và cập nhật thông tin cá nhân có xác thực OTP.
 const Profile = () => {
@@ -426,3 +430,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

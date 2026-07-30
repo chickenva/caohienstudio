@@ -1,11 +1,23 @@
-const Booking = require("../models/Booking");
-const Service = require("../models/Service");
-const Payment = require("../models/Payment");
-const User = require("../models/User");
+/**
+ * bookingController.js
+ * Xử lý toàn bộ luồng đặt lịch chụp của studio:
+ *  - Customer: tạo yêu cầu đặt lịch, xem đơn, xác nhận hợp đồng, thanh toán VNPay.
+ *  - Admin: tạo đơn hộ, gửi hợp đồng PDF, cập nhật trạng thái, phân công thợ, quản lý thanh toán.
+ *
+ * LUỒNG TRẠNG THÁI MỚI:
+ *  REQUESTED → CONTRACT_SENT → WAITING_PAYMENT → CONFIRMED → IN_PROGRESS → COMPLETED
+ *  Tại mọi bước đều có thể chuyển sang CANCELED (trừ COMPLETED).
+ *
+ * LUỒNG LEGACY (backward-compat): PENDING → DEPOSITED → CONFIRMED → COMPLETED | CANCELED
+ */
+const Booking  = require("../models/Booking");
+const Service  = require("../models/Service");
+const Payment  = require("../models/Payment");
+const User     = require("../models/User");
 
-const crypto = require("crypto");
-const moment = require("moment");
-const bcrypt = require("bcryptjs");
+const crypto      = require("crypto");
+const moment      = require("moment");
+const bcrypt      = require("bcryptjs");
 const mailService = require("../services/mailService");
 const { generateContractPdf, generateQrDataUrl } = require("../utils/contractPdf");
 

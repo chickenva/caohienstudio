@@ -1,3 +1,7 @@
+/**
+ * Galleries.jsx
+ * Trang danh sách album ảnh công khai, lọc theo danh mục.
+ */
 import React, { useState, useEffect } from "react";
 import { Spin, message, Empty, Row, Col } from "antd";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -18,7 +22,7 @@ import {
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const categoryLabels = {
   WEDDING: "Ảnh cưới",
@@ -601,3 +605,4 @@ const Galleries = () => {
 };
 
 export default Galleries;
+

@@ -1,40 +1,43 @@
+/**
+ * Mongoose Schema: Category (Danh mục)
+ * Dùng để phân loại dịch vụ (SERVICE) và album (GALLERY).
+ * Mỗi danh mục có một slug duy nhất trong từng type.
+ */
 const mongoose = require("mongoose");
 
-// Schema danh mục dùng để lọc dịch vụ và album.
 const categorySchema = new mongoose.Schema(
   {
+    // Tên hiển thị của danh mục
     name: {
-      type: String,
+      type:     String,
       required: true,
-      trim: true,
+      trim:     true,
     },
+
+    // Định danh dạng URL-friendly (ví dụ: "cuoi-truyen-thong")
     slug: {
-      type: String,
+      type:     String,
       required: true,
-      trim: true,
+      trim:     true,
     },
+
+    // Loại danh mục: SERVICE (gói dịch vụ) hoặc GALLERY (album ảnh)
     type: {
-      type: String,
-      enum: ["SERVICE", "GALLERY"],
+      type:     String,
+      enum:     ["SERVICE", "GALLERY"],
       required: true,
     },
-    description: {
-      type: String,
-      default: "",
-    },
-    is_active: {
-      type: Boolean,
-      default: true,
-    },
-    order: {
-      type: Number,
-      default: 0,
-    },
+
+    description: { type: String, default: "" },
+    is_active:   { type: Boolean, default: true },
+
+    // Thứ tự hiển thị — số nhỏ hơn hiển thị trước
+    order: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
 
-// Tạo index kết hợp slug và type để đảm bảo duy nhất
+// Index kết hợp slug + type để đảm bảo slug là duy nhất trong mỗi loại
 categorySchema.index({ slug: 1, type: 1 }, { unique: true });
 
 module.exports = mongoose.model("Category", categorySchema);

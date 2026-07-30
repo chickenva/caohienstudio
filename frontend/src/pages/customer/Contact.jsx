@@ -1,3 +1,7 @@
+/**
+ * Contact.jsx
+ * Trang liên hệ tư vấn: form OTP email, thông tin dịch vụ/lịch.
+ */
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -17,7 +21,7 @@ import dayjs from "dayjs";
 import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const CATEGORY_LABELS = {
   ALL: "Tất cả dịch vụ",
@@ -698,3 +702,4 @@ const Contact = () => {
 };
 
 export default Contact;
+

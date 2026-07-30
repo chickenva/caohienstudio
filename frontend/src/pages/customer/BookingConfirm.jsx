@@ -1,3 +1,7 @@
+/**
+ * BookingConfirm.jsx
+ * Trang xác nhận hợp đồng — khách đọc hợp đồng và xác nhận trước khi thanh toán.
+ */
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Result, Button, message, Row, Col, Spin, Divider, Input } from "antd";
@@ -6,7 +10,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#BFA16A";
 
 // Trang xác nhận lại thông tin trước khi khách gửi yêu cầu đặt lịch.
@@ -332,3 +336,4 @@ const BookingConfirm = () => {
 };
 
 export default BookingConfirm;
+

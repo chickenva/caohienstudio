@@ -1,3 +1,7 @@
+/**
+ * RefundPolicy.jsx
+ * Trang chính sách hoàn tiền và hủy lịch.
+ */
 import React from 'react';
 import { Typography, Divider } from 'antd';
 

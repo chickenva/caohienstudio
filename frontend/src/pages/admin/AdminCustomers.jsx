@@ -1,3 +1,7 @@
+/**
+ * AdminCustomers.jsx
+ * Quản lý danh sách khách hàng: xem chi tiết, ẩn/hiện tài khoản.
+ */
 import React, { useEffect, useState } from "react";
 import {
   Table,
@@ -30,7 +34,7 @@ import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
@@ -463,3 +467,4 @@ const AdminCustomers = () => {
 };
 
 export default AdminCustomers;
+

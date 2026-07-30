@@ -1,3 +1,7 @@
+/**
+ * AdminProfile.jsx
+ * Trang hồ sơ Admin: xem/chỉnh thông tin cá nhân và đổi mật khẩu.
+ */
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -25,7 +29,7 @@ import axios from "axios";
 
 const { Title, Text } = Typography;
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang admin cập nhật thông tin hồ sơ cá nhân.
 const AdminProfile = () => {
@@ -439,3 +443,4 @@ const AdminProfile = () => {
 };
 
 export default AdminProfile;
+

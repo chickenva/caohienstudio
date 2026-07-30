@@ -1,3 +1,7 @@
+/**
+ * Register.jsx
+ * Trang đăng ký tài khoản mới: OTP email, validate form.
+ */
 import React, { useState } from "react";
 import { Form, Input, Button, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +11,7 @@ import axios from "axios";
 const PRIMARY_COLOR = "#9a8a78";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
-const API_URL = import.meta.env.VITE_API_URL || "https://caohienstudio-api.onrender.com/api";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang đăng ký tài khoản customer với xác thực OTP email.
 const Register = () => {
@@ -374,3 +378,4 @@ const Register = () => {
 };
 
 export default Register;
+

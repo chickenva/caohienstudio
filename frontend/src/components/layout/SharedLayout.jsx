@@ -1,3 +1,7 @@
+/**
+ * SharedLayout.jsx
+ * Layout chia sẻ giữa Customer và Public — header + footer chung.
+ */
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button, Space, Dropdown, Avatar, Divider } from "antd";

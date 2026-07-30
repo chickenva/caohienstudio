@@ -1,3 +1,7 @@
+/**
+ * Contract.jsx
+ * Trang điều khoản hợp đồng và chính sách dịch vụ.
+ */
 import React from 'react';
 import { Typography, Divider } from 'antd';
 

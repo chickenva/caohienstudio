@@ -1,8 +1,0 @@
-$kind: http-request
-url: http://localhost:5000/api/galleries
-method: GET
-auth:
-  type: bearer
-  credentials:
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMDE0Mzg5MzAzNzQ0ZDlhZTFiYjc2YSIsImlhdCI6MTc3OTE1ODY2MywiZXhwIjoxNzc5MjQ1MDYzfQ.WslIcAyJLeBkzIYbYBXCqx6XsNsFOytjEbFKzjrLuI0
-order: 4130909822004568

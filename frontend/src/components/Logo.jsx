@@ -1,3 +1,7 @@
+/**
+ * Logo.jsx
+ * Component logo Cao Hiển Studio dạng text/image, dùng chung toàn site.
+ */
 import React from "react";
 
 // Component logo dùng lại ở header/layout với tùy chọn kích thước và màu chữ.

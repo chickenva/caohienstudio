@@ -1,3 +1,7 @@
+/**
+ * AdminPlaceholder.jsx
+ * Trang placeholder cho các tính năng admin đang phát triển.
+ */
 import React from "react";
 import { Card, Button, Table } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
