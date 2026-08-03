@@ -7,12 +7,17 @@
 const nodemailer = require("nodemailer");
 const moment     = require("moment");
 
-// Cấu hình transporter
+// Cấu hình transporter (Tối ưu cho Cloud/Render)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 

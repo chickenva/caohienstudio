@@ -9,10 +9,18 @@ const bcrypt     = require("bcryptjs");
 const jwt        = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
-// Transporter Gmail dùng chung cho toàn bộ controller
+// Transporter Gmail dùng chung cho toàn bộ controller (Tối ưu cho Cloud/Render)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
 // ==========================================
