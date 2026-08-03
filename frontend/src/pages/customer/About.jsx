@@ -42,27 +42,6 @@ const About = () => {
     };
   }, []);
 
-  const blogs = [
-    {
-      date: "Mar 04, 2026",
-      title: "Khoảnh Khắc Quan Trọng Không Thể Bỏ Lỡ Trong Ngày Cưới",
-      image:
-        "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      date: "Mar 04, 2026",
-      title: "Kinh Nghiệm Chọn Nhiếp Ảnh Gia Cưới Phù Hợp",
-      image:
-        "https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      date: "Mar 04, 2026",
-      title: "Vì Sao Ảnh Cưới Tự Nhiên Đang Trở Thành Xu Hướng",
-      image:
-        "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop",
-    },
-  ];
-
   return (
     <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", color: "#2F2F2F" }}>
       {/* Ambient Glow spotlights */}
@@ -141,7 +120,7 @@ const About = () => {
           </div>
           <div>
             <button
-              onClick={() => navigate("/booking")}
+              onClick={() => navigate("/contact")}
               className="btn-premium-gold"
             >
               LIÊN HỆ VỚI TÔI <ArrowRightOutlined />
@@ -410,97 +389,6 @@ const About = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* SECTION 3: BLOG */}
-      <div style={{ padding: "100px 40px 120px 40px", background: "#FAF7F2" }}>
-        <div style={{ textAlign: "center", marginBottom: "65px" }} className="scroll-reveal">
-          <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
-            Journal & Insights
-          </span>
-          <h2
-            className="font-serif-luxury"
-            style={{
-              fontSize: "42px",
-              fontWeight: "300",
-              color: "#1F1F1F",
-              margin: 0
-            }}
-          >
-            From the blog
-          </h2>
-          <div style={{ width: "40px", height: "1px", background: "#BFA16A", margin: "20px auto 0 auto" }}></div>
-        </div>
-        
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "35px",
-          }}
-        >
-          {blogs.map((blog, index) => (
-            <div key={index} style={{ textAlign: "left" }} className={`scroll-reveal stagger-${index + 1}`}>
-              <div style={{ overflow: "hidden", border: "1px solid #E8DED2", marginBottom: "20px", position: "relative" }}>
-                <img
-                  src={blog.image}
-                  alt="Blog cover"
-                  style={{
-                    width: "100%",
-                    height: "260px",
-                    objectFit: "cover",
-                    display: "block",
-                    transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-                  }}
-                  className="portfolio-item-image"
-                />
-              </div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "#BFA16A",
-                  marginBottom: "10px",
-                  textTransform: "uppercase",
-                  letterSpacing: "1.5px",
-                  fontWeight: "600"
-                }}
-              >
-                {blog.date}
-              </div>
-              <h3
-                className="font-serif-luxury"
-                style={{
-                  fontSize: "21px",
-                  fontWeight: "normal",
-                  color: "#2F2F2F",
-                  lineHeight: "1.45",
-                  marginBottom: "20px",
-                  minHeight: "56px",
-                }}
-              >
-                {blog.title}
-              </h3>
-              <span
-                style={{
-                  fontSize: "11px",
-                  color: "#2F2F2F",
-                  borderBottom: "1px solid #BFA16A",
-                  paddingBottom: "4px",
-                  cursor: "pointer",
-                  letterSpacing: "2px",
-                  textTransform: "uppercase",
-                  fontWeight: "500",
-                  transition: "all 0.3s"
-                }}
-                className="btn-readmore-hover"
-              >
-                Read More
-              </span>
-            </div>
-          ))}
         </div>
       </div>
     </div>

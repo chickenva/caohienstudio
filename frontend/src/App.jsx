@@ -41,6 +41,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminGalleries from "./pages/admin/AdminGalleries";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminCustomers from "./pages/admin/AdminCustomers";
+import AdminAccountsList from "./pages/admin/AdminAccountsList";
+import AdminAccountForm from "./pages/admin/AdminAccountForm";
 
 import CreateOrder from "./pages/admin/CreateOrder";
 import ServiceForm from "./pages/admin/ServiceForm";
@@ -109,6 +111,9 @@ function App() {
           <Route path="services/edit/:id" element={<ServiceForm />} />
           
           <Route path="categories/:type" element={<AdminCategories />} />
+
+          <Route path="accounts" element={<AdminAccountsList />} />
+          <Route path="accounts/add" element={<AdminAccountForm />} />
 
         </Route>
       </Routes>

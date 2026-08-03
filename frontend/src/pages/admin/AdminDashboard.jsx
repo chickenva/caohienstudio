@@ -190,11 +190,6 @@ const AdminDashboard = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchOverview}>
-            Làm mới
-          </Button>
-
-          <Button type="primary" onClick={() => navigate("/admin/orders")}>
-            Xem đơn đặt lịch
           </Button>
         </Space>
       </div>

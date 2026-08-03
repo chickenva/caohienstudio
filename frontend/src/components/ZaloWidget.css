@@ -1,0 +1,144 @@
+/* ==========================================
+   ZALO FLOATING WIDGET - Light Luxury Vibe
+   Cao Hiển Studio Design System (#BFA16A)
+   ========================================== */
+
+.zalo-chat-fab {
+  position: fixed;
+  bottom: 100px;
+  right: 28px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: row-reverse; /* Đặt label nằm phía bên trái nút */
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: "Outfit", "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+}
+
+.zalo-fab-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  /* Tone màu Light Luxury: Đen sang trọng viền vàng mạ (Gold #BFA16A) */
+  background: linear-gradient(135deg, #2a2a2a 0%, #171717 100%);
+  border: 1.5px solid #BFA16A;
+  box-shadow: 
+    0 4px 18px rgba(0, 0, 0, 0.25),
+    0 0 12px rgba(191, 161, 106, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Pulsing effect ánh kim sang trọng */
+.zalo-fab-circle::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(191, 161, 106, 0.5);
+  animation: zalo-gold-pulse 2.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes zalo-gold-pulse {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+}
+
+.zalo-chat-fab:hover .zalo-fab-circle {
+  transform: scale(1.08);
+  background: linear-gradient(135deg, #BFA16A 0%, #D4B97A 100%);
+  border-color: #ffffff;
+  box-shadow: 
+    0 6px 24px rgba(191, 161, 106, 0.5),
+    0 0 0 6px rgba(191, 161, 106, 0.15);
+}
+
+.zalo-chat-fab:hover .zalo-fab-circle svg text {
+  fill: #1a1a1a;
+}
+
+.zalo-chat-fab:hover .zalo-fab-circle svg rect {
+  fill: #1a1a1a;
+}
+
+.zalo-chat-fab:active .zalo-fab-circle {
+  transform: scale(0.95);
+}
+
+/* Text label container sang trọng */
+.zalo-fab-label {
+  background: rgba(26, 26, 26, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #FAF7F2;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(191, 161, 106, 0.3);
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  opacity: 0.95;
+  transform: translateX(4px);
+}
+
+.zalo-chat-fab:hover .zalo-fab-label {
+  opacity: 1;
+  transform: translateX(0);
+  background: #2a2a2a;
+  border-color: #BFA16A;
+  color: #BFA16A;
+}
+
+/* Modal styling */
+.zalo-modal-content {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.zalo-qr-image {
+  width: 200px;
+  height: 200px;
+  margin: 15px auto;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eee;
+}
+
+/* Responsive adjustment cho di động */
+@media (max-width: 576px) {
+  .zalo-chat-fab {
+    bottom: 92px;
+    right: 20px;
+  }
+  .zalo-fab-circle {
+    width: 50px;
+    height: 50px;
+  }
+  .zalo-fab-label {
+    display: none;
+  }
+}

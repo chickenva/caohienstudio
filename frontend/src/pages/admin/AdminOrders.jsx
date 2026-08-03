@@ -602,7 +602,7 @@ export default function AdminOrders() {
           <Title level={3} style={{ marginBottom: 4 }}>Quản Lý Đơn Đặt Lịch</Title>
           <Text type="secondary">Theo dõi yêu cầu đặt lịch, hợp đồng và thanh toán.</Text>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={fetchBookings}>Làm mới</Button>
+        <Button icon={<ReloadOutlined />} onClick={fetchBookings}></Button>
       </div>
 
       {/* Filter */}

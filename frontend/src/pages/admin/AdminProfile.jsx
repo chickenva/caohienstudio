@@ -184,7 +184,7 @@ const AdminProfile = () => {
     } catch (error) {
       message.error(
         error.response?.data?.message ||
-          "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu cũ.",
+        "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu cũ.",
       );
     } finally {
       setPassLoading(false);
@@ -217,7 +217,6 @@ const AdminProfile = () => {
           onClick={fetchCurrentUser}
           loading={fetching}
         >
-          Làm mới
         </Button>
       </div>
 

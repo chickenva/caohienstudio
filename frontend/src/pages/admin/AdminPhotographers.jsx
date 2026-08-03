@@ -80,7 +80,7 @@ const AdminPhotographers = () => {
     } catch (err) {
       message.error(
         err.response?.data?.message ||
-          "Không thể cập nhật trạng thái nhiếp ảnh gia",
+        "Không thể cập nhật trạng thái nhiếp ảnh gia",
       );
     } finally {
       setActionLoadingId(null);
@@ -233,7 +233,6 @@ const AdminPhotographers = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchPhotographers}>
-            Làm mới
           </Button>
 
           <Button

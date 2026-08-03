@@ -1,7 +1,8 @@
 /**
  * userController.js
- * Quản lý người dùng: nhiếp ảnh gia (public + admin) và khách hàng (admin).
+ * Quản lý người dùng: nhiếp ảnh gia (public + admin), khách hàng và tài khoản admin.
  * Admin có toàn quyền CRUD photographer, xem và ẩn/hiện tài khoản customer.
+ * Admin có thể tạo tài khoản ADMIN/PHOTOGRAPHER mới qua trang Quản lý tài khoản.
  */
 const bcrypt = require("bcryptjs");
 const User   = require("../models/User");
@@ -300,5 +301,98 @@ exports.searchCustomersForAdmin = async (req, res) => {
     res.status(200).json(customers);
   } catch (error) {
     res.status(500).json({ message: "Lỗi tìm khách hàng", error: error.message });
+  }
+};
+
+// ==========================================
+// ADMIN: QUẢN LÝ TÀI KHOẢN (ADMIN + PHOTOGRAPHER)
+// ==========================================
+
+/**
+ * [GET] /api/users/admin/accounts
+ * Admin lấy toàn bộ danh sách tài khoản ADMIN.
+ */
+exports.getAllAccountsForAdmin = async (req, res) => {
+  try {
+    const accounts = await User.find({ role: "ADMIN" })
+      .select("full_name email phone role is_active createdAt updatedAt")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(accounts);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi lấy danh sách tài khoản", error: error.message });
+  }
+};
+
+/**
+ * [POST] /api/users/admin/accounts
+ * Admin tạo tài khoản ADMIN mới.
+ * Mật khẩu được mã hóa bằng bcrypt trước khi lưu.
+ */
+exports.createAccount = async (req, res) => {
+  try {
+    const { email, password, full_name, phone, is_active = true } = req.body;
+
+    if (!email || !password || !full_name) {
+      return res.status(400).json({ message: "Vui lòng nhập email, mật khẩu và họ tên" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email này đã tồn tại" });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const account = await User.create({
+      email,
+      password_hash,
+      full_name,
+      phone,
+      role: "ADMIN",
+      is_active,
+    });
+
+    res.status(201).json({
+      message: "Tạo tài khoản thành công",
+      account: {
+        _id: account._id,
+        email: account.email,
+        full_name: account.full_name,
+        phone: account.phone,
+        role: account.role,
+        is_active: account.is_active,
+        createdAt: account.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi tạo tài khoản", error: error.message });
+  }
+};
+
+/**
+ * [PATCH] /api/users/admin/accounts/:id/toggle-active
+ * Admin kích hoạt hoặc khóa tài khoản ADMIN.
+ */
+exports.toggleAccountActive = async (req, res) => {
+  try {
+    const account = await User.findOne({
+      _id: req.params.id,
+      role: "ADMIN",
+    });
+
+    if (!account) {
+      return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+    }
+
+    account.is_active = !account.is_active;
+    await account.save();
+
+    res.status(200).json({
+      message: account.is_active ? "Đã kích hoạt tài khoản" : "Đã khóa tài khoản",
+      account,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi cập nhật trạng thái tài khoản", error: error.message });
   }
 };

@@ -48,7 +48,6 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // FIX: Map đúng trường full_name từ DB vào fullName của Form
       const userData = {
         fullName: res.data.full_name,
         phone: res.data.phone,
@@ -65,7 +64,6 @@ const Profile = () => {
   const handleRequestOtp = (values, type) => {
     if (type === "INFO") {
       const dataToSend = {};
-      // FIX: Đổi lại thành full_name để gửi xuống Backend cho chuẩn với Schema
       if (values.fullName) dataToSend.full_name = values.fullName;
       if (values.phone) dataToSend.phone = values.phone;
       if (values.email) dataToSend.email = values.email;
@@ -99,12 +97,11 @@ const Profile = () => {
         },
       );
 
-      // FIX: Backend trả về user sau khi update, map lại full_name
       localStorage.setItem(
         "user",
         JSON.stringify({
           ...res.data.user,
-          name: res.data.user.full_name, // Đồng bộ lại với format lúc Login
+          name: res.data.user.full_name,
         }),
       );
 
@@ -150,21 +147,20 @@ const Profile = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const emailCurrent = JSON.parse(localStorage.getItem("user")).email;
-      const verifyEmail = pendingData.email || emailCurrent;
+      const emailCurrent = originalData.email;
 
-      await axios.post(`${API_URL}/auth/verify-otp`, {
-        email: verifyEmail,
-        otp: otpValue.otp,
-      });
+      await axios.post(
+        `${API_URL}/auth/verify-update-otp`,
+        { email: pendingData.email || emailCurrent, otp: otpValue },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
       if (pendingData.type === "INFO") {
         const res = await axios.put(
           `${API_URL}/auth/update-profile`,
-          { ...pendingData, otp: otpValue.otp },
+          pendingData,
           { headers: { Authorization: `Bearer ${token}` } },
         );
-
         localStorage.setItem(
           "user",
           JSON.stringify({
@@ -172,7 +168,6 @@ const Profile = () => {
             name: res.data.user.full_name,
           }),
         );
-
         setOriginalData({
           fullName: res.data.user.full_name,
           phone: res.data.user.phone,
@@ -201,12 +196,9 @@ const Profile = () => {
   return (
     <div style={{ maxWidth: "800px", margin: "80px auto 40px", padding: "0 40px" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(154, 138, 120, 0.08)", border: "1px solid rgba(154, 138, 120, 0.2)", marginBottom: 20 }}>
-          <UserOutlined style={{ color: PRIMARY_COLOR }} />
-          <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
-            Tài Khoản
-          </span>
-        </div>
+        <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+          MY ACCOUNT
+        </span>
         <h1
           className="font-serif-luxury"
           style={{
@@ -221,6 +213,11 @@ const Profile = () => {
           Quản lý{" "}
           <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Tài Khoản</span>
         </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: "0 auto 20px" }}>
+          <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+          <div style={{ width: 6, height: 6, background: "#BFA16A", transform: "rotate(45deg)" }} />
+          <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+        </div>
         <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 460, margin: "0 auto", fontWeight: 300 }}>
           Cập nhật thông tin cá nhân và bảo mật tài khoản của bạn.
         </p>
@@ -430,4 +427,3 @@ const Profile = () => {
 };
 
 export default Profile;
-

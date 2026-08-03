@@ -161,7 +161,7 @@ const AdminServices = () => {
       const activeIndex = services.findIndex((i) => i._id === active.id);
       const overIndex = services.findIndex((i) => i._id === over?.id);
       const newServices = arrayMove(services, activeIndex, overIndex);
-      
+
       // Calculate new orders. The backend sorted ascending by order, so let's just reassign them.
       // If we just send back the items with their new order (e.g. index), it's fine.
       const reorderedItems = newServices.map((item, index) => ({
@@ -425,16 +425,7 @@ const AdminServices = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchServices}>
-            Làm mới
-          </Button>
 
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate("/admin/services/add")}
-            style={{ fontWeight: 600 }}
-          >
-            Thêm dịch vụ
           </Button>
         </Space>
       </div>

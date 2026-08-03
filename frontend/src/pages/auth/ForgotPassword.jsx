@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
 
-const PRIMARY_COLOR = "#9a8a78";
+const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
@@ -88,7 +88,7 @@ const ForgotPassword = () => {
         alignItems: "center",
         minHeight: "calc(100vh - 170px)",
         padding: "40px 20px",
-        background: "#fafafa",
+        background: "#FAF7F2",
       }}
     >
       <div
@@ -97,7 +97,7 @@ const ForgotPassword = () => {
           maxWidth: "450px",
           background: "#ffffff",
           padding: "50px 40px",
-          border: "1px solid #eaeaea",
+          border: "1px solid #E8DED2",
           boxShadow: "0 10px 30px rgba(0,0,0,0.02)",
         }}
       >
@@ -105,13 +105,15 @@ const ForgotPassword = () => {
           <h1
             style={{
               fontFamily: FONT_SERIF,
-              fontSize: "30px",
+              fontSize: "28px",
               fontWeight: "normal",
               color: "#333",
               marginBottom: "10px",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
             }}
           >
-            Khôi phục mật khẩu
+            KHÔI PHỤC MẬT KHẨU
           </h1>
           <p
             style={{
@@ -346,4 +348,3 @@ const ForgotPassword = () => {
 };
 
 export default ForgotPassword;
-

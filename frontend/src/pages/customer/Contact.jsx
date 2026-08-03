@@ -344,12 +344,9 @@ const Contact = () => {
 
       {/* HEADER */}
       <div className="scroll-reveal" style={{ textAlign: "center", padding: "100px 20px 50px 20px", maxWidth: "800px", margin: "0 auto" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: 20 }}>
-          <MessageOutlined style={{ color: PRIMARY_COLOR }} />
-          <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
-            Contact Us
-          </span>
-        </div>
+        <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+          CONTACT US
+        </span>
         <h1 className="font-serif-luxury" style={{ fontSize: "clamp(32px, 4vw, 48px)", fontWeight: 300, margin: "0 0 16px 0", color: "#1F1F1F", lineHeight: 1.2, letterSpacing: "-0.5px" }}>
           Liên Hệ{" "}
           <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Với Chúng Tôi</span>
@@ -375,7 +372,29 @@ const Contact = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "30px", color: "#555555", fontSize: "14.5px", fontWeight: "300" }}>
               {[
                 { icon: <EnvironmentOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Địa Chỉ", value: "34B4 TL 887, phường An Hội, Vĩnh Long" },
-                { icon: <PhoneOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Hotline", value: "(+84) 979 7676 02" },
+                { 
+                  icon: <PhoneOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, 
+                  label: "Hotline / Zalo", 
+                  value: (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
+                      <span style={{ color: "#2F2F2F" }}>(+84) 979 7676 02</span>
+                      <a
+                        href={import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: PRIMARY_COLOR,
+                          fontWeight: 600,
+                          fontSize: "12.5px",
+                          textDecoration: "underline",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Chat Zalo ngay
+                      </a>
+                    </div>
+                  )
+                },
                 { icon: <MailOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Email", value: "caohienstudio@gmail.com" },
                 { icon: <ClockCircleOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Giờ Làm Việc", value: "Thứ 2 - Chủ Nhật: 09:00 AM - 05:00 PM" },
               ].map(({ icon, label, value }) => (
@@ -392,14 +411,55 @@ const Contact = () => {
             </div>
 
             {/* BẢN ĐỒ */}
-            <div style={{ marginTop: "45px", overflow: "hidden", border: "1px solid #E8DED2" }}>
+            <div style={{ marginTop: "35px", overflow: "hidden", border: "1px solid #E8DED2" }}>
               <iframe
                 title="CaoHien Studio Map"
                 src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d583.697091199096!2d106.3687414401994!3d10.210644960730347!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTDCsDEyJzM5LjgiTiAxMDbCsDIyJzA4LjEiRQ!5e0!3m2!1svi!2s!4v1778813420109!5m2!1svi!2s"
-                width="100%" height="260"
+                width="100%" height="220"
                 style={{ border: 0, display: "block" }}
                 allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"
               />
+            </div>
+
+            {/* THẺ TƯ VẤN ZALO (KHÔNG DÙNG ICON ZALO) */}
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "16px 20px",
+                background: "#FAF7F2",
+                border: "1px solid #E8DED2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "13.5px", color: "#2F2F2F", letterSpacing: "0.5px" }}>
+                  TƯ VẤN TRỰC TIẾP QUA ZALO
+                </div>
+                <div style={{ fontSize: "12.5px", color: "#666", marginTop: "4px" }}>
+                  Hotline / Zalo: 0979 7676 02
+                </div>
+              </div>
+              <a
+                href={import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602"}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: PRIMARY_COLOR,
+                  color: "#fff",
+                  padding: "8px 18px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Nhắn Zalo
+              </a>
             </div>
           </Col>
 

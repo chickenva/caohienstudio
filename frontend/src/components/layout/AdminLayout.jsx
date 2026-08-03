@@ -14,7 +14,7 @@ import {
   ShoppingCartOutlined,
   LogoutOutlined,
   HomeOutlined,
-
+  TeamOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
@@ -66,7 +66,6 @@ const AdminLayout = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    message.success("Đã đăng xuất tài khoản quản trị");
     navigate("/login");
   };
 
@@ -101,14 +100,19 @@ const AdminLayout = () => {
       label: "Thư viện ảnh",
       children: [
         { key: "/admin/galleries", label: "Danh sách album" },
-        { key: "/admin/galleries/create", label: "Tạo album" },
+        { key: "/admin/galleries/create", label: "Thêm album" },
         { key: "/admin/categories/gallery", label: "Quản lý danh mục" },
       ],
     },
     {
-      key: "/admin/customers",
-      icon: <SolutionOutlined />,
-      label: "Khách hàng",
+      key: "/admin/accounts",
+      icon: <TeamOutlined />,
+      label: "Tài khoản",
+      children: [
+        { key: "/admin/accounts", label: "Danh sách tài khoản" },
+        { key: "/admin/accounts/add", label: "Thêm tài khoản" },
+        { key: "/admin/customers", label: "Danh sách khách hàng" },
+      ],
     },
   ];
 

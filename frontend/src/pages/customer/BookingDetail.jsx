@@ -35,7 +35,7 @@ const { Countdown } = Statistic;
 const { Text, Paragraph } = Typography;
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
-const PRIMARY_COLOR = "#9a8a78";
+const PRIMARY_COLOR = "#BFA16A";
 
 // Định dạng tiền VND trong chi tiết đơn.
 const formatCurrency = (value) => {
@@ -257,6 +257,36 @@ const BookingDetail = () => {
     return expiresAt.isAfter(dayjs()) ? expiresAt.valueOf() : null;
   }, [booking]);
 
+  // Lấy danh sách dịch vụ chính (không có dấu +)
+  const mainServicesList = useMemo(() => {
+    if (!booking) return [];
+    if (booking.original_service_ids && booking.original_service_ids.length > 0) {
+      return booking.original_service_ids.map(s => typeof s === "object" ? s.name : s).filter(Boolean);
+    }
+    if (booking.service_id) {
+      return [typeof booking.service_id === "object" ? booking.service_id.name : booking.service_id];
+    }
+    return [booking.serviceName || "Dịch vụ chính"];
+  }, [booking]);
+
+  // Lấy danh sách dịch vụ đi kèm (có dấu +)
+  const addonServicesList = useMemo(() => {
+    if (!booking || !booking.extra_service_ids || booking.extra_service_ids.length === 0) {
+      return [];
+    }
+    const mainIds = (booking.original_service_ids || []).map(s => typeof s === "object" ? s._id : s);
+    if (booking.service_id) {
+      mainIds.push(typeof booking.service_id === "object" ? booking.service_id._id : booking.service_id);
+    }
+    return booking.extra_service_ids
+      .filter(s => {
+        const id = typeof s === "object" ? s._id : s;
+        return !mainIds.includes(id);
+      })
+      .map(s => typeof s === "object" ? s.name : s)
+      .filter(Boolean);
+  }, [booking]);
+
   const canPay = isPayableBooking(booking);
   const canCancelBooking = ["REQUESTED", "CONTRACT_SENT", "PENDING"].includes(booking?.status);
   const isPendingExpired = isExpiredPendingBooking(booking);
@@ -293,38 +323,47 @@ const BookingDetail = () => {
   return (
     <div style={{ maxWidth: "1000px", margin: "40px auto", padding: "0 20px" }}>
       <Card
-        title={<span style={{ fontSize: "20px" }}>CHI TIẾT ĐƠN ĐẶT LỊCH</span>}
+        title={<span style={{ fontSize: "20px", textTransform: "uppercase", letterSpacing: 1 }}>CHI TIẾT ĐƠN ĐẶT LỊCH</span>}
         extra={
           <Button icon={<ReloadOutlined />} onClick={fetchBooking}>
-            Làm mới
           </Button>
         }
       >
+        {/* Hàng 4 ô thống kê chi phí đồng bộ */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} md={8}>
-            <Card size="small">
-              <div style={{ color: "#888" }}>Tổng giá trị</div>
-              <strong style={{ fontSize: 22 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <div style={{ color: "#888", fontSize: 12 }}>Tổng giá trị</div>
+              <strong style={{ fontSize: 20, color: PRIMARY_COLOR }}>
                 {formatCurrency(booking.total_amount)}
               </strong>
             </Card>
           </Col>
 
-          <Col xs={24} md={8}>
-            <Card size="small">
-              <div style={{ color: "#888" }}>Đã thanh toán</div>
-              <strong style={{ fontSize: 22, color: getPaidAmountColor(booking.paid_amount) }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <div style={{ color: "#888", fontSize: 12 }}>Tiền cọc (30%)</div>
+              <strong style={{ fontSize: 20, color: "#2F2F2F" }}>
+                {formatCurrency(Math.round((booking.total_amount || 0) * 0.3))}
+              </strong>
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <div style={{ color: "#888", fontSize: 12 }}>Đã thanh toán</div>
+              <strong style={{ fontSize: 20, color: getPaidAmountColor(booking.paid_amount) }}>
                 {formatCurrency(booking.paid_amount)}
               </strong>
             </Card>
           </Col>
 
-          <Col xs={24} md={8}>
-            <Card size="small">
-              <div style={{ color: "#888" }}>Còn lại</div>
+          <Col xs={24} sm={12} md={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <div style={{ color: "#888", fontSize: 12 }}>Còn lại</div>
               <strong
                 style={{
-                  fontSize: 22,
+                  fontSize: 20,
                   color: getRemainingAmountColor(booking.remaining_amount)
                 }}
               >
@@ -339,51 +378,58 @@ const BookingDetail = () => {
           </Col>
         </Row>
 
-        <Descriptions bordered column={1}>
+        {/* Bảng chi tiết đơn đặt lịch chuẩn thứ tự flow booking */}
+        <Descriptions bordered column={1} labelStyle={{ fontWeight: 600, width: "220px", color: "#444" }}>
           <Descriptions.Item label="Mã đơn hàng">
-            {booking._id}
+            <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{booking._id}</span>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Gói chính">
-            {booking.service_id?.name || "Dịch vụ"}
-          </Descriptions.Item>
-
-          <Descriptions.Item label="Gói đi kèm">
-            {booking.extra_service_ids?.length > 0
-              ? booking.extra_service_ids.map(s => s.name).join(", ")
-              : "Không có"}
-          </Descriptions.Item>
-
-          <Descriptions.Item label="Ngày chụp">
-            {dayjs(booking.start_time).format("DD/MM/YYYY")}
-          </Descriptions.Item>
-
-          <Descriptions.Item label="Thời gian chụp">
-            {dayjs(booking.start_time).format("HH:mm")} -{" "}
-            {dayjs(booking.end_time).format("HH:mm")}
-          </Descriptions.Item>
-
-          <Descriptions.Item label="Thợ chụp/Nhân sự">
-            {booking.assigned_staff_ids?.length > 0 ? (
-              <Space direction="vertical">
-                {booking.assigned_staff_ids.map((staff) => (
-                  <div key={staff._id}>
-                    <strong>{staff.full_name}</strong>
-                    {staff.phone ? ` - ${staff.phone}` : ""}
-                  </div>
-                ))}
-              </Space>
-            ) : (
-              <span style={{ color: "#999" }}>Chưa phân công</span>
-            )}
+          <Descriptions.Item label="Hình thức chụp">
+            {booking.shooting_type === "STUDIO" ? "Chụp tại Studio" : "Chụp Ngoại cảnh"}
           </Descriptions.Item>
 
           <Descriptions.Item label="Địa điểm">
-            {booking.location}
+            {booking.location || "Tại Studio"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Ngày chụp">
+            {dayjs(booking.start_time || booking.shoot_date).format("DD/MM/YYYY")}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Buổi chụp">
+            {booking.shooting_session === "MORNING" ? "Buổi sáng (08:00–12:00)" :
+              booking.shooting_session === "AFTERNOON" ? "Buổi chiều (13:00–17:00)" :
+                "Cả ngày (08:00–17:00)"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Dịch vụ chính">
+            {mainServicesList.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {mainServicesList.map((name, i) => (
+                  <div key={i} style={{ fontWeight: 500 }}>{name}</div>
+                ))}
+              </div>
+            ) : "Dịch vụ chính"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Các gói đi kèm">
+            {addonServicesList.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {addonServicesList.map((name, i) => (
+                  <div key={i} style={{ color: "#555" }}>+ {name}</div>
+                ))}
+              </div>
+            ) : (
+              <span style={{ color: "#999", fontStyle: "italic" }}>Chưa chọn</span>
+            )}
           </Descriptions.Item>
 
           <Descriptions.Item label="Ghi chú">
-            {booking.note || "Không có"}
+            {booking.note ? (
+              <span style={{ fontStyle: "italic", color: "#555" }}>"{booking.note}"</span>
+            ) : (
+              <span style={{ color: "#999", fontStyle: "italic" }}>Không có</span>
+            )}
           </Descriptions.Item>
 
           <Descriptions.Item label="Trạng thái đơn">

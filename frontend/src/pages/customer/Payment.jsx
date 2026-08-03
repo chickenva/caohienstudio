@@ -8,7 +8,7 @@ import { Card, Statistic, Spin, message, Button } from "antd";
 import { LoadingOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 
-const PRIMARY_COLOR = "#9a8a78";
+const PRIMARY_COLOR = "#BFA16A";
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang thanh toán cũ/legacy, giữ lại để tương thích route hiện có.

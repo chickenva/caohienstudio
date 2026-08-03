@@ -32,6 +32,7 @@ import dayjs from "dayjs";
 import "../../Home.css";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
+const PRIMARY_COLOR = "#BFA16A";
 
 // Màn khách hàng chọn dịch vụ, hình thức chụp, ngày và buổi chụp.
 const Booking = () => {
@@ -667,17 +668,19 @@ const Booking = () => {
           <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 2 }}>
 
             <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: 20 }}>
-                <CalendarOutlined style={{ color: "#BFA16A" }} />
-                <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: "#BFA16A", fontWeight: 600 }}>
-                  Đặt Lịch Chụp Ảnh
-                </span>
-              </div>
+              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+                BOOK AN APPOINTMENT
+              </span>
               <h1 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "clamp(32px, 4vw, 48px)", fontWeight: 300, lineHeight: 1.2, margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
                 Trải Nghiệm{" "}
                 <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Đẳng Cấp</span>
               </h1>
-              <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 560, margin: "0 auto", fontWeight: 300 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: "0 auto 20px" }}>
+                <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+                <div style={{ width: 6, height: 6, background: "#BFA16A", transform: "rotate(45deg)" }} />
+                <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+              </div>
+              <p style={{ color: "#555555", fontSize: "15.5px", lineHeight: 1.8, maxWidth: 560, margin: "0 auto", fontWeight: 300, letterSpacing: "0.5px" }}>
                 Chọn gói dịch vụ, thêm các gói đi kèm và thời gian phù hợp. Hệ thống dự báo thời tiết thông minh giúp bạn lên kế hoạch hoàn hảo.
               </p>
             </div>
@@ -1134,102 +1137,66 @@ const Booking = () => {
               {/* ===== SUMMARY & SUBMIT ===== */}
               <div style={{ marginTop: 30 }}>
                 <Row gutter={[24, 24]}>
-                  {/* Cột trái: Tóm tắt chi phí */}
-                  <Col xs={24} lg={12} style={{ display: "flex", flexDirection: "column" }}>
-                    <div className="glass-panel" style={{ padding: 24, borderRadius: 8, display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
-                      <div>
-                        <h3 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: 600, color: "#2F2F2F", textTransform: "uppercase" }}>Tóm tắt chi phí</h3>
-                        
-                        <div style={{ marginBottom: 12 }}>
-                          <span style={{ color: "#555", display: "block", marginBottom: 6 }}>Dịch vụ chính:</span>
+                  {/* Tóm tắt chi phí (Chia cột 3 phần sang trọng, Tổng cộng bên phải) */}
+                  <Col xs={24}>
+                    <div className="glass-panel" style={{ padding: "24px 28px", borderRadius: 8 }}>
+                      <div style={{ marginBottom: 20, paddingBottom: 12, borderBottom: "1px solid #E8DED2" }}>
+                        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#2F2F2F", textTransform: "uppercase", letterSpacing: "1px" }}>
+                          Tóm Tắt Chi Phí
+                        </h3>
+                      </div>
+
+                      <Row gutter={[32, 20]} align="top">
+                        {/* Cột 1: Dịch vụ chính */}
+                        <Col xs={24} md={9}>
+                          <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 8 }}>
+                            Dịch Vụ Chính
+                          </span>
                           {selectedMainServices.length > 0 ? (
                             selectedMainServices.map(service => (
-                              <div key={service._id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#777", paddingLeft: 12, marginBottom: 4 }}>
+                              <div key={service._id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, color: "#2F2F2F", marginBottom: 6 }}>
                                 <span>- {service.name}</span>
-                                <span>{Number(service.base_price || 0).toLocaleString("vi-VN")}đ</span>
+                                <span style={{ fontWeight: 500, color: "#555" }}>{Number(service.base_price || 0).toLocaleString("vi-VN")}đ</span>
                               </div>
                             ))
                           ) : (
-                            <div style={{ fontSize: 13, color: "#999", paddingLeft: 12 }}>Chưa chọn</div>
+                            <div style={{ fontSize: 13, color: "#aaa", fontStyle: "italic" }}>Chưa chọn</div>
                           )}
-                        </div>
+                        </Col>
 
-                        {selectedAddonIds.length > 0 && (
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ color: "#555", marginBottom: 4 }}>Các gói đi kèm:</div>
-                            {selectedAddonIds.map(id => {
+                        {/* Cột 2: Các gói đi kèm */}
+                        <Col xs={24} md={9} style={{ borderLeft: "1px solid #E8DED2" }}>
+                          <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 8 }}>
+                            Các Gói Đi Kèm
+                          </span>
+                          {selectedAddonIds.length > 0 ? (
+                            selectedAddonIds.map(id => {
                               const addon = allServices.find(s => s._id === id);
                               return addon ? (
-                                <div key={id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#777", paddingLeft: 12, marginBottom: 4 }}>
-                                  <span>- {addon.name}</span>
-                                  <span>{Number(addon.base_price).toLocaleString("vi-VN")}đ</span>
+                                <div key={id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, color: "#2F2F2F", marginBottom: 6 }}>
+                                  <span>+ {addon.name}</span>
+                                  <span style={{ fontWeight: 500, color: "#555" }}>{Number(addon.base_price).toLocaleString("vi-VN")}đ</span>
                                 </div>
                               ) : null;
-                            })}
+                            })
+                          ) : (
+                            <div style={{ fontSize: 13, color: "#aaa", fontStyle: "italic" }}>Chưa chọn</div>
+                          )}
+                        </Col>
+
+                        {/* Cột 3: Tổng cộng (Nằm gọn bên phải) */}
+                        <Col xs={24} md={6} style={{ borderLeft: "1px solid #E8DED2", textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                          <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                            Tổng Cộng
+                          </span>
+                          <div style={{ fontSize: 24, fontWeight: 700, color: "#BFA16A" }}>
+                            {finalPrice.toLocaleString("vi-VN")}đ
                           </div>
-                        )}
-                        
-                        <div style={{ height: 1, background: "#E8DED2", margin: "16px 0" }}></div>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 16, fontWeight: 600 }}>Tổng cộng:</span>
-                          <span style={{ fontSize: 20, fontWeight: 700, color: "#BFA16A" }}>{finalPrice.toLocaleString("vi-VN")}đ</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Col>
-                  
-                  {/* Cột phải: Mức thanh toán áp dụng */}
-                  <Col xs={24} lg={12} style={{ display: "flex", flexDirection: "column" }}>
-                    <div className="glass-panel" style={{ padding: 24, borderRadius: 8, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      {appointmentDate ? (
-                        <div
-                          style={{
-                            margin: 0,
-                            padding: "16px",
-                            background: "#fdfaf6",
-                            border: `1px solid ${depositInfo.color}`,
-                            borderRadius: "10px",
-                          }}
-                        >
-                          <p style={{ margin: 0, fontSize: "16px" }}>
-                            Mức thanh toán áp dụng:{" "}
-                            <strong style={{ color: depositInfo.color }}>
-                              {depositInfo.percent}
-                            </strong>
-                            <span style={{ marginLeft: 8, fontSize: "14px", color: "#666" }}>
-                              ({depositInfo.label})
-                            </span>
-                          </p>
-            
-                          <p
-                            style={{
-                              margin: "6px 0 0",
-                              fontSize: "12px",
-                              color: "#888",
-                              fontStyle: "italic",
-                              lineHeight: "1.5",
-                            }}
-                          >
-                            * Lưu ý: Đặt cọc 30% tổng giá trị đơn để giữ lịch. Theo chính sách của Studio, tiền cọc sẽ không được hoàn lại nếu bạn chủ động hủy. Nếu cần dời lịch, Studio hỗ trợ bảo lưu cọc trong 6 tháng.
-                          </p>
-
-                          <p
-                            style={{
-                              margin: "6px 0 0",
-                              fontSize: "13px",
-                              color: "#cf1322",
-                            }}
-                          >
-                            * Sau khi tạo đơn, bạn cần hoàn tất thanh toán trong 15 phút. Quá
-                            thời gian này, lịch sẽ tự hết hạn và không còn giữ thợ chụp.
-                          </p>
-                        </div>
-                      ) : (
-                        <div style={{ textAlign: "center", color: "#888", fontSize: 14, fontStyle: "italic", padding: 16 }}>
-                          Vui lòng chọn ngày giờ chụp để xem mức thanh toán áp dụng.
-                        </div>
-                      )}
+                          <div style={{ fontSize: 12, color: "#666", marginTop: 6, fontWeight: 500 }}>
+                            Tiền cọc (30%): <span style={{ color: "#2F2F2F", fontWeight: 600 }}>{Math.round(finalPrice * 0.3).toLocaleString("vi-VN")}đ</span>
+                          </div>
+                        </Col>
+                      </Row>
                     </div>
                   </Col>
                 </Row>

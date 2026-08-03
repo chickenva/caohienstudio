@@ -120,7 +120,7 @@ const AdminCustomers = () => {
     } catch (err) {
       message.error(
         err.response?.data?.message ||
-          "Không thể cập nhật trạng thái tài khoản",
+        "Không thể cập nhật trạng thái tài khoản",
       );
     } finally {
       setActionLoadingId(null);
@@ -271,7 +271,6 @@ const AdminCustomers = () => {
         </div>
 
         <Button icon={<ReloadOutlined />} onClick={fetchCustomers}>
-          Làm mới
         </Button>
       </div>
 

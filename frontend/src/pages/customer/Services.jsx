@@ -29,7 +29,7 @@ const Services = () => {
     { key: "ALL", label: "TẤT CẢ GÓI", description: "Toàn bộ bảng giá dịch vụ chụp ảnh" }
   ]);
 
-  const currentCategory = searchParams.get("cat") || "ALL";
+  const currentCategory = searchParams.get("category") || searchParams.get("cat") || "ALL";
 
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
@@ -39,7 +39,7 @@ const Services = () => {
       try {
         const [catsRes, srvRes] = await Promise.all([
           axios.get(`${API_URL}/categories?type=SERVICE&is_active=true`),
-          axios.get(`${API_URL}/services${currentCategory !== "ALL" ? `?category=${currentCategory}` : ""}`)
+          axios.get(`${API_URL}/services`)
         ]);
 
         const dynamicCategories = (catsRes.data.categories || []).map(c => ({
@@ -66,7 +66,7 @@ const Services = () => {
     return () => {
       document.body.style.backgroundColor = "";
     };
-  }, [currentCategory]);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -92,7 +92,7 @@ const Services = () => {
     return () => {
       revealElements.forEach((el) => observer.unobserve(el));
     };
-  }, [loading, services]);
+  }, [loading, services, currentCategory]);
 
   const handleCategoryChange = (category) => {
     if (category === "ALL") {
@@ -117,12 +117,9 @@ const Services = () => {
 
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "80px 20px 100px 20px" }}>
         <div style={{ textAlign: "center", marginBottom: "38px" }} className="scroll-reveal">
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(191, 161, 106, 0.08)", border: "1px solid rgba(191, 161, 106, 0.2)", marginBottom: 20 }}>
-            <AppstoreOutlined style={{ color: PRIMARY_COLOR }} />
-            <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
-              Cao Hiển Studio
-            </span>
-          </div>
+          <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+            Our Services
+          </span>
           <h1
             className="font-serif-luxury"
             style={{
@@ -135,7 +132,7 @@ const Services = () => {
             }}
           >
             {currentCategory === "ALL" ? (
-              <>Đa Dạng{" "}<span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Dịch Vụ</span></>
+              <>Tất Cả{" "}<span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Dịch Vụ</span></>
             ) : (
               <>{(categories.find(c => c.key === currentCategory)?.label || "Dịch Vụ").split(" ")[0]}{" "}
               <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>{(categories.find(c => c.key === currentCategory)?.label || "Dịch Vụ").split(" ").slice(1).join(" ")}</span></>
@@ -189,9 +186,11 @@ const Services = () => {
         </div>
 
         {(() => {
-          const displayedServices = currentCategory === "ALL"
-            ? services.filter((v, i, a) => a.findIndex(t => t.name === v.name) === i)
-            : services;
+          const displayedServices = services.filter((item, index, self) => {
+            const matchesCategory = currentCategory === "ALL" || item.category === currentCategory || item.category?.slug === currentCategory;
+            if (!matchesCategory) return false;
+            return self.findIndex(t => t.name === item.name) === index;
+          });
 
           if (displayedServices.length === 0) {
             return <Empty description="Chưa có gói dịch vụ trong danh mục này" />;
@@ -219,7 +218,7 @@ const Services = () => {
 
                   <div className="service-card-content">
                     <div style={{ color: PRIMARY_COLOR, fontSize: 10, letterSpacing: 1.5, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-                      {categories.find(c => c.key === item.category)?.label || "Dịch vụ"}
+                      {categories.find(c => c.key === item.category || c.key === item.category?.slug)?.label || "Dịch vụ"}
                     </div>
 
                     <h3 className="service-card-title font-serif-luxury" style={{ fontWeight: "400", fontSize: "22px" }}>

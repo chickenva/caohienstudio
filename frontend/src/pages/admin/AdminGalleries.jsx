@@ -168,7 +168,7 @@ const AdminGalleries = () => {
       const activeIndex = galleries.findIndex((i) => i._id === active.id);
       const overIndex = galleries.findIndex((i) => i._id === over?.id);
       const newGalleries = arrayMove(galleries, activeIndex, overIndex);
-      
+
       const reorderedItems = newGalleries.map((item, index) => ({
         _id: item._id,
         order: index,
@@ -454,16 +454,6 @@ const AdminGalleries = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchGalleries}>
-            Làm mới
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate("/admin/galleries/create")}
-            style={{ fontWeight: 600 }}
-          >
-            Tạo album
           </Button>
         </Space>
       </div>

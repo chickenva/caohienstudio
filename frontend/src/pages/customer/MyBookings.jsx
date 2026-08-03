@@ -206,12 +206,9 @@ const MyBookings = () => {
   return (
     <div style={{ maxWidth: "1250px", margin: "80px auto 40px", padding: "0 20px" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "6px 18px", background: "rgba(154, 138, 120, 0.08)", border: "1px solid rgba(154, 138, 120, 0.2)", marginBottom: 20 }}>
-          <CalendarOutlined style={{ color: PRIMARY_COLOR }} />
-          <span style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: PRIMARY_COLOR, fontWeight: 600 }}>
-            Lịch Chụp Của Tôi
-          </span>
-        </div>
+        <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+          MY BOOKINGS
+        </span>
         <h1
           className="font-serif-luxury"
           style={{
@@ -226,6 +223,11 @@ const MyBookings = () => {
           Quản lý{" "}
           <span className="text-gold" style={{ fontStyle: "italic", fontWeight: 400 }}>Đơn Đặt Lịch</span>
         </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: "0 auto 20px" }}>
+          <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+          <div style={{ width: 6, height: 6, background: "#BFA16A", transform: "rotate(45deg)" }} />
+          <div style={{ width: 40, height: 1, background: "#BFA16A" }} />
+        </div>
         <p style={{ color: "#777", fontSize: 14, lineHeight: 1.8, maxWidth: 520, margin: "0 auto", fontWeight: 300 }}>
           Theo dõi trạng thái yêu cầu đặt lịch, hợp đồng và thông tin thanh toán.
         </p>
@@ -290,7 +292,7 @@ const MyBookings = () => {
         />
 
         <Button icon={<ReloadOutlined />} onClick={fetchBookings} loading={loading}>
-          Làm mới
+
         </Button>
       </div>
 

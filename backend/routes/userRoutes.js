@@ -70,4 +70,25 @@ router.patch(
   userController.toggleCustomerActive,
 );
 
+// ==========================================
+// ADMIN: ACCOUNTS (ADMIN + PHOTOGRAPHER)
+// ==========================================
+router.get(
+  "/admin/accounts",
+  verifyAdmin,
+  userController.getAllAccountsForAdmin,
+);
+
+router.post(
+  "/admin/accounts",
+  verifyAdmin,
+  userController.createAccount,
+);
+
+router.patch(
+  "/admin/accounts/:id/toggle-active",
+  verifyAdmin,
+  userController.toggleAccountActive,
+);
+
 module.exports = router;

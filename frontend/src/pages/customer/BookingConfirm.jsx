@@ -112,59 +112,82 @@ const BookingConfirm = () => {
     );
   }
 
-  // Màn hình thành công sau khi gửi yêu cầu
+  // Màn hình thành công sau khi gửi yêu cầu (Đã nâng cấp sang trọng, chuyên nghiệp & đồng bộ)
   if (submitted) {
+    const mainPrice = servicesInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
+    const addonsPrice = addonsInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
+    const totalPrice = mainPrice + addonsPrice;
+    const depositPrice = Math.round(totalPrice * 0.3);
+
     return (
-      <div className="home-page-container" style={{ minHeight: "100vh", padding: "100px 0 60px", background: "#FAF7F2" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px" }}>
-          <div className="glass-panel" style={{ padding: 48, borderRadius: 12, textAlign: "center" }}>
-            <div style={{
-              display: "inline-flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "rgba(191, 161, 106, 0.12)",
-              marginBottom: 24,
-            }}>
-              <CheckCircleFilled style={{ fontSize: 44, color: PRIMARY_COLOR }} />
+      <div className="home-page-container" style={{ minHeight: "100vh", padding: "80px 20px 80px", background: "#FAF7F2" }}>
+        <div className="glow-spotlight-light" style={{ top: "10%", left: "10%" }}></div>
+        <div className="glow-spotlight-light" style={{ top: "50%", right: "10%" }}></div>
+
+        <div style={{ maxWidth: 680, margin: "0 auto" }}>
+          <div className="glass-panel" style={{ padding: "40px 36px", borderRadius: 12, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, #D4B26F 0%, #BFA16A 100%)" }} />
+
+            {/* Check Icon */}
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{
+                display: "inline-flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                background: "rgba(191, 161, 106, 0.12)",
+                border: `1px solid ${PRIMARY_COLOR}`,
+                marginBottom: 16,
+              }}>
+                <CheckCircleFilled style={{ fontSize: 38, color: PRIMARY_COLOR }} />
+              </div>
+
+              <h1 className="font-serif-luxury" style={{ fontSize: 30, color: "#2F2F2F", margin: 0 }}>
+                Yêu Cầu Đặt Lịch Đã Được Gửi Thành Công
+              </h1>
             </div>
 
-            <h1 className="font-serif-luxury" style={{ fontSize: 26, color: "#2F2F2F", marginBottom: 16 }}>
-              Yêu cầu đã được gửi!
-            </h1>
-
-            <p style={{ color: "#666", fontSize: 15, lineHeight: 1.8, marginBottom: 8 }}>
-              Studio <strong>Cao Hiển</strong> đã nhận được yêu cầu đặt lịch của bạn.
-            </p>
-            <p style={{ color: "#888", fontSize: 14, lineHeight: 1.8, marginBottom: 32 }}>
-              Đội ngũ sẽ kiểm tra thông tin, chỉnh đơn nếu cần và <strong>gửi hợp đồng xác nhận qua email</strong> trong thời gian sớm nhất.
-              Sau khi nhận hợp đồng, bạn sẽ tiến hành xác nhận và đặt cọc để giữ lịch.
+            <p style={{ color: "#555", fontSize: 14.5, textAlign: "center", lineHeight: 1.8, marginBottom: 36 }}>
+              Cảm ơn bạn đã tin tưởng dịch vụ tại <strong>Cao Hiển Studio</strong>. Yêu cầu đặt lịch của bạn đã được ghi nhận thành công. Nhân viên sẽ liên hệ trực tiếp để tư vấn và hỗ trợ xác nhận lịch hẹn sớm nhất.
             </p>
 
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            {/* Các nút thao tác: Đổi chỗ Nút Trang Chủ sang trái & Nút Xem Đơn sang phải */}
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button
+                size="large"
+                onClick={() => navigate("/")}
+                style={{
+                  height: 50,
+                  padding: "0 32px",
+                  borderRadius: 8,
+                  borderColor: "#E8DED2",
+                  color: "#555",
+                  fontWeight: 500,
+                  letterSpacing: 0.5,
+                }}
+              >
+                VỀ TRANG CHỦ
+              </Button>
               <Button
                 type="primary"
                 size="large"
                 onClick={() => navigate("/customer/my-bookings")}
                 style={{
-                  background: "linear-gradient(135deg, #2F2F2F 0%, #1A1A1A 100%)",
-                  borderColor: "#2F2F2F",
-                  height: 48,
-                  padding: "0 28px",
+                  background: "linear-gradient(135deg, #D4B26F 0%, #BFA16A 100%)",
+                  borderColor: PRIMARY_COLOR,
+                  color: "#FFFFFF",
+                  height: 50,
+                  padding: "0 32px",
                   borderRadius: 8,
-                  letterSpacing: 0.5,
+                  letterSpacing: 1,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  boxShadow: "0 4px 14px rgba(191, 161, 106, 0.35)",
                 }}
               >
-                Xem đơn của tôi
-              </Button>
-              <Button
-                size="large"
-                onClick={() => navigate("/")}
-                style={{ height: 48, padding: "0 28px", borderRadius: 8 }}
-              >
-                Về trang chủ
+                XEM ĐƠN CỦA TÔI
               </Button>
             </div>
           </div>
@@ -193,26 +216,11 @@ const BookingConfirm = () => {
 
         <div className="glass-panel" style={{ padding: 40, borderRadius: 12 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <div style={{
-              display: "inline-flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              background: "rgba(191, 161, 106, 0.1)",
-              color: PRIMARY_COLOR,
-              fontSize: 28,
-              marginBottom: 16,
-            }}>
-              <SendOutlined />
-            </div>
             <h1 className="font-serif-luxury" style={{ fontSize: 28, color: "#2F2F2F", margin: 0 }}>
               Xác nhận Yêu cầu Đặt lịch
             </h1>
-            <p style={{ color: "#777", marginTop: 8, lineHeight: 1.8 }}>
-              Kiểm tra lại thông tin trước khi gửi yêu cầu đến studio.
-              Studio sẽ xem xét và gửi hợp đồng xác nhận trước khi bạn thanh toán.
+            <p style={{ color: "#666", fontSize: 14, lineHeight: 1.8, maxWidth: 640, margin: "10px auto 0" }}>
+              Vui lòng kiểm tra kỹ các thông tin chi tiết dưới đây. Nhân viên sẽ liên hệ trực tiếp để tư vấn và hỗ trợ xác nhận lịch hẹn sớm nhất.
             </p>
           </div>
 
@@ -224,14 +232,14 @@ const BookingConfirm = () => {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Hình thức & Buổi chụp</div>
+                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Hình thức chụp</div>
                   <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>
-                    {bookingData.shooting_type === "STUDIO" ? "Chụp tại Studio" : "Chụp Ngoại cảnh"} — {
-                      bookingData.shooting_session === "MORNING" ? "Buổi sáng (08:00–12:00)" :
-                      bookingData.shooting_session === "AFTERNOON" ? "Buổi chiều (13:00–17:00)" :
-                      "Cả ngày (08:00–17:00)"
-                    }
+                    {bookingData.shooting_type === "STUDIO" ? "Chụp tại Studio" : "Chụp Ngoại cảnh"}
                   </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Địa điểm</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>{bookingData.location}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Ngày chụp</div>
@@ -240,8 +248,14 @@ const BookingConfirm = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Địa điểm</div>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>{bookingData.location}</div>
+                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Buổi chụp</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>
+                    {
+                      bookingData.shooting_session === "MORNING" ? "Buổi sáng (08:00–12:00)" :
+                        bookingData.shooting_session === "AFTERNOON" ? "Buổi chiều (13:00–17:00)" :
+                          "Cả ngày (08:00–17:00)"
+                    }
+                  </div>
                 </div>
                 {bookingData.note && (
                   <div>
@@ -250,17 +264,6 @@ const BookingConfirm = () => {
                   </div>
                 )}
               </div>
-
-              <div style={{ marginTop: 24 }}>
-                <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Ghi chú thêm (Tùy chọn)</div>
-                <Input.TextArea
-                  rows={3}
-                  placeholder="Bạn có yêu cầu đặc biệt nào cho buổi chụp không?"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  style={{ borderRadius: 8 }}
-                />
-              </div>
             </Col>
 
             <Col xs={24} md={12}>
@@ -268,9 +271,9 @@ const BookingConfirm = () => {
                 Dịch vụ đã chọn
               </h3>
 
-              {servicesInfo.map((service, index) => (
+              {servicesInfo.map((service) => (
                 <div key={service._id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontWeight: 500 }}>{index === 0 ? "" : "+ "}{service.name}</span>
+                  <span style={{ fontWeight: 500 }}>{service.name}</span>
                   <span>{Number(service.base_price || 0).toLocaleString("vi-VN")}đ</span>
                 </div>
               ))}
@@ -284,25 +287,33 @@ const BookingConfirm = () => {
 
               <Divider style={{ margin: "16px 0" }} />
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: "#2F2F2F" }}>Tổng tham khảo:</span>
-                <span style={{ fontSize: 18, fontWeight: 700, color: "#2F2F2F" }}>
+                <span style={{ fontSize: 18, fontWeight: 700, color: PRIMARY_COLOR }}>
                   {totalPrice.toLocaleString("vi-VN")}đ
                 </span>
               </div>
-
-              <div style={{
-                background: "rgba(191, 161, 106, 0.06)",
-                border: "1px solid rgba(191, 161, 106, 0.2)",
-                borderRadius: 8,
-                padding: "12px 16px",
-              }}>
-                <div style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>💡 Lưu ý về thanh toán</div>
-                <div style={{ fontSize: 13, color: "#555", lineHeight: 1.7 }}>
-                  Tổng tiền và tiền cọc <strong>chính xác</strong> sẽ được studio xác nhận trong hợp đồng.
-                  Bạn chỉ thanh toán <strong>sau khi đọc và đồng ý hợp đồng</strong>.
-                </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "#666" }}>Tiền cọc (30%):</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#2F2F2F" }}>
+                  {Math.round(totalPrice * 0.3).toLocaleString("vi-VN")}đ
+                </span>
               </div>
+            </Col>
+
+            {/* Ô Ghi chú thêm kéo dài toàn bộ chiều rộng */}
+            <Col xs={24}>
+              <Divider style={{ margin: "8px 0 20px 0" }} />
+              <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+                Ghi chú thêm (Tùy chọn)
+              </div>
+              <Input.TextArea
+                rows={3}
+                placeholder="Bạn có yêu cầu đặc biệt nào cho buổi chụp không?"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                style={{ borderRadius: 8, width: "100%" }}
+              />
             </Col>
           </Row>
 
@@ -310,24 +321,24 @@ const BookingConfirm = () => {
             <Button
               type="primary"
               size="large"
-              icon={<SendOutlined />}
               onClick={handleSubmitRequest}
               loading={submitting}
               style={{
-                background: "linear-gradient(135deg, #2F2F2F 0%, #1A1A1A 100%)",
-                borderColor: "#2F2F2F",
+                background: "linear-gradient(135deg, #D4B26F 0%, #BFA16A 100%)",
+                borderColor: "#BFA16A",
+                color: "#FFFFFF",
                 height: 54,
                 padding: "0 44px",
                 fontSize: 16,
                 borderRadius: 8,
-                letterSpacing: 1,
+                letterSpacing: 1.5,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                boxShadow: "0 4px 14px rgba(191, 161, 106, 0.35)",
               }}
             >
-              Gửi yêu cầu đặt lịch
+              GỬI YÊU CẦU ĐẶT LỊCH
             </Button>
-            <div style={{ marginTop: 12, fontSize: 13, color: "#888" }}>
-              Studio sẽ xem xét yêu cầu và liên hệ xác nhận với bạn.
-            </div>
           </div>
         </div>
       </div>
