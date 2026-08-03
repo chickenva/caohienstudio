@@ -53,14 +53,13 @@ setInterval(() => {
 
 /**
  * Lấy dữ liệu thực từ DB để xây dựng context cho AI tư vấn:
- * danh sách dịch vụ, thợ chụp và album đang hoạt động.
- * @returns {{ servicesText, photographersText, galleriesText }}
+ * danh sách dịch vụ và album đang hoạt động.
+ * @returns {{ servicesText, galleriesText }}
  */
 async function getStudioContext() {
   try {
-    const [services, photographers, galleries] = await Promise.all([
+    const [services, galleries] = await Promise.all([
       Service.find({ is_active: true }).lean(),
-      User.find({ role: "PHOTOGRAPHER", is_active: true }).lean(),
       PublicGallery.find({ is_active: true }).lean(),
     ]);
 
@@ -70,25 +69,17 @@ async function getStudioContext() {
         ).join("\n")
       : "Chưa có thông tin dịch vụ.";
 
-    const photographersText = photographers.length > 0
-      ? photographers.map((p) => {
-          const portfolio = p.portfolio || {};
-          return `- ${p.full_name}${portfolio.years_of_experience ? ` (${portfolio.years_of_experience} năm kinh nghiệm)` : ""}${portfolio.specialties?.length ? `, chuyên: ${portfolio.specialties.join(", ")}` : ""}${portfolio.bio ? ` – ${portfolio.bio}` : ""}`;
-        }).join("\n")
-      : "Chưa có thông tin thợ chụp.";
-
     const galleriesText = galleries.length > 0
       ? galleries.map((g) =>
           `- Album "${g.title}" (Concept: ${g.category}, Địa điểm: ${g.location || "Cao Hiển Studio"})${g.description ? ` - ${g.description}` : ""}`
         ).join("\n")
       : "Chưa có thông tin album.";
 
-    return { servicesText, photographersText, galleriesText };
+    return { servicesText, galleriesText };
   } catch (error) {
     console.error("Lỗi lấy dữ liệu studio context:", error.message);
     return {
       servicesText:      "Không thể tải thông tin dịch vụ lúc này.",
-      photographersText: "Không thể tải thông tin thợ chụp lúc này.",
       galleriesText:     "Không thể tải thông tin album lúc này.",
     };
   }
@@ -100,7 +91,7 @@ async function getStudioContext() {
 
 /**
  * Ghép system prompt tiếng Việt gồm thông tin studio, FAQ và quy tắc trả lời.
- * @param {{ servicesText, photographersText, galleriesText }} context
+ * @param {{ servicesText, galleriesText }} context
  * @returns {string}
  */
 function buildSystemPrompt(context) {
@@ -114,9 +105,6 @@ Người sáng lập: Nhiếp ảnh gia Cao Hiển, chuyên Nhiếp ảnh Cướ
 
 🎯 CÁC GÓI CHỤP:
 ${context.servicesText}
-
-👨‍💼 ĐỘI NGŨ THỢ CHỤP:
-${context.photographersText}
 
 📸 CÁC ALBUM ẢNH (GALLERIES) NỔI BẬT ĐỂ THAM KHẢO:
 ${context.galleriesText}

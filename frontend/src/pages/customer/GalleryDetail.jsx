@@ -437,7 +437,7 @@ const GalleryDetail = () => {
             </div>
           </Col>
 
-          {/* Photographer */}
+          {/* Đơn vị thực hiện */}
           <Col xs={24} md={8}>
             <div 
               className="glass-panel" 
@@ -445,7 +445,7 @@ const GalleryDetail = () => {
             >
               <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
                 <CameraOutlined />
-                <span>Nhiếp ảnh gia</span>
+                <span>Đơn vị thực hiện</span>
               </div>
               <div
                 className="font-serif-luxury"
@@ -459,7 +459,7 @@ const GalleryDetail = () => {
                   textOverflow: "ellipsis"
                 }}
               >
-                {gallery.photographer_id?.full_name || "Cao Hiển Studio"}
+                Cao Hiển Studio
               </div>
             </div>
           </Col>

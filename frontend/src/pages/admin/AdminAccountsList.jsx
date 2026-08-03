@@ -1,6 +1,6 @@
 /**
  * AdminAccountsList.jsx
- * Danh sách tài khoản hệ thống (ADMIN + PHOTOGRAPHER): xem, ẩn/kích hoạt tài khoản.
+ * Danh sách tài khoản hệ thống (ADMIN): xem, khóa/kích hoạt tài khoản.
  */
 import React, { useEffect, useState } from "react";
 import {
@@ -50,7 +50,7 @@ const roleLabels = {
   ADMIN: "Quản trị viên",
 };
 
-// Trang admin quản lý danh sách tài khoản ADMIN và PHOTOGRAPHER.
+// Trang admin quản lý danh sách tài khoản ADMIN.
 const AdminAccountsList = () => {
   const navigate = useNavigate();
 

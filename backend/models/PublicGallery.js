@@ -36,12 +36,6 @@ const publicGallerySchema = new mongoose.Schema(
     // Nếu để trống, backend sẽ lấy ảnh đầu tiên trong folder Drive.
     coverImage: { type: String, default: "" },
 
-    // Nhiếp ảnh gia phụ trách album (tùy chọn)
-    photographer_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref:  "User",
-    },
-
     // Các gói dịch vụ liên quan đến album
     service_ids: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Service" },

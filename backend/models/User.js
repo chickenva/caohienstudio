@@ -1,7 +1,7 @@
 /**
  * Mongoose Schema: User (Người dùng)
  * Lưu thông tin tài khoản, mật khẩu (đã mã hóa) và phân quyền.
- * Role: ADMIN | PHOTOGRAPHER | CUSTOMER
+ * Role: ADMIN | CUSTOMER
  */
 const mongoose = require("mongoose");
 
@@ -14,21 +14,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type:    String,
-      enum:    ["ADMIN", "PHOTOGRAPHER", "CUSTOMER"],
+      enum:    ["ADMIN", "CUSTOMER"],
       default: "CUSTOMER",
-    },
-
-    // Thông tin portfolio (chỉ dùng cho PHOTOGRAPHER)
-    portfolio: {
-      avatar:               String,
-      bio:                  String,
-      specialties:          [{ type: String }],
-      years_of_experience:  Number,
-      featured_images:      [{ type: String }],
-
-      // Liên kết folder Google Drive của thợ chụp
-      google_drive_folder_id:  String,
-      google_drive_folder_url: String,
     },
 
     // Trạng thái tài khoản — false khi admin khóa tài khoản

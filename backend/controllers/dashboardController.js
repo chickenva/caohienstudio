@@ -48,8 +48,6 @@ exports.getAdminOverview = async (req, res) => {
       monthlyBookings,
       totalCustomers,
       activeCustomers,
-      totalPhotographers,
-      activePhotographers,
       activeServices,
       activeGalleries,
 
@@ -82,9 +80,6 @@ exports.getAdminOverview = async (req, res) => {
 
       User.countDocuments({ role: "CUSTOMER" }),
       User.countDocuments({ role: "CUSTOMER", is_active: true }),
-
-      User.countDocuments({ role: "PHOTOGRAPHER" }),
-      User.countDocuments({ role: "PHOTOGRAPHER", is_active: true }),
 
       Service.countDocuments({ is_active: true }),
       PublicGallery.countDocuments({ is_active: true }),
@@ -128,7 +123,6 @@ exports.getAdminOverview = async (req, res) => {
       Booking.find()
         .populate("customer_id",    "full_name email phone")
         .populate("service_id",     "name base_price duration_hours")
-        .populate("photographer_ids", "full_name email")
         .sort({ createdAt: -1 })
         .limit(6),
 
@@ -174,9 +168,6 @@ exports.getAdminOverview = async (req, res) => {
 
         totalCustomers,
         activeCustomers,
-
-        totalPhotographers,
-        activePhotographers,
 
         activeServices,
         activeGalleries,

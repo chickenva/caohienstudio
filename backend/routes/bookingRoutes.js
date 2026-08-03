@@ -15,9 +15,6 @@ router.get("/vnpay-return", bookingController.vnpayReturn);
 // Frontend cũng có thể POST params về backend để xác thực chữ ký
 router.post("/vnpay-return", bookingController.vnpayReturn);
 
-// Lấy danh sách khung giờ bận của thợ chụp
-router.get("/photographer-busy-slots", bookingController.getPhotographerBusySlots);
-
 // Lấy danh sách khung giờ bận của studio (dùng cho booking mới)
 router.get("/studio-busy-slots", bookingController.getStudioBusySlots);
 

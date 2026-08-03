@@ -1,47 +1,8 @@
-// Router người dùng: nhiếp ảnh gia, khách hàng và tìm kiếm admin.
+// Router người dùng: khách hàng và tài khoản admin.
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
 const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
-
-// ==========================================
-// PUBLIC ROUTES
-// ==========================================
-router.get("/photographers", userController.getPhotographers);
-router.get("/photographers/:id", userController.getPhotographerDetail);
-
-// ==========================================
-// ADMIN: PHOTOGRAPHERS
-// ==========================================
-router.get(
-  "/admin/photographers",
-  verifyAdmin,
-  userController.getAllPhotographersForAdmin,
-);
-
-router.get(
-  "/admin/photographers/:id",
-  verifyAdmin,
-  userController.getPhotographerDetailForAdmin,
-);
-
-router.post(
-  "/admin/photographers",
-  verifyAdmin,
-  userController.createPhotographer,
-);
-
-router.put(
-  "/admin/photographers/:id",
-  verifyAdmin,
-  userController.updatePhotographer,
-);
-
-router.patch(
-  "/admin/photographers/:id/toggle-active",
-  verifyAdmin,
-  userController.togglePhotographerActive,
-);
 
 // ==========================================
 // ADMIN: CUSTOMERS
@@ -71,7 +32,7 @@ router.patch(
 );
 
 // ==========================================
-// ADMIN: ACCOUNTS (ADMIN + PHOTOGRAPHER)
+// ADMIN: ACCOUNTS (ADMIN)
 // ==========================================
 router.get(
   "/admin/accounts",

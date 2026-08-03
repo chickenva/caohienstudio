@@ -42,7 +42,7 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()>\.]).{8,
  */
 const sendOtpEmail = async (toEmail, subject, description, otpCode) => {
   await transporter.sendMail({
-    from:    `"Cao Hien Studio" <no-reply@caohien.com>`,
+    from:    `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
     to:      toEmail,
     subject,
     html: `
@@ -220,7 +220,8 @@ exports.sendRegisterOtp = async (req, res) => {
 
     res.status(200).json({ message: "Mã OTP đã được gửi!" });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi server", error });
+    console.error("Lỗi gửi OTP đăng ký:", error);
+    res.status(500).json({ message: "Lỗi server khi gửi OTP", error: error.message });
   }
 };
 

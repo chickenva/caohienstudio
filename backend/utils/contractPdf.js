@@ -264,14 +264,6 @@ const generateContractPdf = async (booking, contractLink) => {
     shootLines.push(["Giờ kết thúc:", moment(booking.end_time).utcOffset(7).format("HH:mm")]);
     shootLines.push(["Địa điểm:", booking.location || "—"]);
 
-    if (booking.photographer_ids && booking.photographer_ids.length > 0) {
-      const names = booking.photographer_ids
-        .map((p) => p.full_name)
-        .filter(Boolean)
-        .join(", ");
-      if (names) shootLines.push(["Nhiếp ảnh gia:", names]);
-    }
-
     for (const [lbl, val] of shootLines) {
       labelValue(doc, lbl, val, 50, y);
       y += 14;

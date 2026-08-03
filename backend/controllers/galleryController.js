@@ -148,7 +148,6 @@ exports.getAllGalleries = async (req, res) => {
     }
 
     const galleries = await PublicGallery.find(query)
-      .populate("photographer_id", "full_name portfolio.avatar")
       .populate("service_ids",     "name base_price duration_hours")
       .sort({ featured: -1, order: 1, createdAt: -1 });
 
@@ -169,7 +168,6 @@ exports.getAllGalleries = async (req, res) => {
 exports.getGalleryById = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id)
-      .populate("photographer_id", "full_name email phone portfolio.avatar")
       .populate("service_ids",     "name description base_price duration_hours");
 
     if (!gallery || !gallery.is_active) {
@@ -207,7 +205,6 @@ exports.getAllGalleriesAdmin = async (req, res) => {
     }
 
     const galleries = await PublicGallery.find(query)
-      .populate("photographer_id", "full_name portfolio.avatar")
       .populate("service_ids",     "name base_price duration_hours")
       .sort({ featured: -1, order: 1, createdAt: -1 });
 
@@ -229,7 +226,7 @@ exports.createGallery = async (req, res) => {
     const {
       title, description, category, location,
       drive_folder_url, drive_folder_id,
-      coverImage, photographer_id, service_ids,
+      coverImage, service_ids,
       featured, is_active,
     } = req.body;
 
@@ -266,7 +263,6 @@ exports.createGallery = async (req, res) => {
       drive_folder_id:  finalDriveFolderId,
       drive_folder_url,
       coverImage:       finalCoverImage,
-      photographer_id:  photographer_id || null,
       service_ids:      service_ids     || [],
       featured:         Boolean(featured),
       is_active:        is_active !== undefined ? is_active : true,
@@ -288,7 +284,7 @@ exports.updateGallery = async (req, res) => {
     const {
       title, description, category, location,
       drive_folder_url, drive_folder_id,
-      coverImage, photographer_id, service_ids,
+      coverImage, service_ids,
       featured, is_active,
     } = req.body;
 
@@ -332,7 +328,6 @@ exports.updateGallery = async (req, res) => {
     });
     gallery.coverImage = finalCoverImage;
 
-    if (photographer_id !== undefined) gallery.photographer_id = photographer_id || null;
     if (service_ids     !== undefined) gallery.service_ids     = service_ids     || [];
     if (featured        !== undefined) gallery.featured        = Boolean(featured);
     if (is_active       !== undefined) gallery.is_active       = is_active;

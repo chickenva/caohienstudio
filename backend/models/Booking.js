@@ -26,11 +26,6 @@ const bookingSchema = new mongoose.Schema(
       { type: mongoose.Schema.Types.ObjectId, ref: "Service" },
     ],
 
-    // Thợ chụp được phân công cho buổi chụp này
-    photographer_ids: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    ],
-
     // Gói dịch vụ đi kèm (addon)
     extra_service_ids: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Service" },
