@@ -21,6 +21,7 @@ const userRoutes = require("./routes/userRoutes");
 const driveRoutes = require("./routes/driveRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const aiChatRoutes = require("./routes/aiChatRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 // Cron jobs
 const setupCronJobs = require("./jobs/cronJobs");
@@ -54,6 +55,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/drive", driveRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai-chat", aiChatRoutes);
+app.use("/api/upload", uploadRoutes);
 
 const PORT = process.env.PORT || 5000;
 

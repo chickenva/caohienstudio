@@ -15,8 +15,9 @@ import {
   Row,
   Col,
   Space,
+  Upload,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, SaveOutlined, UploadOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -34,11 +35,37 @@ const GalleryForm = () => {
   const isEdit = Boolean(id);
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const getToken = () => localStorage.getItem("token");
+
+  const handleCustomUpload = async ({ file, onSuccess, onError }) => {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await axios.post(`${API_URL}/upload/image`, formData, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const uploadedUrl = res.data.url;
+      form.setFieldsValue({ coverImage: uploadedUrl });
+      message.success("Tải ảnh bìa album từ máy lên thành công!");
+      onSuccess(res.data, file);
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi tải ảnh lên server!");
+      onError(err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     fetchOptions();
@@ -143,8 +170,7 @@ const GalleryForm = () => {
           {isEdit ? "Chỉnh sửa album" : "Tạo album mới"}
         </Title>
         <Text type="secondary">
-          Tạo album bằng cách dán link folder Google Drive. Sau này chỉ cần thêm
-          hoặc xóa ảnh trong folder Drive, album trên web sẽ tự cập nhật.
+          Tạo album bằng cách dán link folder Google Drive. Bạn cũng có thể tải ảnh bìa trực tiếp từ máy tính.
         </Text>
       </div>
 
@@ -219,9 +245,20 @@ const GalleryForm = () => {
               <Form.Item
                 label="Ảnh bìa tùy chọn"
                 name="coverImage"
-                extra="Có thể bỏ trống. Nếu bỏ trống, hệ thống sẽ lấy ảnh đầu tiên trong folder Drive làm ảnh bìa."
+                extra="Có thể bỏ trống (sẽ lấy ảnh đầu tiên trong Drive) hoặc Dán link/Tải ảnh trực tiếp từ máy tính."
               >
-                <Input placeholder="Dán link ảnh bìa nếu muốn cố định ảnh bìa" />
+                <Space.Compact style={{ width: "100%" }}>
+                  <Input placeholder="Dán link ảnh bìa (Drive/Web) hoặc chọn Upload từ máy" />
+                  <Upload
+                    customRequest={handleCustomUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading}>
+                      Tải ảnh từ máy
+                    </Button>
+                  </Upload>
+                </Space.Compact>
               </Form.Item>
             </Col>
 
@@ -248,14 +285,14 @@ const GalleryForm = () => {
             <Col xs={24}>
               <Form.Item label="Mô tả album" name="description">
                 <TextArea
-                  rows={5}
-                  placeholder="Mô tả phong cách, câu chuyện hoặc điểm nổi bật của album..."
+                  rows={4}
+                  placeholder="Mô tả về album, phong cách, kỷ niệm..."
                 />
               </Form.Item>
             </Col>
 
             {isEdit && (
-              <Col xs={24} md={12}>
+              <Col xs={24}>
                 <Form.Item
                   label="Hiển thị trên website"
                   name="is_active"
@@ -267,9 +304,10 @@ const GalleryForm = () => {
             )}
           </Row>
 
-          <Space>
-            <Button onClick={() => navigate("/admin/galleries")}>Hủy</Button>
-
+          <Space style={{ marginTop: 20 }}>
+            <Button onClick={() => navigate("/admin/galleries")}>
+              Hủy
+            </Button>
             <Button
               type="primary"
               htmlType="submit"
@@ -286,4 +324,3 @@ const GalleryForm = () => {
 };
 
 export default GalleryForm;
-

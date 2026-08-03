@@ -17,8 +17,9 @@ import {
   Space,
   Image,
   Select,
+  Upload,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, SaveOutlined, UploadOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -26,8 +27,6 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
-
-
 
 // Form admin tạo/cập nhật gói dịch vụ.
 const ServiceForm = () => {
@@ -38,11 +37,38 @@ const ServiceForm = () => {
   const isEdit = Boolean(id);
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
   const [categories, setCategories] = useState([]);
 
   const getToken = () => localStorage.getItem("token");
+
+  const handleCustomUpload = async ({ file, onSuccess, onError }) => {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await axios.post(`${API_URL}/upload/image`, formData, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const uploadedUrl = res.data.url;
+      form.setFieldsValue({ thumbnail: uploadedUrl });
+      setThumbnailPreview(uploadedUrl);
+      message.success("Tải ảnh từ máy lên thành công!");
+      onSuccess(res.data, file);
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi tải ảnh lên server!");
+      onError(err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -224,7 +250,21 @@ const ServiceForm = () => {
               </Row>
 
               <Form.Item label="Ảnh đại diện / Thumbnail" name="thumbnail">
-                <Input placeholder="Dán link ảnh thumbnail" onChange={handleThumbnailChange} />
+                <Space.Compact style={{ width: "100%" }}>
+                  <Input
+                    placeholder="Dán link ảnh (Drive/Web) hoặc chọn Upload từ máy"
+                    onChange={handleThumbnailChange}
+                  />
+                  <Upload
+                    customRequest={handleCustomUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading}>
+                      Tải ảnh từ máy
+                    </Button>
+                  </Upload>
+                </Space.Compact>
               </Form.Item>
 
               <Form.Item label="Mô tả gói dịch vụ" name="description">
