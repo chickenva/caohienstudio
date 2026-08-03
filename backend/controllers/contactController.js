@@ -7,10 +7,13 @@ const nodemailer = require("nodemailer");
 const Contact   = require("../models/Contact");
 const OTP       = require("../models/OTP");
 
-// Khởi tạo transporter Gmail dùng chung cho toàn bộ controller
+// Khởi tạo transporter Gmail dùng chung cho toàn bộ controller (Tối ưu cho Cloud/Render)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  tls: { rejectUnauthorized: false },
 });
 
 /**
