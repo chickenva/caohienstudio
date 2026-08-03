@@ -7,11 +7,10 @@ import { Form, Input, Button, Modal, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
+import { API_URL } from "../../config/api";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
-
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 // Trang đăng ký tài khoản customer với xác thực OTP email.
 const Register = () => {
