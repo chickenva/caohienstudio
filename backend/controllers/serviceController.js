@@ -37,18 +37,18 @@ const normalizeFeatures = (features) => {
  */
 const buildServicePayload = (body) => {
   const {
-    name, description, category,
-    base_price, duration_hours,
-    thumbnail, features,
-    is_active, booking_mode, allow_addon,
+    name, category,
+    base_price,     thumbnail,
+    features,       is_active,
+    booking_mode,   allow_addon,
   } = body;
 
   return {
-    name, description,
-    category:     category || "OTHER",
-    base_price, duration_hours,
-    thumbnail, features,
-    is_active, booking_mode, allow_addon,
+    name,
+    category:       category || "OTHER",
+    base_price,     thumbnail,
+    features,       is_active,
+    booking_mode,   allow_addon,
   };
 };
 
@@ -131,36 +131,34 @@ exports.getServiceByIdForAdmin = async (req, res) => {
 
 /**
  * [POST] /api/services/admin
- * Admin tạo gói dịch vụ mới. Validate tên, giá và thời lượng.
+ * Admin tạo gói dịch vụ mới. Validate tên và giá.
  */
 exports.createService = async (req, res) => {
   try {
     const payload = buildServicePayload(req.body);
 
-    if (!payload.name || payload.base_price === undefined || payload.duration_hours === undefined) {
+    if (!payload.name || payload.base_price === undefined) {
       return res.status(400).json({
-        message: "Vui lòng nhập tên dịch vụ, giá và thời lượng chụp/quay",
+        message: "Vui lòng nhập tên dịch vụ và giá",
       });
     }
 
-    if (Number(payload.base_price) < 0 || Number(payload.duration_hours) <= 0) {
+    if (Number(payload.base_price) < 0) {
       return res.status(400).json({
-        message: "Giá dịch vụ hoặc thời lượng không hợp lệ",
+        message: "Giá dịch vụ không hợp lệ",
       });
     }
 
     const newService = await Service.create({
-      name:         payload.name,
-      description:  payload.description,
-      category:     payload.category,
-      base_price:   Number(payload.base_price),
-      duration_hours: Number(payload.duration_hours),
-      thumbnail:    payload.thumbnail,
-      features:     normalizeFeatures(payload.features),
-      is_active:    payload.is_active !== undefined ? payload.is_active : true,
-      booking_mode: payload.booking_mode || "SINGLE_DAY",
-      allow_addon:  payload.allow_addon  !== undefined ? payload.allow_addon : false,
-      order:        req.body.order || 0,
+      name:           payload.name,
+      category:       payload.category,
+      base_price:     Number(payload.base_price),
+      thumbnail:      payload.thumbnail,
+      features:       normalizeFeatures(payload.features),
+      is_active:      payload.is_active !== undefined ? payload.is_active : true,
+      booking_mode:   payload.booking_mode || "SINGLE_DAY",
+      allow_addon:    payload.allow_addon  !== undefined ? payload.allow_addon : false,
+      order:          req.body.order || 0,
     });
 
     res.status(201).json({ message: "Tạo gói dịch vụ thành công", service: newService });
@@ -182,11 +180,11 @@ exports.updateService = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy dịch vụ để cập nhật" });
     }
 
-    if (payload.name        !== undefined) service.name        = payload.name;
-    if (payload.description !== undefined) service.description = payload.description;
-    if (payload.thumbnail   !== undefined) service.thumbnail   = payload.thumbnail;
-    if (payload.is_active   !== undefined) service.is_active   = payload.is_active;
-    if (payload.category    !== undefined) service.category    = payload.category;
+    if (payload.name           !== undefined) service.name           = payload.name;
+
+    if (payload.thumbnail      !== undefined) service.thumbnail      = payload.thumbnail;
+    if (payload.is_active      !== undefined) service.is_active      = payload.is_active;
+    if (payload.category       !== undefined) service.category       = payload.category;
 
     if (payload.features !== undefined) {
       service.features = normalizeFeatures(payload.features);
@@ -197,13 +195,6 @@ exports.updateService = async (req, res) => {
         return res.status(400).json({ message: "Giá dịch vụ không hợp lệ" });
       }
       service.base_price = Number(payload.base_price);
-    }
-
-    if (payload.duration_hours !== undefined) {
-      if (Number(payload.duration_hours) <= 0) {
-        return res.status(400).json({ message: "Thời lượng chụp/quay không hợp lệ" });
-      }
-      service.duration_hours = Number(payload.duration_hours);
     }
 
     if (payload.booking_mode !== undefined) service.booking_mode = payload.booking_mode;

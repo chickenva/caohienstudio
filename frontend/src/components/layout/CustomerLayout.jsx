@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Button, Space, Dropdown, Avatar, message } from "antd";
+import { Button, Space, Dropdown, Avatar, message, Drawer } from "antd";
 import {
   ArrowRightOutlined,
   UserOutlined,
@@ -20,6 +20,7 @@ import {
   DashboardOutlined,
   ArrowUpOutlined,
   ClockCircleOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import AIChatWidget from "../AIChatWidget";
 import Logo from "../Logo";
@@ -35,6 +36,7 @@ const CustomerLayout = () => {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Tự động cuộn lên đầu trang khi chuyển trang
   useEffect(() => {
@@ -167,10 +169,9 @@ const CustomerLayout = () => {
         background: "#fff",
       }}
     >
-      {/* ==========================================
-          1. HEADER (Logic phân quyền User/Guest)
-      ========================================== */}
+      {/* HEADER (Logic phân quyền User/Guest + Mobile Drawer) */}
       <header
+        className="customer-header"
         style={{
           position: "fixed",
           top: 0,
@@ -187,155 +188,261 @@ const CustomerLayout = () => {
           zIndex: 1000,
           borderBottom: "1px solid #E8DED2",
           fontFamily: FONT_SANS,
+          transition: "all 0.3s ease",
         }}
       >
         {/* Logo */}
         <Logo size={40} textColor="#2F2F2F" onClick={() => handleMenuClick("/")} />
 
-        {/* Menu giữa */}
-        <div style={{ display: "flex", gap: "30px" }}>
+        {/* Desktop Navigation */}
+        <div className="desktop-nav-menu">
           <span onClick={() => handleMenuClick("/")} style={menuStyle("/")}>
             TRANG CHỦ
           </span>
-
           <span onClick={() => handleMenuClick("/about")} style={menuStyle("/about")}>
             GIỚI THIỆU
           </span>
-
-          <span
-            onClick={() => handleMenuClick("/galleries")}
-            style={menuStyle("/galleries")}
-          >
+          <span onClick={() => handleMenuClick("/galleries")} style={menuStyle("/galleries")}>
             THƯ VIỆN ẢNH
           </span>
-
-          <span
-            onClick={() => handleMenuClick("/services")}
-            style={menuStyle("/services")}
-          >
+          <span onClick={() => handleMenuClick("/services")} style={menuStyle("/services")}>
             DỊCH VỤ
           </span>
-
-          <span
-            onClick={() => handleMenuClick("/booking")}
-            style={menuStyle("/booking")}
-          >
+          <span onClick={() => handleMenuClick("/booking")} style={menuStyle("/booking")}>
             ĐẶT LỊCH
           </span>
-
-
-          <span
-            onClick={() => handleMenuClick("/contact")}
-            style={menuStyle("/contact")}
-          >
+          <span onClick={() => handleMenuClick("/contact")} style={menuStyle("/contact")}>
             LIÊN HỆ
           </span>
         </div>
 
-        {/* Khu vực bên phải Header */}
-        <div
-          style={{
-            minWidth: "150px",
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
-        >
-          {user ? (
-            user.role === "ADMIN" ? (
-              /* TRƯỜNG HỢP: ADMIN xem website */
-              <Button
-                icon={<DashboardOutlined />}
-                onClick={() => navigate("/admin/dashboard")}
-                style={{
-                  background: "#2f2f2f",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 0,
-                  height: 40,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  letterSpacing: "1px",
-                  padding: "0 20px",
-                }}
-              >
-                QUẢN LÝ WEBSITE
-              </Button>
-            ) : (
-              /* TRƯỜNG HỢP: ĐÃ ĐĂNG NHẬP (customer) */
-              <Dropdown
-                menu={{ items: userMenuItems }}
-                placement="bottomRight"
-                arrow
-              >
-                <div
+        {/* Right Header Area (Desktop User/Auth + Mobile Hamburger) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="desktop-user-area">
+            {user ? (
+              user.role === "ADMIN" ? (
+                <Button
+                  icon={<DashboardOutlined />}
+                  onClick={() => navigate("/admin/dashboard")}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    gap: "10px",
+                    background: "#2f2f2f",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 0,
+                    height: 40,
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    letterSpacing: "1px",
+                    padding: "0 20px",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      color: "#2F2F2F",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {user.full_name || "TÀI KHOẢN"}
-                  </span>
-                  <Avatar
-                    size="small"
-                    icon={<UserOutlined />}
-                    style={{ backgroundColor: PRIMARY_COLOR }}
-                  />
-                </div>
-              </Dropdown>
-            )
-          ) : (
-            /* TRƯỜNG HỢP: KHÁCH VÃNG LAI */
-            <Space size="middle">
+                  QUẢN LÝ WEBSITE
+                </Button>
+              ) : (
+                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+                  <div style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: "10px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#2F2F2F", textTransform: "uppercase" }}>
+                      {user.full_name || "TÀI KHOẢN"}
+                    </span>
+                    <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: PRIMARY_COLOR }} />
+                  </div>
+                </Dropdown>
+              )
+            ) : (
+              <Space size="middle">
+                <Button
+                  type="text"
+                  onClick={() => navigate("/login")}
+                  style={{ fontWeight: 600, fontSize: "11px", letterSpacing: "1px", textTransform: "uppercase", color: "#2F2F2F" }}
+                  className="btn-nav-login"
+                >
+                  ĐĂNG NHẬP
+                </Button>
+                <Button
+                  onClick={() => navigate("/register")}
+                  style={{ background: PRIMARY_COLOR, color: "#fff", borderRadius: "0", height: "40px", border: "none", fontSize: "11px", letterSpacing: "1px", padding: "0 25px", fontWeight: 500 }}
+                  className="btn-nav-register"
+                >
+                  ĐĂNG KÝ <ArrowRightOutlined />
+                </Button>
+              </Space>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <Button
+            type="text"
+            icon={<MenuOutlined style={{ fontSize: "22px", color: "#2F2F2F" }} />}
+            onClick={() => setMobileMenuOpen(true)}
+            className="mobile-nav-toggle"
+          />
+        </div>
+      </header>
+
+      {/* Mobile Drawer Menu */}
+      <Drawer
+        title={
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Logo size={32} textColor="#2F2F2F" onClick={() => { setMobileMenuOpen(false); handleMenuClick("/"); }} />
+          </div>
+        }
+        placement="right"
+        onClose={() => setMobileMenuOpen(false)}
+        open={mobileMenuOpen}
+        width={300}
+        bodyStyle={{ padding: "24px 20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {[
+            { label: "TRANG CHỦ", path: "/" },
+            { label: "GIỚI THIỆU", path: "/about" },
+            { label: "THƯ VIỆN ẢNH", path: "/galleries" },
+            { label: "DỊCH VỤ", path: "/services" },
+            { label: "ĐẶT LỊCH HẸN", path: "/booking" },
+            { label: "LIÊN HỆ", path: "/contact" },
+          ].map((item) => (
+            <div
+              key={item.path}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleMenuClick(item.path);
+              }}
+              style={{
+                fontSize: "15px",
+                fontWeight: 600,
+                letterSpacing: "1.5px",
+                color: isActive(item.path) ? PRIMARY_COLOR : "#2F2F2F",
+                padding: "10px 0",
+                borderBottom: "1px solid #F0E8DD",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>{item.label}</span>
+              {isActive(item.path) && <div style={{ width: 8, height: 8, borderRadius: "50%", background: PRIMARY_COLOR }} />}
+            </div>
+          ))}
+        </div>
+
+        {/* User Auth Info inside Mobile Drawer */}
+        <div style={{ marginTop: "30px", paddingTop: "20px", borderTop: "1px solid #E8DED2" }}>
+          {user ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "#2F2F2F" }}>
+                Xin chào, {user.full_name || "Khách hàng"}
+              </div>
               <Button
-                type="text"
-                onClick={() => navigate("/login")}
-                style={{
-                  fontWeight: 600,
-                  fontSize: "11px",
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                  color: "#2F2F2F"
-                }}
-                className="btn-nav-login"
+                block
+                icon={<InfoCircleOutlined />}
+                onClick={() => { setMobileMenuOpen(false); handleMenuClick("/customer/profile"); }}
+              >
+                Thông tin tài khoản
+              </Button>
+              <Button
+                block
+                icon={<CalendarOutlined />}
+                onClick={() => { setMobileMenuOpen(false); handleMenuClick("/customer/my-bookings"); }}
+              >
+                Quản lý đơn đặt lịch
+              </Button>
+              <Button
+                block
+                danger
+                icon={<LogoutOutlined />}
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+              >
+                Đăng xuất
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <Button
+                block
+                type="primary"
+                onClick={() => { setMobileMenuOpen(false); navigate("/login"); }}
+                style={{ background: PRIMARY_COLOR, borderColor: PRIMARY_COLOR, height: 44, fontWeight: 600 }}
               >
                 ĐĂNG NHẬP
               </Button>
               <Button
-                onClick={() => navigate("/register")}
-                style={{
-                  background: PRIMARY_COLOR,
-                  color: "#fff",
-                  borderRadius: "0",
-                  height: "40px",
-                  border: "none",
-                  fontSize: "11px",
-                  letterSpacing: "1px",
-                  padding: "0 25px",
-                  fontWeight: 500
-                }}
-                className="btn-nav-register"
+                block
+                onClick={() => { setMobileMenuOpen(false); navigate("/register"); }}
+                style={{ height: 44, fontWeight: 500 }}
               >
-                ĐĂNG KÝ <ArrowRightOutlined />
+                ĐĂNG KÝ TÀI KHOẢN
               </Button>
-            </Space>
+            </div>
           )}
         </div>
-      </header>
+      </Drawer>
 
       {/* CONTENT */}
-      <main style={{ flex: 1, marginTop: "90px" }}>
+      <main className="customer-main-content">
         <Outlet />
       </main>
+
+      <style>{`
+        .customer-header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 90px;
+          background-color: rgba(250, 247, 242, 0.95);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 40px;
+          z-index: 1000;
+          border-bottom: 1px solid #E8DED2;
+          font-family: ${FONT_SANS};
+          transition: all 0.3s ease;
+        }
+
+        .customer-main-content {
+          flex: 1;
+          margin-top: 90px;
+        }
+
+        .desktop-nav-menu {
+          display: flex;
+          gap: 30px;
+        }
+
+        .desktop-user-area {
+          display: flex;
+          align-items: center;
+        }
+
+        .mobile-nav-toggle {
+          display: none !important;
+        }
+
+        @media (max-width: 991px) {
+          .customer-header {
+            height: 70px !important;
+            padding: 0 18px !important;
+          }
+          .customer-main-content {
+            margin-top: 70px !important;
+          }
+          .desktop-nav-menu {
+            display: none !important;
+          }
+          .desktop-user-area {
+            display: none !important;
+          }
+          .mobile-nav-toggle {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+      `}</style>
 
       {/* FOOTER CHUYÊN NGHIỆP */}
       <footer

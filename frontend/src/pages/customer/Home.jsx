@@ -22,14 +22,16 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../Home.css";
-
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 import {
+  isServerUploadUrl,
+  upgradeGoogleImageUrl,
   getGalleryImageSrcSet,
   getGalleryImageUrl,
   getImageErrorHandler,
   preloadImages,
 } from "../../utils/imageUtils";
+
+
 
 // Fallback images
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=2070&auto=format&fit=crop";
@@ -38,12 +40,14 @@ const FALLBACK_PORTRAIT = "https://images.unsplash.com/photo-1516035069371-29a1b
 const FALLBACK_EVENT = "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop";
 const FALLBACK_GEAR = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop";
 
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const categoryLabels = {
   WEDDING: "Ảnh cưới",
   PORTRAIT: "Chân dung",
   EVENT: "Sự kiện",
   GRADUATION: "Kỷ yếu",
+
 };
 
 // Trang chủ khách hàng hiển thị hero, dịch vụ nổi bật và album tiêu biểu.
@@ -78,17 +82,28 @@ const Home = () => {
         const [servicesRes, galleriesRes] = await Promise.allSettled(endpoints);
 
         if (servicesRes.status === "fulfilled") {
-          setServices(servicesRes.value.data || []);
+          const data = Array.isArray(servicesRes.value.data)
+            ? servicesRes.value.data
+            : (servicesRes.value.data?.services || []);
+          setServices(data);
         }
         if (galleriesRes.status === "fulfilled") {
-          const fetchedGalleries = galleriesRes.value.data || [];
+          const fetchedGalleries = Array.isArray(galleriesRes.value.data)
+            ? galleriesRes.value.data
+            : (galleriesRes.value.data?.galleries || []);
           setGalleries(fetchedGalleries);
-          await preloadImages(
-            fetchedGalleries.slice(0, 4).map((item) =>
-              getGalleryImageUrl(item, "cover", FALLBACK_PORTRAIT),
-            ),
-            { limit: 4, timeoutMs: 3200 },
-          );
+          try {
+            if (fetchedGalleries.length > 0) {
+              await preloadImages(
+                fetchedGalleries.slice(0, 4).map((item) =>
+                  getGalleryImageUrl(item, "cover", FALLBACK_PORTRAIT),
+                ),
+                { limit: 4, timeoutMs: 3200 },
+              );
+            }
+          } catch (preloadErr) {
+            console.warn("Preload images warning:", preloadErr);
+          }
         }
       } catch (err) {
         console.error("Failed to load some resources", err);
@@ -168,27 +183,21 @@ const Home = () => {
       _id: "demo-wedding",
       name: "Gói Cưới Fine Art / Wedding",
       base_price: 15000000,
-      duration_hours: 8,
       thumbnail: FALLBACK_WEDDING,
-      description: "Chụp ảnh và quay phim cưới với phong cách ánh sáng tự nhiên đầy lãng mạn, xử lý màu sắc tinh tế, dịu nhẹ.",
       features: ["2 Nhiếp ảnh gia chuyên nghiệp", "Hỗ trợ hướng dẫn tạo dáng tự nhiên", "Bàn giao toàn bộ file gốc & 50 ảnh retouch", "Album ảnh cao cấp 30x30 in ấn phong cách châu Âu"]
     },
     {
       _id: "demo-portrait",
       name: "Chân Dung Nghệ Thuật / Fine Art Portrait",
       base_price: 3500000,
-      duration_hours: 3,
       thumbnail: FALLBACK_PORTRAIT,
-      description: "Lưu giữ chân dung cá nhân mộc mạc, ghi dấu thần thái tự nhiên dưới góc máy dịu dàng, trong trẻo.",
       features: ["1 Photographer chính", "Setup studio ánh sáng trong trẻo nhẹ nhàng", "Retouch 15 file cao cấp xuất sắc", "Hỗ trợ make-up phong cách thanh lịch"]
     },
     {
       _id: "demo-event",
       name: "Quay Phim & Chụp Sự Kiện / Cinema Event",
       base_price: 8000000,
-      duration_hours: 5,
       thumbnail: FALLBACK_EVENT,
-      description: "Ghi lại những khoảnh khắc lễ đính hôn, sự kiện doanh nghiệp với phong cách chân thực, tinh tế và ấm áp.",
       features: ["1 thành viên chụp & 1 thành viên quay", "Quay phim độ phân giải 4K sắc nét", "Dựng phim highlight cảm xúc 3-5 phút", "Giao file nhanh chóng trong vòng 3 ngày"]
     }
   ];
@@ -352,9 +361,25 @@ const Home = () => {
                     >
                       <div className="service-image-container">
                         <img 
-                          src={item.thumbnail || FALLBACK_WEDDING} 
+                          src={
+                            isServerUploadUrl(item.thumbnail)
+                              ? item.thumbnail
+                              : upgradeGoogleImageUrl(item.thumbnail, "s800") || FALLBACK_WEDDING
+                          } 
                           alt={item.name} 
-                          onError={(e) => { e.currentTarget.src = FALLBACK_WEDDING; }}
+                          onError={(e) => {
+                            if (!e.currentTarget.dataset.fallbackApplied) {
+                              e.currentTarget.dataset.fallbackApplied = "true";
+                              const driveUrl = upgradeGoogleImageUrl(item.thumbnail, "s800");
+                              if (driveUrl && driveUrl !== e.currentTarget.src) {
+                                e.currentTarget.src = driveUrl;
+                              } else {
+                                e.currentTarget.src = FALLBACK_WEDDING;
+                              }
+                            } else {
+                              e.currentTarget.src = FALLBACK_WEDDING;
+                            }
+                          }}
                         />
                         <div className="service-image-overlay" />
                       </div>
@@ -362,12 +387,6 @@ const Home = () => {
                         <h3 className="service-card-title">{item.name}</h3>
                         <div className="service-card-price">{formatPrice(item.base_price)}</div>
                         
-                        {item.duration_hours && (
-                          <div style={{ fontSize: "13px", color: "#666666", marginBottom: "15px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                            <ClockCircleOutlined style={{ color: "#BFA16A" }} />
-                            <span>Thời gian chụp: {item.duration_hours} giờ</span>
-                          </div>
-                        )}
 
                         <div className="service-card-features">
                           {(item.features || [

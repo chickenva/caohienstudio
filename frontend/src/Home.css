@@ -138,8 +138,13 @@ header {
 }
 
 @keyframes marquee-light {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* Stat Cards */
@@ -148,9 +153,11 @@ header {
   padding: 20px;
   text-align: center;
 }
+
 .stat-card-luxury:last-child {
   border-right: none;
 }
+
 .stat-number {
   font-family: 'Playfair Display', serif;
   font-size: 48px;
@@ -158,6 +165,7 @@ header {
   line-height: 1.1;
   font-weight: 300;
 }
+
 .stat-label {
   font-size: 11px;
   color: #777777;
@@ -549,7 +557,7 @@ header {
   font-family: 'Outfit', sans-serif !important;
 }
 
-.home-page-container .ant-input-affix-wrapper > input.ant-input {
+.home-page-container .ant-input-affix-wrapper>input.ant-input {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -563,7 +571,7 @@ header {
   box-shadow: 0 0 10px rgba(191, 161, 106, 0.15) !important;
 }
 
-.home-page-container .ant-form-item-label > label {
+.home-page-container .ant-form-item-label>label {
   color: #555555 !important;
   font-size: 12px !important;
   letter-spacing: 1px !important;
@@ -587,42 +595,133 @@ header {
 }
 
 /* stagger effects */
-.stagger-1 { transition-delay: 0.1s; }
-.stagger-2 { transition-delay: 0.2s; }
-.stagger-3 { transition-delay: 0.3s; }
-.stagger-4 { transition-delay: 0.4s; }
+.stagger-1 {
+  transition-delay: 0.1s;
+}
+
+.stagger-2 {
+  transition-delay: 0.2s;
+}
+
+.stagger-3 {
+  transition-delay: 0.3s;
+}
+
+.stagger-4 {
+  transition-delay: 0.4s;
+}
 
 /* Responsive Grid and Box Styling */
-@media (max-width: 1024px) {
-  .portfolio-masonry {
-    grid-auto-rows: 190px;
+/* Catalog Selector Nav Bar (Dynamic horizontal tab bar) */
+.catalog-selector {
+  display: flex;
+  gap: 32px;
+  border-bottom: 1px solid #E8DED2;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  padding-bottom: 2px;
+}
+
+.catalog-selector::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.catalog-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: #777777;
+  position: relative;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.catalog-link:hover {
+  color: #BFA16A;
+}
+
+.catalog-link.active {
+  color: #BFA16A;
+}
+
+.catalog-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #BFA16A;
+}
+
+.catalog-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  color: #BFA16A;
+}
+
+@media (max-width: 991px) {
+  .museum-collage-container {
+    height: 380px;
   }
-  .stat-card-luxury {
-    border-right: none;
-    border-bottom: 1px solid #E8DED2;
-    padding: 15px 0;
+  .museum-collage-item.collage-1 {
+    width: 200px;
+    height: 270px;
+    left: 2%;
   }
-  .stat-card-luxury:last-child {
-    border-bottom: none;
+  .museum-collage-item.collage-2 {
+    width: 210px;
+    height: 280px;
+    right: 2%;
+  }
+  .museum-collage-item.collage-3 {
+    width: 240px;
+    height: 320px;
   }
 }
 
 @media (max-width: 768px) {
+  /* Full bleed reset on mobile to avoid horizontal scrollbar overflow */
+  .full-bleed {
+    width: 100% !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .glow-spotlight-light {
+    width: 300px !important;
+    height: 300px !important;
+  }
+
   .portfolio-masonry {
     display: flex;
     flex-direction: column;
     gap: 18px;
   }
+
   .portfolio-item-featured,
   .portfolio-item-side,
   .portfolio-item-wide {
-    height: 320px;
+    height: 280px;
   }
+
   .gear-card-luxury {
     flex-direction: column;
     text-align: center;
-    padding: 30px;
+    padding: 20px;
   }
+
   .gear-image {
     width: 120px;
     height: 120px;

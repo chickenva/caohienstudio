@@ -65,7 +65,7 @@ async function getStudioContext() {
 
     const servicesText = services.length > 0
       ? services.map((s) =>
-          `- ${s.name}: ${s.base_price?.toLocaleString("vi-VN")}đ, thời lượng ${s.duration_hours} giờ${s.description ? ` – ${s.description}` : ""}`
+          `- ${s.name}: ${s.base_price?.toLocaleString("vi-VN")}đ`
         ).join("\n")
       : "Chưa có thông tin dịch vụ.";
 

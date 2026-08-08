@@ -3,8 +3,8 @@
  * Quản lý danh mục (SERVICE/GALLERY): CRUD, sắp xếp thứ tự kéo thả.
  */
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, message, Modal, Form, Input, Switch, Tag } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, MenuOutlined } from "@ant-design/icons";
+import { Table, Button, Space, message, Modal, Form, Input, Switch, Tag, Card, Typography, Tooltip } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, MenuOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -227,6 +227,11 @@ export default function AdminCategories() {
 
   const columns = [
     {
+      title: (
+        <Tooltip title="Nhấn giữ và kéo thả icon ở mỗi dòng để thay đổi thứ tự hiển thị">
+          <InfoCircleOutlined style={{ color: "#BFA16A", cursor: "pointer" }} />
+        </Tooltip>
+      ),
       key: "sort",
       width: 50,
       align: "center",
@@ -242,7 +247,11 @@ export default function AdminCategories() {
       title: "Mã (Slug)",
       dataIndex: "slug",
       key: "slug",
-      render: (text) => <Tag color="blue">{text}</Tag>,
+      render: (text) => (
+        <Tag style={{ color: "#8C6B2D", background: "#FAF6EF", borderColor: "#E8DFD1", fontWeight: 600, borderRadius: 4 }}>
+          {text}
+        </Tag>
+      ),
     },
     {
       title: "Mô tả",
@@ -275,35 +284,51 @@ export default function AdminCategories() {
     },
   ];
 
+  const { Title } = Typography;
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2>{title}</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          Thêm danh mục mới
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
+          {title}
+        </Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAdd}
+          style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
+        >
+          Thêm danh mục
         </Button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext
-          items={categories.map((i) => i._id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <Table
-            components={{
-              body: {
-                row: SortableRow,
-              },
-            }}
-            columns={columns}
-            dataSource={categories}
-            rowKey="_id"
-            loading={loading}
-            bordered
-            pagination={false}
-          />
-        </SortableContext>
-      </DndContext>
+      <Card
+        bordered={false}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
+        bodyStyle={{ padding: "0px" }}
+      >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext
+            items={categories.map((i) => i._id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table
+              components={{
+                body: {
+                  row: SortableRow,
+                },
+              }}
+              columns={columns}
+              dataSource={categories}
+              rowKey="_id"
+              loading={loading}
+              bordered={false}
+              pagination={false}
+              style={{ borderRadius: 12 }}
+            />
+          </SortableContext>
+        </DndContext>
+      </Card>
 
       <Modal
         title={editingCategory ? "Sửa danh mục" : "Thêm danh mục mới"}
@@ -339,7 +364,7 @@ export default function AdminCategories() {
           <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>
             <Space>
               <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}>
                 Lưu
               </Button>
             </Space>

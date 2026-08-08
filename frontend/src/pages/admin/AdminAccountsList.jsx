@@ -15,21 +15,21 @@ import {
   Select,
   Row,
   Col,
+  Card,
 } from "antd";
 import {
-  PlusOutlined,
   ReloadOutlined,
   LockOutlined,
   UnlockOutlined,
   UserOutlined,
   SearchOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+const { Title } = Typography;
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -50,7 +50,6 @@ const roleLabels = {
   ADMIN: "Quản trị viên",
 };
 
-// Trang admin quản lý danh sách tài khoản ADMIN.
 const AdminAccountsList = () => {
   const navigate = useNavigate();
 
@@ -66,17 +65,18 @@ const AdminAccountsList = () => {
   }, []);
 
   useEffect(() => {
-    let data = [...accounts];
+    let data = Array.isArray(accounts) ? [...accounts] : [];
     if (roleFilter !== "ALL") {
-      data = data.filter((a) => a.role === roleFilter);
+      data = data.filter((a) => a && a.role === roleFilter);
     }
     if (searchText.trim()) {
       const keyword = searchText.trim().toLowerCase();
       data = data.filter(
         (a) =>
-          a.full_name?.toLowerCase().includes(keyword) ||
-          a.email?.toLowerCase().includes(keyword) ||
-          a.phone?.toLowerCase().includes(keyword),
+          a &&
+          (a.full_name?.toLowerCase().includes(keyword) ||
+            a.email?.toLowerCase().includes(keyword) ||
+            a.phone?.toLowerCase().includes(keyword)),
       );
     }
     setFiltered(data);
@@ -90,7 +90,8 @@ const AdminAccountsList = () => {
       const res = await axios.get(`${API_URL}/users/admin/accounts`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      setAccounts(res.data || []);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.accounts || []);
+      setAccounts(data);
     } catch (err) {
       message.error(
         err.response?.data?.message || "Không thể tải danh sách tài khoản",
@@ -101,6 +102,7 @@ const AdminAccountsList = () => {
   };
 
   const handleToggleActive = async (record) => {
+    if (!record?._id) return;
     setActionLoadingId(record._id);
     try {
       await axios.patch(
@@ -124,11 +126,12 @@ const AdminAccountsList = () => {
   };
 
   const confirmToggle = (record) => {
+    if (!record) return;
     Modal.confirm({
       title: record.is_active ? "Khóa tài khoản này?" : "Kích hoạt tài khoản?",
       content: record.is_active
-        ? `Tài khoản "${record.full_name}" sẽ bị khóa và không thể đăng nhập.`
-        : `Tài khoản "${record.full_name}" sẽ được kích hoạt lại.`,
+        ? `Tài khoản "${record.full_name || record.email}" sẽ bị khóa và không thể đăng nhập.`
+        : `Tài khoản "${record.full_name || record.email}" sẽ được kích hoạt lại.`,
       okText: record.is_active ? "Khóa" : "Kích hoạt",
       okType: record.is_active ? "danger" : "primary",
       cancelText: "Hủy",
@@ -147,7 +150,7 @@ const AdminAccountsList = () => {
               width: 38,
               height: 38,
               borderRadius: "50%",
-              background: record.role === "ADMIN" ? "#1677ff22" : "#722ed122",
+              background: record?.role === "ADMIN" ? "#1677ff22" : "#722ed122",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -156,14 +159,14 @@ const AdminAccountsList = () => {
           >
             <UserOutlined
               style={{
-                color: record.role === "ADMIN" ? "#1677ff" : "#722ed1",
+                color: record?.role === "ADMIN" ? "#1677ff" : "#722ed1",
                 fontSize: 16,
               }}
             />
           </div>
           <div>
-            <div style={{ fontWeight: 600 }}>{record.full_name}</div>
-            <div style={{ fontSize: 12, color: "#888" }}>{record.email}</div>
+            <div style={{ fontWeight: 600 }}>{record?.full_name || "Tài khoản"}</div>
+            <div style={{ fontSize: 12, color: "#888" }}>{record?.email || ""}</div>
           </div>
         </div>
       ),
@@ -182,7 +185,7 @@ const AdminAccountsList = () => {
       width: 160,
       render: (role) => (
         <Tag color={roleColors[role] || "default"}>
-          {roleLabels[role] || role}
+          {roleLabels[role] || role || "N/A"}
         </Tag>
       ),
     },
@@ -203,7 +206,7 @@ const AdminAccountsList = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       width: 160,
-      render: (date) => dayjs(date).format("DD/MM/YYYY HH:mm"),
+      render: (date) => date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—",
     },
     {
       title: "THAO TÁC",
@@ -212,12 +215,12 @@ const AdminAccountsList = () => {
       width: 140,
       render: (_, record) => (
         <Button
-          icon={record.is_active ? <LockOutlined /> : <UnlockOutlined />}
-          loading={actionLoadingId === record._id}
-          danger={record.is_active}
+          icon={record?.is_active ? <LockOutlined /> : <UnlockOutlined />}
+          loading={actionLoadingId === record?._id}
+          danger={record?.is_active}
           onClick={() => confirmToggle(record)}
         >
-          {record.is_active ? "Khóa" : "Kích hoạt"}
+          {record?.is_active ? "Khóa" : "Kích hoạt"}
         </Button>
       ),
     },
@@ -236,54 +239,92 @@ const AdminAccountsList = () => {
         }}
       >
         <div>
-          <Title level={3} style={{ marginBottom: 4 }}>
+          <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
             Danh sách tài khoản
           </Title>
-          <Text type="secondary">
-            Quản lý tài khoản quản trị viên của hệ thống.
-          </Text>
         </div>
 
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchAccounts}>
-          </Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchAccounts} loading={loading} />
         </Space>
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 18 }}>
-        <Col xs={24} sm={14}>
-          <Input
-            placeholder="Tìm theo tên, email hoặc số điện thoại..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            allowClear
-          />
-        </Col>
-        <Col xs={24} sm={10}>
-          <Select
-            value={roleFilter}
-            onChange={setRoleFilter}
-            style={{ width: "100%" }}
-          >
-            {roleOptions.map((opt) => (
-              <Option key={opt.value} value={opt.value}>
-                {opt.label}
-              </Option>
-            ))}
-          </Select>
-        </Col>
-      </Row>
+      <Card
+        bordered={false}
+        style={{
+          marginBottom: 20,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          borderRadius: 12,
+          border: "1px solid #efebe4",
+        }}
+        bodyStyle={{ padding: "18px 24px" }}
+      >
+        <Row gutter={[16, 12]} align="middle">
+          <Col xs={24} sm={14}>
+            <span
+              style={{
+                fontWeight: 600,
+                display: "block",
+                marginBottom: 6,
+                color: "#595959",
+              }}
+            >
+              Tìm kiếm tài khoản
+            </span>
+            <Input
+              placeholder="Tìm theo tên, email hoặc số điện thoại..."
+              prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+              size="large"
+              style={{ borderRadius: 8 }}
+            />
+          </Col>
+          <Col xs={24} sm={10}>
+            <span
+              style={{
+                fontWeight: 600,
+                display: "block",
+                marginBottom: 6,
+                color: "#595959",
+              }}
+            >
+              Lọc theo vai trò
+            </span>
+            <Select
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={roleOptions}
+              style={{ width: "100%" }}
+              size="large"
+              dropdownStyle={{ borderRadius: 8 }}
+            />
+          </Col>
+        </Row>
+      </Card>
 
-      <Table
-        columns={columns}
-        dataSource={filtered}
-        rowKey="_id"
-        loading={loading}
-        bordered
-        scroll={{ x: 800 }}
-        pagination={{ pageSize: 10 }}
-      />
+      <Card
+        bordered={false}
+        style={{
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          borderRadius: 12,
+          border: "1px solid #efebe4",
+          overflow: "hidden",
+        }}
+        bodyStyle={{ padding: "0px" }}
+      >
+        <Table
+          columns={columns}
+          dataSource={filtered}
+          rowKey="_id"
+          loading={loading}
+          bordered={false}
+          scroll={{ x: 800 }}
+          pagination={{ pageSize: 10 }}
+          style={{ borderRadius: 12 }}
+        />
+      </Card>
     </div>
   );
 };

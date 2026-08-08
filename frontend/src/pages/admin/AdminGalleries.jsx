@@ -29,6 +29,7 @@ import {
   SearchOutlined,
   PictureOutlined,
   MenuOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -266,30 +267,44 @@ const AdminGalleries = () => {
     });
   };
 
-  const totalCount = galleries.length;
-  const activeCount = galleries.filter((g) => g.is_active).length;
+  const totalCount = Array.isArray(galleries) ? galleries.length : 0;
+  const activeCount = Array.isArray(galleries)
+    ? galleries.filter((g) => g?.is_active).length
+    : 0;
   const hiddenCount = totalCount - activeCount;
 
-  const filteredGalleries = galleries.filter((gallery) => {
-    const matchSearch =
-      !searchText ||
-      (gallery?.title && gallery.title.toLowerCase().includes(searchText.toLowerCase())) ||
-      (gallery?.location &&
-        gallery.location.toLowerCase().includes(searchText.toLowerCase()));
-    const catSlug = typeof gallery?.category === 'object' ? gallery.category?.slug : gallery?.category;
-    const matchCategory =
-      categoryFilter.length === 0 || categoryFilter.includes(catSlug);
-    const matchStatus =
-      statusFilter === "ALL" ||
-      (statusFilter === "ACTIVE" && gallery?.is_active) ||
-      (statusFilter === "HIDDEN" && !gallery?.is_active);
-    return matchSearch && matchCategory && matchStatus;
-  });
+  const filteredGalleries = (Array.isArray(galleries) ? galleries : []).filter(
+    (gallery) => {
+      if (!gallery) return false;
+      const matchSearch =
+        !searchText ||
+        (gallery?.title &&
+          gallery.title.toLowerCase().includes(searchText.toLowerCase())) ||
+        (gallery?.location &&
+          gallery.location.toLowerCase().includes(searchText.toLowerCase()));
+      const catSlug =
+        typeof gallery?.category === "object"
+          ? gallery.category?.slug
+          : gallery?.category;
+      const matchCategory =
+        categoryFilter.length === 0 || categoryFilter.includes(catSlug);
+      const matchStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE" && gallery?.is_active) ||
+        (statusFilter === "HIDDEN" && !gallery?.is_active);
+      return matchSearch && matchCategory && matchStatus;
+    },
+  );
 
   const isFiltering = searchText !== "" || categoryFilter.length > 0 || statusFilter !== "ALL";
 
   const columns = [
     {
+      title: (
+        <Tooltip title="Nhấn giữ và kéo thả icon ở mỗi dòng để thay đổi thứ tự hiển thị">
+          <InfoCircleOutlined style={{ color: "#BFA16A", cursor: "pointer" }} />
+        </Tooltip>
+      ),
       key: "sort",
       width: 50,
       align: "center",
@@ -356,7 +371,7 @@ const AdminGalleries = () => {
         const cat = categories.find((c) => c.slug === catSlug);
         const displayName = cat ? cat.name : (typeof category === 'object' ? category?.name : category);
         return (
-          <Tag color="blue" style={{ fontWeight: 500, borderRadius: 4 }}>
+          <Tag style={{ color: "#8C6B2D", background: "#FAF6EF", borderColor: "#E8DFD1", fontWeight: 600, borderRadius: 4 }}>
             {typeof displayName === 'string' ? displayName : "KHÁC"}
           </Tag>
         );
@@ -406,6 +421,7 @@ const AdminGalleries = () => {
             ghost
             icon={<EditOutlined />}
             onClick={() => navigate(`/admin/galleries/edit/${record._id}`)}
+            style={{ color: "#BFA16A", borderColor: "#BFA16A" }}
           >
             Sửa
           </Button>
@@ -444,17 +460,13 @@ const AdminGalleries = () => {
         }}
       >
         <div>
-          <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+          <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
             Quản lý thư viện ảnh
           </Title>
-          <Text type="secondary">
-            Thêm, chỉnh sửa, ẩn/hiện và xóa album. Ảnh trong album được lấy trực tiếp từ folder Google Drive.
-          </Text>
         </div>
 
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchGalleries}>
-          </Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchGalleries} />
         </Space>
       </div>
 
@@ -464,21 +476,21 @@ const AdminGalleries = () => {
           <Card
             bordered={false}
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg, #BFA16A 0%, #9A8A78 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(24,144,255,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(191,161,106,0.25)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Tổng số album
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
               </div>
-              <PictureOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <PictureOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -489,19 +501,19 @@ const AdminGalleries = () => {
             style={{
               background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(82,196,26,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(82,196,26,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Album đang hiển thị
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
               </div>
-              <EyeOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <EyeOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -512,19 +524,19 @@ const AdminGalleries = () => {
             style={{
               background: "linear-gradient(135deg, #bfbfbf 0%, #8c8c8c 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(140,140,140,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(140,140,140,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Album đang ẩn
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{hiddenCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{hiddenCount}</div>
               </div>
-              <EyeInvisibleOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <EyeInvisibleOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -533,8 +545,8 @@ const AdminGalleries = () => {
       {/* Filter panel */}
       <Card
         bordered={false}
-        style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
-        bodyStyle={{ padding: "16px 24px" }}
+        style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
+        bodyStyle={{ padding: "18px 24px" }}
       >
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={10}>
@@ -546,7 +558,7 @@ const AdminGalleries = () => {
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
               size="large"
-              style={{ borderRadius: 6 }}
+              style={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} sm={12} md={7}>
@@ -564,7 +576,7 @@ const AdminGalleries = () => {
               maxTagCount="responsive"
               allowClear
               size="large"
-              dropdownStyle={{ borderRadius: 6 }}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} sm={12} md={7}>
@@ -576,7 +588,7 @@ const AdminGalleries = () => {
               onChange={setStatusFilter}
               options={statusOptions}
               size="large"
-              dropdownStyle={{ borderRadius: 6 }}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Col>
         </Row>
@@ -585,7 +597,7 @@ const AdminGalleries = () => {
       {/* Main Table */}
       <Card
         bordered={false}
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
         bodyStyle={{ padding: "0px" }}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -606,7 +618,7 @@ const AdminGalleries = () => {
               bordered={false}
               scroll={{ x: 1200 }}
               pagination={false}
-              style={{ borderRadius: 8, overflow: "hidden" }}
+              style={{ borderRadius: 12, overflow: "hidden" }}
             />
           </SortableContext>
         </DndContext>

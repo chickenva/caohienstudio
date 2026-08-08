@@ -262,12 +262,9 @@ const AdminCustomers = () => {
         }}
       >
         <div>
-          <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+          <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
             Quản lý khách hàng
           </Title>
-          <Text type="secondary">
-            Xem danh sách, tra cứu và khóa/mở khóa tài khoản khách hàng trên hệ thống.
-          </Text>
         </div>
 
         <Button icon={<ReloadOutlined />} onClick={fetchCustomers}>
@@ -280,21 +277,21 @@ const AdminCustomers = () => {
           <Card
             bordered={false}
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg, #BFA16A 0%, #9A8A78 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(24,144,255,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(191,161,106,0.25)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Tổng khách hàng
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
               </div>
-              <TeamOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <TeamOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -305,19 +302,19 @@ const AdminCustomers = () => {
             style={{
               background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(82,196,26,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(82,196,26,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Đang hoạt động
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
               </div>
-              <UserOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <UserOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -328,19 +325,19 @@ const AdminCustomers = () => {
             style={{
               background: "linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(255,77,79,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(255,77,79,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Đã khóa
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{lockedCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{lockedCount}</div>
               </div>
-              <LockOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <LockOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -349,8 +346,8 @@ const AdminCustomers = () => {
       {/* Filter panel */}
       <Card
         bordered={false}
-        style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
-        bodyStyle={{ padding: "16px 24px" }}
+        style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
+        bodyStyle={{ padding: "18px 24px" }}
       >
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={16}>
@@ -362,7 +359,7 @@ const AdminCustomers = () => {
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
               size="large"
-              style={{ borderRadius: 6 }}
+              style={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} md={8}>
@@ -374,7 +371,7 @@ const AdminCustomers = () => {
               onChange={setStatusFilter}
               options={statusOptions}
               size="large"
-              dropdownStyle={{ borderRadius: 6 }}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Col>
         </Row>
@@ -383,7 +380,7 @@ const AdminCustomers = () => {
       {/* Main Table */}
       <Card
         bordered={false}
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
         bodyStyle={{ padding: "0px" }}
       >
         <Table
@@ -418,6 +415,7 @@ const AdminCustomers = () => {
                 setDetailOpen(false);
                 navigate(`/admin/orders?customerName=${encodeURIComponent(selectedCustomer.full_name || selectedCustomer.email || "")}`);
               }}
+              style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
             >
               Xem lịch đặt
             </Button>

@@ -19,12 +19,14 @@ import {
   List,
   Tag,
   Alert,
+  Tooltip,
 } from "antd";
 import {
   ArrowLeftOutlined,
   SaveOutlined,
   SearchOutlined,
   UserOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -254,13 +256,9 @@ const OrdersCreate = () => {
       </Button>
 
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ marginBottom: 4 }}>
+        <Title level={3} style={{ marginBottom: 0 }}>
           Tạo đơn đặt lịch hộ khách
         </Title>
-        <Text type="secondary">
-          Dùng cho trường hợp khách gọi điện, nhắn Zalo hoặc đến trực tiếp nhờ
-          studio đặt lịch.
-        </Text>
       </div>
 
       <Form
@@ -276,18 +274,29 @@ const OrdersCreate = () => {
       >
         <Row gutter={24}>
           <Col xs={24} lg={10}>
-            <Card title="1. Thông tin khách hàng" style={{ marginBottom: 20 }}>
+            <Card
+              title={
+                <span>
+                  1. Thông tin khách hàng{" "}
+                  <Tooltip title="Nếu không chọn khách có sẵn, hệ thống sẽ tự tạo tài khoản CUSTOMER tạm.">
+                    <InfoCircleOutlined style={{ color: "#BFA16A", fontSize: 15, marginLeft: 6, cursor: "pointer" }} />
+                  </Tooltip>
+                </span>
+              }
+              style={{ marginBottom: 20, borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}
+            >
               <Form.Item
-                label="Tìm khách hàng bằng email / SĐT / tên"
+                label="Tìm kiếm khách hàng"
                 name="customer_search"
               >
                 <Input.Search
-                  placeholder="VD: 0909..., vana@gmail.com, Nguyễn Văn A"
+                  placeholder="Nhập email, SĐT hoặc họ tên khách hàng..."
                   enterButton={
                     <Button
                       type="primary"
                       icon={<SearchOutlined />}
                       loading={searchingCustomer}
+                      style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
                     >
                       Tìm
                     </Button>
@@ -332,7 +341,7 @@ const OrdersCreate = () => {
                 />
               )}
 
-              {selectedCustomer ? (
+              {selectedCustomer && (
                 <Alert
                   type="success"
                   showIcon
@@ -352,13 +361,6 @@ const OrdersCreate = () => {
                       </Button>
                     </div>
                   }
-                />
-              ) : (
-                <Alert
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  message="Nếu không chọn khách có sẵn, hệ thống sẽ tự tạo tài khoản CUSTOMER tạm."
                 />
               )}
 
@@ -400,7 +402,7 @@ const OrdersCreate = () => {
 
           <Col xs={24} lg={14}>
             {/* === Card dịch vụ (giữ nguyên) === */}
-            <Card title="2. Thông tin lịch chụp" style={{ marginBottom: 20 }}>
+            <Card title="2. Thông tin lịch chụp" style={{ marginBottom: 20, borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
               <Row gutter={16}>
                 {/* Ngày chụp */}
                 <Col xs={24} md={8}>
@@ -507,7 +509,7 @@ const OrdersCreate = () => {
               </Row>
             </Card>
 
-            <Card title="3. Thanh toán / trạng thái">
+            <Card title="3. Thanh toán / trạng thái" style={{ marginBottom: 20, borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
@@ -669,6 +671,7 @@ const OrdersCreate = () => {
             htmlType="submit"
             icon={<SaveOutlined />}
             loading={loading}
+            style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
           >
             Tạo đơn đặt hộ
           </Button>

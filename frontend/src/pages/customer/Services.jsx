@@ -13,10 +13,22 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
+import { isServerUploadUrl, upgradeGoogleImageUrl } from "../../utils/imageUtils";
 
 const PRIMARY_COLOR = "#BFA16A";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
+
+/**
+ * Chọn src thumbnail card: ưu tiên server upload, fallback sang Drive thumbnail.
+ * @param {string} thumbnail
+ * @returns {string}
+ */
+const resolveCardThumbnail = (thumbnail) => {
+  if (!thumbnail) return FALLBACK_WEDDING;
+  if (isServerUploadUrl(thumbnail)) return thumbnail;
+  return upgradeGoogleImageUrl(thumbnail, "s800") || FALLBACK_WEDDING;
+};
 
 // Trang danh sách dịch vụ, lọc theo danh mục và dẫn sang chi tiết/đặt lịch.
 const Services = () => {
@@ -208,9 +220,20 @@ const Services = () => {
                   <div className="service-image-container">
                     <img
                       alt={item.name}
-                      src={item.thumbnail || FALLBACK_WEDDING}
+                      src={resolveCardThumbnail(item.thumbnail)}
                       onError={(e) => {
-                        e.currentTarget.src = FALLBACK_WEDDING;
+                        // server upload lỗi → thử Drive thumbnail nếu có
+                        if (!e.currentTarget.dataset.fallbackApplied) {
+                          e.currentTarget.dataset.fallbackApplied = "true";
+                          const driveUrl = upgradeGoogleImageUrl(item.thumbnail, "s800");
+                          if (driveUrl && driveUrl !== e.currentTarget.src) {
+                            e.currentTarget.src = driveUrl;
+                          } else {
+                            e.currentTarget.src = FALLBACK_WEDDING;
+                          }
+                        } else {
+                          e.currentTarget.src = FALLBACK_WEDDING;
+                        }
                       }}
                     />
                     <div className="service-image-overlay" />
@@ -229,20 +252,7 @@ const Services = () => {
                       {item.base_price?.toLocaleString("vi-VN")}đ
                     </div>
 
-                    <div
-                      style={{
-                        fontSize: "13.5px",
-                        color: "#666",
-                        marginBottom: "20px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <ClockCircleOutlined style={{ color: PRIMARY_COLOR }} />
-                      <span>Thời lượng: {item.duration_hours || 4} giờ</span>
-                    </div>
+
 
                     <div className="service-card-features">
                       {(

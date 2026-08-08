@@ -76,16 +76,14 @@ const AdminAccountForm = () => {
       </div>
 
       <Card
-        style={{ borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+        bordered={false}
+        style={{ borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}
       >
         <div style={{ marginBottom: 24 }}>
-          <Title level={4} style={{ marginBottom: 4 }}>
+          <Title level={4} style={{ marginBottom: 0 }}>
             <UserAddOutlined style={{ marginRight: 8, color: "#BFA16A" }} />
             Thêm tài khoản mới
           </Title>
-          <Text type="secondary">
-            Tạo tài khoản quản trị viên cho hệ thống.
-          </Text>
         </div>
 
         <Divider />

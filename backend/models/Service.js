@@ -9,19 +9,18 @@ const serviceSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
 
-    description: { type: String },
-
     // Danh mục (slug từ bảng Category, ví dụ: "cuoi", "gia-dinh")
     category: { type: String, default: "OTHER" },
 
     // Giá gốc (đơn vị VND)
     base_price: { type: Number, required: true },
 
-    // Thời lượng buổi chụp (giờ, ví dụ: 4, 8, 12)
-    duration_hours: { type: Number, required: true },
+    // Nhãn thời lượng tự do (ví dụ: "1 buổi", "1 ngày", "Cả ngày + đêm")
+
 
     // Ảnh thumbnail hiển thị trên trang danh sách/trang chủ
     thumbnail: { type: String },
+
 
     // Danh sách tính năng/quyền lợi của gói
     features: [{ type: String }],

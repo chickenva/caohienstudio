@@ -27,6 +27,7 @@ import {
   SearchOutlined,
   CameraOutlined,
   MenuOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -46,11 +47,18 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { upgradeGoogleImageUrl, isServerUploadUrl } from "../../utils/imageUtils";
 
 const { Title, Text } = Typography;
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
+/** Chọn URL thumbnail cho cột bảng: ưu tiên server upload, fallback sang Drive thumb */
+const resolveAdminThumbnail = (thumbnail) => {
+  if (!thumbnail) return "";
+  if (isServerUploadUrl(thumbnail)) return thumbnail;
+  return upgradeGoogleImageUrl(thumbnail, "s480") || "";
+};
 
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
@@ -240,9 +248,7 @@ const AdminServices = () => {
   const filteredServices = services.filter((service) => {
     const matchSearch =
       !searchText ||
-      (service?.name && service.name.toLowerCase().includes(searchText.toLowerCase())) ||
-      (service?.description &&
-        service.description.toLowerCase().includes(searchText.toLowerCase()));
+      (service?.name && service.name.toLowerCase().includes(searchText.toLowerCase()));
     const catSlug = typeof service?.category === 'object' ? service.category?.slug : service?.category;
     const matchCategory =
       categoryFilter.length === 0 || categoryFilter.includes(catSlug);
@@ -257,6 +263,11 @@ const AdminServices = () => {
 
   const columns = [
     {
+      title: (
+        <Tooltip title="Nhấn giữ và kéo thả icon ở mỗi dòng để thay đổi thứ tự hiển thị">
+          <InfoCircleOutlined style={{ color: "#BFA16A", cursor: "pointer" }} />
+        </Tooltip>
+      ),
       key: "sort",
       width: 50,
       align: "center",
@@ -273,39 +284,50 @@ const AdminServices = () => {
       dataIndex: "thumbnail",
       key: "thumbnail",
       width: 110,
-      render: (thumbnail) => (
-        <Image
-          src={
-            thumbnail ||
-            "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=300&auto=format&fit=crop"
-          }
-          width={78}
-          height={58}
-          style={{ objectFit: "cover", borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}
-          preview={false}
-        />
-      ),
+      render: (thumbnail) => {
+        const src = resolveAdminThumbnail(thumbnail);
+        const FALLBACK = "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=300&auto=format&fit=crop";
+        return (
+          <Image
+            src={src || FALLBACK}
+            width={78}
+            height={58}
+            style={{ objectFit: "cover", borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}
+            preview={false}
+            fallback={FALLBACK}
+            onError={(e) => {
+              // Nếu server upload lỗi, thử Drive thumbnail
+              if (!e.currentTarget.dataset.fallbackApplied) {
+                e.currentTarget.dataset.fallbackApplied = "true";
+                const driveUrl = upgradeGoogleImageUrl(thumbnail, "s480");
+                if (driveUrl && driveUrl !== src) {
+                  e.currentTarget.src = driveUrl;
+                } else {
+                  e.currentTarget.src = FALLBACK;
+                }
+              } else {
+                e.currentTarget.src = FALLBACK;
+              }
+            }}
+          />
+        );
+      },
     },
     {
       title: "GÓI DỊCH VỤ",
       dataIndex: "name",
       key: "name",
+      minWidth: 320,
       render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 700, color: "#262626", fontSize: "14px" }}>{record?.name || "Chưa có tên"}</div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#8c8c8c",
-              maxWidth: 420,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              marginTop: 4,
-            }}
-          >
-            {record.description || "Chưa có mô tả"}
+        <div style={{ padding: "4px 0" }}>
+          <div style={{ fontWeight: 700, color: "#1F1F1F", fontSize: "15px", lineHeight: "1.4" }}>
+            {record?.name || "Chưa có tên"}
           </div>
+          {record?.allow_addon && (
+            <Tag color="orange" style={{ fontSize: "11px", borderRadius: 4, marginTop: 4, fontWeight: 500 }}>
+              Dịch vụ đi kèm (Add-on)
+            </Tag>
+          )}
         </div>
       ),
     },
@@ -313,19 +335,18 @@ const AdminServices = () => {
       title: "DANH MỤC",
       dataIndex: "category",
       key: "category",
-      width: 190,
+      width: 180,
       render: (category) => {
         const catSlug = typeof category === 'object' ? category?.slug : category;
         const cat = categories.find((c) => c.slug === catSlug);
         const displayName = cat ? cat.name?.toUpperCase() : (typeof category === 'object' ? category?.name : category) || "KHÁC";
         return (
-          <Tag color="gold" style={{ fontWeight: 500, borderRadius: 4 }}>
+          <Tag style={{ color: "#8C6B2D", background: "#FAF6EF", borderColor: "#E8DFD1", fontWeight: 600, borderRadius: 4, padding: "2px 10px" }}>
             {typeof displayName === 'string' ? displayName : "KHÁC"}
           </Tag>
         );
       },
     },
-
     {
       title: "GIÁ BÁN",
       dataIndex: "base_price",
@@ -333,20 +354,9 @@ const AdminServices = () => {
       width: 160,
       align: "right",
       render: (price) => (
-        <strong style={{ color: "#d4b106", fontSize: "14px" }}>
+        <strong style={{ color: "#BFA16A", fontSize: "15px", fontWeight: 700 }}>
           {Number(price || 0).toLocaleString("vi-VN")}đ
         </strong>
-      ),
-    },
-    {
-      title: "THỜI LƯỢNG",
-      dataIndex: "duration_hours",
-      key: "duration_hours",
-      width: 130,
-      render: (hours) => (
-        <Tag color="purple" style={{ fontWeight: 500, borderRadius: 4 }}>
-          {hours} giờ
-        </Tag>
       ),
     },
     {
@@ -354,13 +364,14 @@ const AdminServices = () => {
       dataIndex: "is_active",
       key: "is_active",
       width: 140,
+      align: "center",
       render: (isActive) =>
         isActive ? (
-          <Tag color="green" style={{ fontWeight: 600, borderRadius: 4 }}>
+          <Tag color="green" style={{ fontWeight: 600, borderRadius: 4, padding: "2px 10px" }}>
             ĐANG HIỂN THỊ
           </Tag>
         ) : (
-          <Tag color="default" style={{ fontWeight: 600, borderRadius: 4 }}>
+          <Tag color="default" style={{ fontWeight: 600, borderRadius: 4, padding: "2px 10px" }}>
             ĐÃ ẨN
           </Tag>
         ),
@@ -369,9 +380,9 @@ const AdminServices = () => {
       title: "THAO TÁC",
       key: "action",
       align: "right",
-      width: 240,
+      width: 220,
       render: (_, record) => (
-        <Space>
+        <Space size="small">
           <Button
             icon={<EyeOutlined />}
             onClick={() => window.open(`/services/${record._id}`, "_blank")}
@@ -384,6 +395,7 @@ const AdminServices = () => {
             ghost
             icon={<EditOutlined />}
             onClick={() => navigate(`/admin/services/edit/${record._id}`)}
+            style={{ color: "#BFA16A", borderColor: "#BFA16A" }}
           >
             Sửa
           </Button>
@@ -415,12 +427,9 @@ const AdminServices = () => {
         }}
       >
         <div>
-          <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+          <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
             Quản lý gói dịch vụ
           </Title>
-          <Text type="secondary">
-            Thêm, chỉnh sửa, ẩn/hiện và sắp xếp thứ tự hiển thị của các gói chụp ảnh trên website.
-          </Text>
         </div>
 
         <Space>
@@ -436,21 +445,21 @@ const AdminServices = () => {
           <Card
             bordered={false}
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg, #BFA16A 0%, #9A8A78 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(24,144,255,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(191,161,106,0.25)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Tổng số gói dịch vụ
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{totalCount}</div>
               </div>
-              <CameraOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <CameraOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -461,19 +470,19 @@ const AdminServices = () => {
             style={{
               background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(82,196,26,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(82,196,26,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Gói đang hiển thị
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{activeCount}</div>
               </div>
-              <EyeOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <EyeOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -484,19 +493,19 @@ const AdminServices = () => {
             style={{
               background: "linear-gradient(135deg, #bfbfbf 0%, #8c8c8c 100%)",
               color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(140,140,140,0.15)",
+              borderRadius: 12,
+              boxShadow: "0 4px 14px rgba(140,140,140,0.2)",
             }}
             bodyStyle={{ padding: "20px 24px" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ opacity: 0.8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
+                <div style={{ opacity: 0.9, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
                   Gói đang ẩn
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{hiddenCount}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{hiddenCount}</div>
               </div>
-              <EyeInvisibleOutlined style={{ fontSize: 36, opacity: 0.8 }} />
+              <EyeInvisibleOutlined style={{ fontSize: 38, opacity: 0.85 }} />
             </div>
           </Card>
         </Col>
@@ -505,20 +514,20 @@ const AdminServices = () => {
       {/* Filter panel */}
       <Card
         bordered={false}
-        style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
-        bodyStyle={{ padding: "16px 24px" }}
+        style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
+        bodyStyle={{ padding: "18px 24px" }}
       >
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={10}>
             <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Tìm kiếm gói dịch vụ</span>
             <Input
-              placeholder="Nhập tên gói hoặc mô tả..."
+              placeholder="Nhập tên gói dịch vụ..."
               prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
               size="large"
-              style={{ borderRadius: 6 }}
+              style={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} sm={12} md={7}>
@@ -536,7 +545,7 @@ const AdminServices = () => {
               maxTagCount="responsive"
               allowClear
               size="large"
-              dropdownStyle={{ borderRadius: 6 }}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} sm={12} md={7}>
@@ -548,7 +557,7 @@ const AdminServices = () => {
               onChange={setStatusFilter}
               options={statusOptions}
               size="large"
-              dropdownStyle={{ borderRadius: 6 }}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Col>
         </Row>
@@ -557,7 +566,7 @@ const AdminServices = () => {
       {/* Main Table */}
       <Card
         bordered={false}
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
         bodyStyle={{ padding: "0px" }}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -578,7 +587,7 @@ const AdminServices = () => {
               bordered={false}
               scroll={{ x: 1000 }}
               pagination={false}
-              style={{ borderRadius: 8, overflow: "hidden" }}
+              style={{ borderRadius: 12, overflow: "hidden" }}
             />
           </SortableContext>
         </DndContext>

@@ -204,12 +204,9 @@ const AdminProfile = () => {
         }}
       >
         <div>
-          <Title level={3} style={{ marginBottom: 4 }}>
+          <Title level={3} style={{ marginBottom: 0 }}>
             Tài khoản quản trị
           </Title>
-          <Text type="secondary">
-            Quản lý thông tin cá nhân và bảo mật tài khoản admin.
-          </Text>
         </div>
 
         <Button
@@ -226,38 +223,40 @@ const AdminProfile = () => {
             bordered={false}
             style={{
               textAlign: "center",
-              borderRadius: 18,
-              background: "#f8f5f1",
+              borderRadius: 12,
+              border: "1px solid #efebe4",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+              background: "#ffffff",
             }}
           >
             <Avatar
-              size={120}
+              size={110}
               src={user.avatar || user.portfolio?.avatar}
               icon={<UserOutlined />}
               style={{
-                backgroundColor: "#9a8a78",
+                backgroundColor: "#BFA16A",
                 marginBottom: 18,
               }}
             />
 
-            <Title level={4} style={{ marginBottom: 6 }}>
+            <Title level={4} style={{ marginBottom: 6, fontWeight: 700 }}>
               {user.full_name || user.fullName || "Admin"}
             </Title>
 
-            <Tag color="gold" style={{ marginBottom: 16 }}>
+            <Tag color="gold" style={{ marginBottom: 16, borderRadius: 4, fontWeight: 600, padding: "2px 10px" }}>
               {user.role === "ADMIN" ? "QUẢN TRỊ VIÊN" : user.role || "ADMIN"}
             </Tag>
 
-            <Divider />
+            <Divider style={{ margin: "16px 0" }} />
 
             <div style={{ textAlign: "left" }}>
-              <p style={{ marginBottom: 12 }}>
-                <MailOutlined style={{ marginRight: 8, color: "#9a8a78" }} />
+              <p style={{ marginBottom: 12, color: "#595959" }}>
+                <MailOutlined style={{ marginRight: 8, color: "#BFA16A" }} />
                 {user.email || "Chưa có email"}
               </p>
 
-              <p style={{ marginBottom: 0 }}>
-                <PhoneOutlined style={{ marginRight: 8, color: "#9a8a78" }} />
+              <p style={{ marginBottom: 0, color: "#595959" }}>
+                <PhoneOutlined style={{ marginRight: 8, color: "#BFA16A" }} />
                 {user.phone || "Chưa cập nhật số điện thoại"}
               </p>
             </div>
@@ -266,12 +265,13 @@ const AdminProfile = () => {
 
         <Col xs={24} lg={16}>
           <Card
-            title="Cập nhật thông tin"
+            title={<span style={{ fontWeight: 700 }}>Cập nhật thông tin</span>}
             bordered={false}
             style={{
-              borderRadius: 18,
+              borderRadius: 12,
+              border: "1px solid #efebe4",
               marginBottom: 24,
-              boxShadow: "0 12px 34px rgba(0,0,0,0.04)",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
             }}
           >
             <Form form={form} layout="vertical" onFinish={handleUpdateProfile}>
@@ -290,6 +290,8 @@ const AdminProfile = () => {
                     <Input
                       prefix={<UserOutlined />}
                       placeholder="Nhập họ và tên"
+                      size="large"
+                      style={{ borderRadius: 8 }}
                     />
                   </Form.Item>
                 </Col>
@@ -299,13 +301,15 @@ const AdminProfile = () => {
                     <Input
                       prefix={<PhoneOutlined />}
                       placeholder="Nhập số điện thoại"
+                      size="large"
+                      style={{ borderRadius: 8 }}
                     />
                   </Form.Item>
                 </Col>
               </Row>
 
               <Form.Item label="Email" name="email">
-                <Input prefix={<MailOutlined />} disabled />
+                <Input prefix={<MailOutlined />} disabled size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Button
@@ -314,10 +318,10 @@ const AdminProfile = () => {
                 icon={<SaveOutlined />}
                 loading={loading}
                 style={{
-                  background: "#2f2f2f",
-                  borderColor: "#2f2f2f",
-                  borderRadius: 999,
-                  height: 42,
+                  background: "#BFA16A",
+                  borderColor: "#BFA16A",
+                  borderRadius: 8,
+                  height: 40,
                   padding: "0 24px",
                 }}
               >
@@ -327,11 +331,12 @@ const AdminProfile = () => {
           </Card>
 
           <Card
-            title="Đổi mật khẩu"
+            title={<span style={{ fontWeight: 700 }}>Đổi mật khẩu</span>}
             bordered={false}
             style={{
-              borderRadius: 18,
-              boxShadow: "0 12px 34px rgba(0,0,0,0.04)",
+              borderRadius: 12,
+              border: "1px solid #efebe4",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
             }}
           >
             <Form
@@ -352,6 +357,8 @@ const AdminProfile = () => {
                 <Input.Password
                   prefix={<LockOutlined />}
                   placeholder="Nhập mật khẩu hiện tại"
+                  size="large"
+                  style={{ borderRadius: 8 }}
                 />
               </Form.Item>
 
@@ -367,13 +374,15 @@ const AdminProfile = () => {
                       },
                       {
                         min: 6,
-                        message: "Mật khẩu phải có ít nhất 6 ký tự",
+                        message: "Mật khẩu mới phải có ít nhất 6 ký tự",
                       },
                     ]}
                   >
                     <Input.Password
                       prefix={<LockOutlined />}
                       placeholder="Nhập mật khẩu mới"
+                      size="large"
+                      style={{ borderRadius: 8 }}
                     />
                   </Form.Item>
                 </Col>
@@ -407,6 +416,8 @@ const AdminProfile = () => {
                     <Input.Password
                       prefix={<LockOutlined />}
                       placeholder="Nhập lại mật khẩu mới"
+                      size="large"
+                      style={{ borderRadius: 8 }}
                     />
                   </Form.Item>
                 </Col>
@@ -419,10 +430,10 @@ const AdminProfile = () => {
                   icon={<LockOutlined />}
                   loading={passLoading}
                   style={{
-                    background: "#2f2f2f",
-                    borderColor: "#2f2f2f",
-                    borderRadius: 999,
-                    height: 42,
+                    background: "#BFA16A",
+                    borderColor: "#BFA16A",
+                    borderRadius: 8,
+                    height: 40,
                     padding: "0 24px",
                   }}
                 >

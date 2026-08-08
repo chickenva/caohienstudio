@@ -122,7 +122,7 @@ exports.getAdminOverview = async (req, res) => {
       // 6 đơn mới nhất (có populate đầy đủ)
       Booking.find()
         .populate("customer_id",    "full_name email phone")
-        .populate("service_id",     "name base_price duration_hours")
+        .populate("service_id",     "name base_price")
         .sort({ createdAt: -1 })
         .limit(6),
 
@@ -193,3 +193,4 @@ exports.getAdminOverview = async (req, res) => {
     });
   }
 };
+

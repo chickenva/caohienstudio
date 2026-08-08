@@ -148,7 +148,7 @@ exports.getAllGalleries = async (req, res) => {
     }
 
     const galleries = await PublicGallery.find(query)
-      .populate("service_ids",     "name base_price duration_hours")
+      .populate("service_ids",     "name base_price")
       .sort({ featured: -1, order: 1, createdAt: -1 });
 
     const hydratedGalleries = await hydrateGalleryList(galleries);
@@ -168,7 +168,7 @@ exports.getAllGalleries = async (req, res) => {
 exports.getGalleryById = async (req, res) => {
   try {
     const gallery = await PublicGallery.findById(req.params.id)
-      .populate("service_ids",     "name description base_price duration_hours");
+      .populate("service_ids",     "name base_price");
 
     if (!gallery || !gallery.is_active) {
       return res.status(404).json({ message: "Không tìm thấy album" });
@@ -205,7 +205,7 @@ exports.getAllGalleriesAdmin = async (req, res) => {
     }
 
     const galleries = await PublicGallery.find(query)
-      .populate("service_ids",     "name base_price duration_hours")
+      .populate("service_ids",     "name base_price")
       .sort({ featured: -1, order: 1, createdAt: -1 });
 
     const hydratedGalleries = await hydrateGalleryList(galleries);
@@ -416,3 +416,4 @@ exports.reorderGalleries = async (req, res) => {
     res.status(500).json({ message: "Lỗi cập nhật thứ tự", error: error.message });
   }
 };
+

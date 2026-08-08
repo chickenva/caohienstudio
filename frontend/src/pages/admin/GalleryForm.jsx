@@ -1,6 +1,6 @@
 /**
  * GalleryForm.jsx
- * Form tạo/chỉnh sửa album gallery — nhập link Drive, danh mục, ảnh bìa.
+ * Form tạo/chỉnh sửa album gallery — nhập link Drive, danh mục, ảnh bìa kèm xem trước ảnh bìa giống ServiceForm.jsx.
  */
 import React, { useEffect, useState } from "react";
 import {
@@ -16,15 +16,27 @@ import {
   Col,
   Space,
   Upload,
+  Image,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined, UploadOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  SaveOutlined,
+  UploadOutlined,
+  DeleteOutlined,
+  PictureOutlined,
+} from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { FALLBACK_GALLERY_IMAGE, upgradeGoogleImageUrl } from "../../utils/imageUtils";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://caohienstudio-api.onrender.com/api");
 
 // Form admin tạo/cập nhật album từ Google Drive.
 const GalleryForm = () => {
@@ -37,6 +49,7 @@ const GalleryForm = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
+  const [coverImagePreview, setCoverImagePreview] = useState("");
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
 
@@ -57,7 +70,8 @@ const GalleryForm = () => {
 
       const uploadedUrl = res.data.url;
       form.setFieldsValue({ coverImage: uploadedUrl });
-      message.success("Tải ảnh bìa album từ máy lên thành công!");
+      setCoverImagePreview(uploadedUrl);
+      message.success("Tải ảnh từ máy lên thành công!");
       onSuccess(res.data, file);
     } catch (err) {
       message.error(err.response?.data?.message || "Lỗi tải ảnh lên server!");
@@ -67,6 +81,8 @@ const GalleryForm = () => {
     }
   };
 
+
+
   useEffect(() => {
     fetchOptions();
 
@@ -74,6 +90,8 @@ const GalleryForm = () => {
       fetchGalleryDetail();
     } else {
       form.resetFields();
+      setCoverImagePreview("");
+      setInitialLoading(false);
     }
   }, [id, isEdit]);
 
@@ -81,14 +99,14 @@ const GalleryForm = () => {
     try {
       const [serviceRes, categoryRes] = await Promise.all([
         axios.get(`${API_URL}/services`),
-        axios.get(`${API_URL}/categories?type=GALLERY&is_active=true`)
+        axios.get(`${API_URL}/categories?type=GALLERY&is_active=true`),
       ]);
 
       const serviceData = Array.isArray(serviceRes.data)
         ? serviceRes.data
         : serviceRes.data.services || [];
       setServices(serviceData);
-      
+
       setCategories(categoryRes.data.categories || []);
     } catch (err) {
       message.error("Không thể tải dữ liệu dịch vụ hoặc danh mục");
@@ -113,6 +131,8 @@ const GalleryForm = () => {
         service_ids: gallery.service_ids?.map((s) => s._id) || [],
         is_active: gallery.is_active,
       });
+
+      setCoverImagePreview(gallery.coverImage || "");
     } catch (err) {
       message.error(err.response?.data?.message || "Không thể tải album");
     } finally {
@@ -126,6 +146,9 @@ const GalleryForm = () => {
     try {
       const payload = {
         ...values,
+        // Luôn lấy coverImage từ state coverImagePreview
+        // (controlled input) để tránh mất giá trị khi form re-render
+        coverImage: coverImagePreview ? upgradeGoogleImageUrl(coverImagePreview, "s1800") || coverImagePreview : "",
         service_ids: values.service_ids || [],
       };
 
@@ -166,12 +189,9 @@ const GalleryForm = () => {
       </Button>
 
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ marginBottom: 4 }}>
+        <Title level={3} style={{ marginBottom: 0 }}>
           {isEdit ? "Chỉnh sửa album" : "Tạo album mới"}
         </Title>
-        <Text type="secondary">
-          Tạo album bằng cách dán link folder Google Drive. Bạn cũng có thể tải ảnh bìa trực tiếp từ máy tính.
-        </Text>
       </div>
 
       <Card loading={initialLoading}>
@@ -183,92 +203,93 @@ const GalleryForm = () => {
             is_active: true,
           }}
         >
-          <Row gutter={20}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Tên album"
-                name="title"
-                rules={[{ required: true, message: "Vui lòng nhập tên album" }]}
-              >
-                <Input placeholder="VD: Minh Anh & Hoài Nam" />
-              </Form.Item>
-            </Col>
+          <Row gutter={24}>
+            <Col xs={24} lg={15}>
+              <Row gutter={16}>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Tên album"
+                    name="title"
+                    rules={[{ required: true, message: "Vui lòng nhập tên album" }]}
+                  >
+                    <Input placeholder="VD: Minh Anh & Hoài Nam" />
+                  </Form.Item>
+                </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Danh mục"
-                name="category"
-                rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
-              >
-                <Select
-                  placeholder="Chọn danh mục"
-                  options={categories.map((c) => ({
-                    value: c.slug,
-                    label: c.name,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Danh mục"
+                    name="category"
+                    rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
+                  >
+                    <Select
+                      placeholder="Chọn danh mục"
+                      options={categories.map((c) => ({
+                        value: c.slug,
+                        label: c.name,
+                      }))}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Col xs={24}>
               <Form.Item
-                label="Link folder Google Drive"
+                label="Link folder album Google Drive"
                 name="drive_folder_url"
                 rules={[
                   {
                     required: !isEdit,
-                    message: "Vui lòng dán link folder Google Drive",
+                    message: "Vui lòng dán link folder album Google Drive",
                   },
                 ]}
-                extra={
-                  isEdit
-                    ? "Khi sửa album, có thể để trống nếu không muốn đổi folder Google Drive."
-                    : "Dán link folder Google Drive chứa ảnh của album."
-                }
               >
                 <Input placeholder="https://drive.google.com/drive/folders/..." />
               </Form.Item>
-            </Col>
 
-            {isEdit && (
-              <Col xs={24}>
+              {isEdit && (
                 <Form.Item
                   label="Google Drive Folder ID"
                   name="drive_folder_id"
                 >
                   <Input disabled />
                 </Form.Item>
-              </Col>
-            )}
+              )}
 
-            <Col xs={24}>
+              {/* coverImage: controlled bằng state coverImagePreview, sync vào form khi thay đổi */}
               <Form.Item
-                label="Ảnh bìa tùy chọn"
+                label="Ảnh đại diện / Thumbnail"
                 name="coverImage"
-                extra="Có thể bỏ trống (sẽ lấy ảnh đầu tiên trong Drive) hoặc Dán link/Tải ảnh trực tiếp từ máy tính."
               >
                 <Space.Compact style={{ width: "100%" }}>
-                  <Input placeholder="Dán link ảnh bìa (Drive/Web) hoặc chọn Upload từ máy" />
+                  <Input
+                    placeholder="Dán link ảnh bìa (Drive/Web) hoặc chọn Upload từ máy"
+                    value={coverImagePreview}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCoverImagePreview(val);
+                      form.setFieldsValue({ coverImage: val });
+                    }}
+                  />
                   <Upload
                     customRequest={handleCustomUpload}
                     showUploadList={false}
                     accept="image/*"
                   >
-                    <Button icon={<UploadOutlined />} loading={uploading}>
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploading}
+                      style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A", color: "#fff" }}
+                    >
                       Tải ảnh từ máy
                     </Button>
                   </Upload>
                 </Space.Compact>
               </Form.Item>
-            </Col>
 
-            <Col xs={24} md={12}>
               <Form.Item label="Địa điểm chụp" name="location">
                 <Input placeholder="VD: Đà Lạt, TP.HCM, Studio..." />
               </Form.Item>
-            </Col>
 
-            <Col xs={24}>
               <Form.Item label="Gói dịch vụ liên quan" name="service_ids">
                 <Select
                   mode="multiple"
@@ -280,19 +301,15 @@ const GalleryForm = () => {
                   }))}
                 />
               </Form.Item>
-            </Col>
 
-            <Col xs={24}>
               <Form.Item label="Mô tả album" name="description">
                 <TextArea
                   rows={4}
                   placeholder="Mô tả về album, phong cách, kỷ niệm..."
                 />
               </Form.Item>
-            </Col>
 
-            {isEdit && (
-              <Col xs={24}>
+              {isEdit && (
                 <Form.Item
                   label="Hiển thị trên website"
                   name="is_active"
@@ -300,8 +317,76 @@ const GalleryForm = () => {
                 >
                   <Switch checkedChildren="Hiện" unCheckedChildren="Ẩn" />
                 </Form.Item>
-              </Col>
-            )}
+              )}
+            </Col>
+
+            <Col xs={24} lg={9}>
+              <Card
+                title={
+                  <Space>
+                    <PictureOutlined style={{ color: "#1890ff" }} />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Xem trước ảnh bìa</span>
+                  </Space>
+                }
+                extra={
+                  coverImagePreview ? (
+                    <Button
+                      danger
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => {
+                        form.setFieldsValue({ coverImage: "" });
+                        setCoverImagePreview("");
+                        message.info("Đã gỡ ảnh bìa");
+                      }}
+                    >
+                      Gỡ ảnh
+                    </Button>
+                  ) : null
+                }
+                bordered
+                style={{ height: "100%" }}
+              >
+                {coverImagePreview ? (
+                  <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #eee", backgroundColor: "#f5f5f5" }}>
+                    <Image
+                      src={upgradeGoogleImageUrl(coverImagePreview, "s1200")}
+                      alt="Xem trước ảnh bìa"
+                      width="100%"
+                      height={240}
+                      style={{ objectFit: "cover", display: "block" }}
+                      fallback={FALLBACK_GALLERY_IMAGE}
+                      onError={() => {
+                        message.warning("Link ảnh xem trước không hợp lệ");
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      height: 240,
+                      borderRadius: 8,
+                      background: "#fafafa",
+                      border: "1px dashed #d9d9d9",
+                      color: "#8c8c8c",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      padding: 20,
+                    }}
+                  >
+                    <PictureOutlined style={{ fontSize: 32, color: "#ccc", marginBottom: 10 }} />
+                    <span>Dán link ảnh bìa hoặc chọn 'Tải ảnh từ máy' để xem trước tại đây</span>
+                    <span style={{ fontSize: 12, color: "#b0b0b0", marginTop: 8 }}>
+                      (Nếu bỏ trống, hệ thống sẽ tự động lấy ảnh đầu tiên từ Google Drive)
+                    </span>
+                  </div>
+                )}
+              </Card>
+            </Col>
           </Row>
 
           <Space style={{ marginTop: 20 }}>
@@ -313,6 +398,7 @@ const GalleryForm = () => {
               htmlType="submit"
               icon={<SaveOutlined />}
               loading={loading}
+              style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
             >
               {isEdit ? "Lưu thay đổi" : "Tạo album"}
             </Button>

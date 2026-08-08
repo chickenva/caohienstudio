@@ -42,9 +42,10 @@ import {
   DownloadOutlined,
   QrcodeOutlined,
   CalendarOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -81,6 +82,7 @@ const statusConfig = {
 
 // Trang admin quản lý toàn bộ vòng đời đơn: yêu cầu, hợp đồng, thanh toán và hoàn thành.
 export default function AdminOrders() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [bookings, setBookings] = useState([]);
@@ -599,33 +601,38 @@ export default function AdminOrders() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
         <div>
-          <Title level={3} style={{ marginBottom: 4 }}>Quản Lý Đơn Đặt Lịch</Title>
-          <Text type="secondary">Theo dõi yêu cầu đặt lịch, hợp đồng và thanh toán.</Text>
+          <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>Quản Lý Đơn Đặt Lịch</Title>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={fetchBookings}></Button>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={fetchBookings} loading={loading} />
+        </Space>
       </div>
 
-      {/* Filter */}
-      <Card bordered={false} style={{ marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 8 }} bodyStyle={{ padding: "16px 24px" }}>
+      {/* Filter Card */}
+      <Card
+        bordered={false}
+        style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
+        bodyStyle={{ padding: "18px 24px" }}
+      >
         <Row gutter={[16, 12]} align="middle">
           <Col xs={24} md={10}>
             <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
-              <FilterOutlined style={{ marginRight: 6 }} />Tìm theo mã đơn / tên khách
+              Tìm kiếm đơn đặt lịch
             </span>
             <Input
-              placeholder="Nhập mã đơn hoặc tên khách hàng..."
+              placeholder="Nhập mã đơn, tên hoặc số điện thoại..."
               prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               allowClear
               size="large"
-              style={{ borderRadius: 6 }}
+              style={{ borderRadius: 8 }}
             />
           </Col>
           <Col xs={24} md={7}>
             <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo ngày chụp</span>
             <DatePicker.RangePicker
-              style={{ width: "100%" }}
+              style={{ width: "100%", borderRadius: 8 }}
               value={dateRange}
               onChange={setDateRange}
               format="DD/MM/YYYY"
@@ -635,25 +642,33 @@ export default function AdminOrders() {
           </Col>
           <Col xs={24} md={7}>
             <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo trạng thái</span>
-            <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} style={{ width: "100%" }} size="large" />
+            <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} style={{ width: "100%" }} size="large" dropdownStyle={{ borderRadius: 8 }} />
           </Col>
         </Row>
         {hasActiveFilter && (
-          <div style={{ marginTop: 10, color: "#8c8c8c", fontSize: 13 }}>
-            Hiển thị <strong>{filteredBookings.length}</strong> / {bookings.length} đơn
+          <div style={{ marginTop: 12, color: "#8c8c8c", fontSize: 13 }}>
+            Đang hiển thị <strong>{filteredBookings.length}</strong> / {bookings.length} đơn hàng
           </div>
         )}
       </Card>
 
-      <Table
-        columns={columns}
-        dataSource={filteredBookings}
-        rowKey="_id"
-        loading={loading}
-        pagination={{ pageSize: 8, showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} đơn` }}
-        scroll={{ x: 1100 }}
-        bordered
-      />
+      {/* Table Container */}
+      <Card
+        bordered={false}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
+        bodyStyle={{ padding: 0 }}
+      >
+        <Table
+          columns={columns}
+          dataSource={filteredBookings}
+          rowKey="_id"
+          loading={loading}
+          pagination={{ pageSize: 10, showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} đơn` }}
+          scroll={{ x: 1100 }}
+          bordered={false}
+          style={{ borderRadius: 12 }}
+        />
+      </Card>
 
       {/* ===== MODAL CHI TIẾT ===== */}
       <Modal
@@ -861,7 +876,7 @@ export default function AdminOrders() {
                 message="Gửi link hoặc QR code cho khách qua Zalo/Email. Khách xem hợp đồng PDF, xác nhận trực tuyến và thanh toán VNPay."
                 style={{ marginBottom: 20, textAlign: "left" }}
               />
-              <Button type="primary" onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); }}>
+              <Button type="primary" onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); }} style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}>
                 Đóng
               </Button>
             </>
@@ -883,7 +898,7 @@ export default function AdminOrders() {
         maskClosable={!savingEdit}
         footer={[
           <Button key="cancel" onClick={() => { setEditModalOpen(false); setEditTarget(null); }} disabled={savingEdit}>Hủy</Button>,
-          <Button key="save" type="primary" loading={savingEdit} onClick={handleSaveEdit}>Lưu thay đổi</Button>,
+          <Button key="save" type="primary" loading={savingEdit} onClick={handleSaveEdit} style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}>Lưu thay đổi</Button>,
         ]}
         width={720}
       >

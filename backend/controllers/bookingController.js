@@ -546,7 +546,7 @@ exports.getMyBookings = async (req, res) => {
     await markExpiredPendingBookings(customerId);
 
     const bookings = await Booking.find({ customer_id: customerId })
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name base_price")
       .sort({ createdAt: -1 });
 
@@ -574,7 +574,7 @@ exports.getBookingDetail = async (req, res) => {
       _id: req.params.id,
       customer_id: customerId,
     })
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name base_price");
 
     if (!booking) {
@@ -773,7 +773,7 @@ exports.cancelMyBooking = async (req, res) => {
       _id: req.params.id,
       customer_id: customerId,
     })
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("assigned_staff_ids", "full_name phone email");
 
     if (!booking) {
@@ -830,7 +830,7 @@ exports.sendContract = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name base_price")
       .populate("extra_service_ids", "name base_price")
       .populate("customer_id", "full_name email phone");
 
@@ -931,7 +931,7 @@ exports.getContractByToken = async (req, res) => {
       contract_token: token,
     })
       .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name base_price")
       .populate("assigned_staff_ids", "full_name phone email");
 
@@ -980,7 +980,7 @@ exports.confirmContract = async (req, res) => {
       contract_token: token,
     })
       .populate("customer_id")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name")
       .populate("extra_service_ids", "name");
 
     if (!booking) {
@@ -1117,7 +1117,7 @@ exports.vnpayReturn = async (req, res) => {
 
     const booking = await Booking.findById(payment.reference_id)
       .populate("customer_id")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name")
       .populate("extra_service_ids", "name");
 
     if (!booking) {
@@ -1655,7 +1655,7 @@ exports.getAllBookingsForAdmin = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name base_price")
       .populate("assigned_staff_ids", "full_name email phone")
       .sort({ createdAt: -1 });
@@ -1686,7 +1686,7 @@ exports.updateBookingStatus = async (req, res) => {
 
     const booking = await Booking.findById(req.params.id)
       .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price duration_hours").populate("service_id", "name thumbnail base_price duration_hours")
+      .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name");
 
     if (!booking) {
@@ -1886,8 +1886,8 @@ exports.rescheduleBooking = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price duration_hours")
-      .populate("service_id", "name base_price duration_hours")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
       .populate("extra_service_ids", "name base_price")
       .populate("assigned_staff_ids", "full_name email");
 
@@ -2080,3 +2080,4 @@ exports.getContractInfo = async (req, res) => {
     });
   }
 };
+

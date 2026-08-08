@@ -20,47 +20,95 @@ const dimensionCache = new Map();
 const isGoogleUserContentUrl = (url = "") =>
   /googleusercontent\.com/i.test(url);
 
-// Nhận diện link thumbnail Google Drive do backend trả về.
+// Nhận diện link Google Drive bất kỳ (link share/view, open, uc, thumbnail, cdn)
+const isGoogleDriveUrl = (url = "") =>
+  /drive\.google\.com/i.test(url) || /googleusercontent\.com\/d\//i.test(url);
+
 const isDriveThumbnailUrl = (url = "") =>
-  /drive\.google\.com\/thumbnail/i.test(url);
+  /drive\.google\.com\/thumbnail/i.test(url) || isGoogleDriveUrl(url);
+
+/**
+ * Phân biệt ảnh đã upload lên server (Cloudinary, local server, v.v.)
+ * với link Google Drive/Photos.
+ * Ưu tiên ảnh server khi cả hai đều tồn tại.
+ * @param {string} url
+ * @returns {boolean}
+ */
+export const isServerUploadUrl = (url = "") => {
+  if (!url) return false;
+  const u = url.trim();
+  // Nếu là link Google Drive / Photos / googleusercontent → không phải server upload
+  if (isGoogleDriveUrl(u) || isGoogleUserContentUrl(u)) return false;
+  if (/photos\.google\.com/i.test(u)) return false;
+  // Các domain còn lại (Cloudinary, server tự host, Unsplash fallback...) là server upload
+  return true;
+};
+
+/**
+ * Trích folderId từ link folder Google Drive.
+ * Hỗ trợ dạng: drive.google.com/drive/folders/FOLDER_ID
+ * @param {string} url
+ * @returns {string|null}
+ */
+export const extractGoogleDriveFolderId = (url = "") => {
+  if (!url) return null;
+  const match = String(url).trim().match(/\/drive\/folders\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+};
+
+// Trích xuất File ID từ link Google Drive bất kỳ (file/d/ID, open?id=ID, uc?id=ID, thumbnail?id=ID, v.v.)
+export const extractGoogleDriveFileId = (input = "") => {
+  if (!input || typeof input !== "string") return null;
+  const str = input.trim();
+
+  // Bỏ qua nếu là link folder Google Drive (/drive/folders/...)
+  if (/\/drive\/folders\//i.test(str)) return null;
+
+  // Pattern 1: /file/d/FILE_ID
+  const matchFileD = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  if (matchFileD && matchFileD[1]) return matchFileD[1];
+
+  // Pattern 2: ?id=FILE_ID hoặc &id=FILE_ID (open?id=, uc?id=, thumbnail?id=)
+  const matchIdParam = str.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+  if (matchIdParam && matchIdParam[1]) return matchIdParam[1];
+
+  // Pattern 3: googleusercontent.com/d/FILE_ID
+  const matchUserContentD = str.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/i);
+  if (matchUserContentD && matchUserContentD[1]) return matchUserContentD[1];
+
+  return null;
+};
 
 // Đổi size dạng s1800 sang w1800 theo format thumbnail Drive.
 const getDriveThumbnailSize = (size = "s1800") =>
   size.startsWith("s") ? `w${size.slice(1)}` : size;
 
-// Nâng kích thước ảnh Google/Drive để gallery không bị mờ.
+// Nâng kích thước ảnh và chuyển đổi mọi định dạng link Google Drive về URL thumbnail có thể hiển thị được.
 export const upgradeGoogleImageUrl = (url, size = "s1800") => {
   if (!url) return "";
 
   const trimmedUrl = String(url).trim();
 
-  if (isDriveThumbnailUrl(trimmedUrl)) {
-    const thumbnailSize = getDriveThumbnailSize(size);
-
-    try {
-      const parsedUrl = new URL(trimmedUrl);
-      parsedUrl.searchParams.set("sz", thumbnailSize);
-      return parsedUrl.toString();
-    } catch (error) {
-      if (/[?&]sz=/i.test(trimmedUrl)) {
-        return trimmedUrl.replace(/([?&]sz=)[^&#]*/i, `$1${thumbnailSize}`);
-      }
-
-      const separator = trimmedUrl.includes("?") ? "&" : "?";
-      return `${trimmedUrl}${separator}sz=${thumbnailSize}`;
+  // 1. Nếu là bất kỳ định dạng link Google Drive nào
+  if (isGoogleDriveUrl(trimmedUrl)) {
+    const fileId = extractGoogleDriveFileId(trimmedUrl);
+    if (fileId) {
+      const thumbnailSize = getDriveThumbnailSize(size);
+      return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${thumbnailSize}`;
     }
   }
 
-  if (!isGoogleUserContentUrl(trimmedUrl)) {
+  // 2. Nếu là link CDN googleusercontent (lh3.googleusercontent.com/...)
+  if (isGoogleUserContentUrl(trimmedUrl)) {
+    if (/=([swh]\d+[^/?#]*)$/i.test(trimmedUrl)) {
+      return trimmedUrl.replace(/=([swh]\d+[^/?#]*)$/i, `=${size}`);
+    }
     return trimmedUrl;
-  }
-
-  if (/=([swh]\d+[^/?#]*)$/i.test(trimmedUrl)) {
-    return trimmedUrl.replace(/=([swh]\d+[^/?#]*)$/i, `=${size}`);
   }
 
   return trimmedUrl;
 };
+
 
 // Chọn URL ảnh phù hợp nhất theo ngữ cảnh thumb/grid/cover/preview.
 export const getGalleryImageUrl = (

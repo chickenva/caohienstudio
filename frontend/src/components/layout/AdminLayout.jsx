@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Layout, Menu, Button, message, Avatar, Dropdown, Divider, Tooltip } from "antd";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import Logo from "../Logo";
 import {
   DashboardOutlined,
   UserOutlined,
@@ -210,56 +211,11 @@ const AdminLayout = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
               cursor: "pointer",
               overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: TEXT_DARK,
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: '"Playfair Display", serif',
-                fontSize: 15,
-                flexShrink: 0,
-              }}
-            >
-              CH
-            </div>
-
-            {!collapsed && (
-              <div style={{ overflow: "hidden" }}>
-                <div
-                  style={{
-                    fontFamily: '"Playfair Display", "Times New Roman", serif',
-                    fontSize: 17,
-                    color: TEXT_DARK,
-                    lineHeight: 1.1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Cao Hiển
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    color: PRIMARY_COLOR,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Studio Admin
-                </div>
-              </div>
-            )}
+            <Logo size={34} showText={!collapsed} textColor={TEXT_DARK} />
           </div>
 
           {/* Collapse button */}
@@ -374,8 +330,9 @@ const AdminLayout = () => {
 
       {/* ── Main content (no Header) ── */}
       <Layout style={{ background: "#f0ece6" }}>
-        <Content style={{ padding: 24 }}>
+        <Content className="admin-layout-content" style={{ padding: 24 }}>
           <div
+            className="admin-main-card"
             style={{
               minHeight: "calc(100vh - 48px)",
               background: "#fff",
@@ -383,6 +340,7 @@ const AdminLayout = () => {
               padding: 28,
               border: `1px solid ${BORDER_COLOR}`,
               boxShadow: "0 16px 48px rgba(80, 60, 40, 0.06)",
+              overflowX: "auto",
             }}
           >
             <Outlet />
@@ -392,6 +350,17 @@ const AdminLayout = () => {
 
       <style>{`
         .ant-layout-sider-trigger { display: none; }
+
+        @media (max-width: 768px) {
+          .admin-layout-content {
+            padding: 10px !important;
+          }
+          .admin-main-card {
+            padding: 16px 12px !important;
+            border-radius: 12px !important;
+            min-height: calc(100vh - 20px) !important;
+          }
+        }
 
         .ant-menu .ant-menu-item,
         .ant-menu .ant-menu-submenu-title {

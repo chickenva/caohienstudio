@@ -11,6 +11,7 @@ import {
   CameraOutlined,
   AppstoreOutlined,
   PictureOutlined,
+  ArrowRightOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
@@ -20,6 +21,8 @@ import {
   getImageDimensions,
   getImageErrorHandler,
   preloadImages,
+  isServerUploadUrl,
+  upgradeGoogleImageUrl,
 } from "../../utils/imageUtils";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
@@ -43,6 +46,7 @@ const GalleryDetail = () => {
 
   const [gallery, setGallery] = useState(null);
   const [images, setImages] = useState([]);
+  const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [masonryColumnCount, setMasonryColumnCount] = useState(1);
   const [imageDimensions, setImageDimensions] = useState({});
@@ -265,6 +269,21 @@ const GalleryDetail = () => {
 
       setGallery(fetchedGallery);
       setImages(fetchedImages);
+
+      // Xử lý gói dịch vụ liên quan
+      const linkedServices = (fetchedGallery.service_ids || []).filter(Boolean);
+      try {
+        const sRes = await axios.get(`${API_URL}/services`);
+        const allServices = Array.isArray(sRes.data) ? sRes.data : sRes.data.services || [];
+        
+        // Ưu tiên gói được link trong album, nếu thiếu thì tự động bổ sung gói cùng danh mục/khác để tròn 3 card
+        const linkedIds = new Set(linkedServices.map(s => s._id || s));
+        const extraServices = allServices.filter(s => !linkedIds.has(s._id));
+        const combined = [...linkedServices, ...extraServices].slice(0, 3);
+        setRelatedServices(combined);
+      } catch (e) {
+        setRelatedServices(linkedServices.slice(0, 3));
+      }
     } catch (err) {
       message.error(
         err.response?.data?.message || "Không tìm thấy album ảnh",
@@ -304,61 +323,92 @@ const GalleryDetail = () => {
       <div
         style={{
           position: "relative",
-          minHeight: "55vh",
-          backgroundImage: `linear-gradient(to bottom, rgba(250, 247, 242, 0.4) 0%, rgba(250, 247, 242, 0.98) 100%), url(${coverImage})`,
-          backgroundAttachment: "fixed",
+          minHeight: "60vh",
+          backgroundImage: `linear-gradient(180deg, rgba(15, 12, 10, 0.38) 0%, rgba(15, 12, 10, 0.28) 45%, rgba(250, 247, 242, 0.75) 85%, #FAF7F2 100%), url(${coverImage})`,
           backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundPosition: "center 30%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "#2F2F2F",
-          padding: "80px 20px 40px 20px",
+          color: "#FFFFFF",
+          padding: "60px 20px 50px 20px",
           textAlign: "center",
-          borderBottom: "1px solid #E8DED2"
+          borderBottom: "1px solid #E8DED2",
         }}
         className="scroll-reveal"
       >
-        {/* Back Button */}
-        <div style={{ maxWidth: "1200px", margin: "0 auto 30px auto", width: "100%", textAlign: "left", padding: "0 20px" }}>
+        {/* Top Back Navigation Bar */}
+        <div style={{ maxWidth: "1200px", margin: "0 auto 40px auto", width: "100%", textAlign: "left", padding: "0 10px" }}>
           <button
             onClick={() => navigate("/galleries")}
-            className="btn-premium-outline"
-            style={{ height: "40px", padding: "0 20px", fontSize: "11px" }}
+            style={{
+              background: "rgba(0, 0, 0, 0.45)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              color: "#FFFFFF",
+              border: "1px solid rgba(255, 255, 255, 0.35)",
+              height: "42px",
+              padding: "0 24px",
+              fontSize: "11px",
+              letterSpacing: "2px",
+              fontWeight: 500,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+              transition: "all 0.3s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(191, 161, 106, 0.85)";
+              e.currentTarget.style.borderColor = PRIMARY_COLOR;
+              e.currentTarget.style.color = "#FFF";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(0, 0, 0, 0.45)";
+              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
+              e.currentTarget.style.color = "#FFFFFF";
+            }}
           >
-            <ArrowLeftOutlined style={{ marginRight: "6px" }} /> QUAY LẠI THƯ VIỆN
+            <ArrowLeftOutlined /> QUAY LẠI THƯ VIỆN
           </button>
         </div>
 
         {/* Category tag label */}
-        <span
+        <div
           style={{
-            fontSize: "10px",
-            letterSpacing: "2.5px",
+            fontSize: "11px",
+            letterSpacing: "3px",
             fontWeight: "600",
             textTransform: "uppercase",
-            padding: "4px 12px",
-            border: "1px solid rgba(191, 161, 106, 0.3)",
-            background: "rgba(191, 161, 106, 0.05)",
-            color: "#BFA16A",
+            padding: "6px 18px",
+            border: "1px solid rgba(212, 177, 106, 0.8)",
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            color: "#F5D796",
             display: "inline-block",
-            marginBottom: "20px"
+            marginBottom: "24px",
+            borderRadius: "2px",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.15)",
           }}
         >
           {categoryLabels[gallery.category] || gallery.category}
-        </span>
+        </div>
 
         {/* Title */}
         <h1
           className="font-serif-luxury"
           style={{
-            fontSize: "clamp(36px, 5.5vw, 68px)",
-            lineHeight: 1.15,
+            fontSize: "clamp(38px, 6vw, 72px)",
+            lineHeight: 1.12,
             fontWeight: "300",
-            margin: "0 0 20px 0",
+            margin: "0 0 22px 0",
             maxWidth: "1000px",
-            color: "#1F1F1F"
+            color: "#FFFFFF",
+            textShadow: "0 3px 18px rgba(0, 0, 0, 0.75), 0 1px 4px rgba(0, 0, 0, 0.9)",
+            letterSpacing: "-0.5px",
           }}
         >
           {gallery.title}
@@ -368,12 +418,13 @@ const GalleryDetail = () => {
         {gallery.description && (
           <p
             style={{
-              fontSize: "15.5px",
-              maxWidth: "720px",
-              color: "#555555",
-              lineHeight: "1.8",
-              margin: 0,
-              fontWeight: "300"
+              fontSize: "16.5px",
+              maxWidth: "750px",
+              color: "#FFFFFF",
+              lineHeight: "1.85",
+              margin: "0 auto",
+              fontWeight: "300",
+              textShadow: "0 2px 12px rgba(0, 0, 0, 0.85), 0 1px 3px rgba(0, 0, 0, 0.95)",
             }}
           >
             {gallery.description}
@@ -381,28 +432,38 @@ const GalleryDetail = () => {
         )}
       </div>
 
-      {/* THÔNG TIN CHI TIẾT ALBUM */}
+      {/* THÔNG TIN CHI TIẾT ALBUM METADATA */}
       <div
-        style={{ maxWidth: "1200px", margin: "0 auto", padding: "50px 20px 0 20px" }}
+        style={{ maxWidth: "1200px", margin: "-35px auto 0 auto", padding: "0 20px", position: "relative", zIndex: 10 }}
         className="scroll-reveal stagger-1"
       >
-        <Row gutter={[20, 20]}>
+        <Row gutter={[16, 16]}>
           {/* Photos count */}
           <Col xs={24} md={8}>
             <div 
-              className="glass-panel" 
-              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+              style={{
+                padding: "16px 22px",
+                border: "1px solid #E8DED2",
+                background: "#FFFFFF",
+                borderRadius: "2px",
+                boxShadow: "0 8px 25px rgba(154, 138, 120, 0.06)",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
             >
-              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <PictureOutlined />
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "11.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <PictureOutlined style={{ fontSize: "14px" }} />
                 <span>Số lượng ảnh</span>
               </div>
               <div
                 className="font-serif-luxury text-gold"
                 style={{
-                  fontSize: "36px",
+                  fontSize: "28px",
                   fontWeight: "300",
-                  marginTop: 8,
+                  marginTop: 4,
+                  lineHeight: 1.1,
                 }}
               >
                 {images.length}
@@ -413,20 +474,29 @@ const GalleryDetail = () => {
           {/* Location */}
           <Col xs={24} md={8}>
             <div 
-              className="glass-panel" 
-              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+              style={{
+                padding: "16px 22px",
+                border: "1px solid #E8DED2",
+                background: "#FFFFFF",
+                borderRadius: "2px",
+                boxShadow: "0 8px 25px rgba(154, 138, 120, 0.06)",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
             >
-              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <EnvironmentOutlined />
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "11.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <EnvironmentOutlined style={{ fontSize: "14px" }} />
                 <span>Địa điểm chụp</span>
               </div>
               <div
                 className="font-serif-luxury"
                 style={{
-                  fontSize: "22px",
+                  fontSize: "18px",
                   fontWeight: "300",
-                  color: "#2F2F2F",
-                  marginTop: 18,
+                  color: "#1F1F1F",
+                  marginTop: 6,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis"
@@ -437,69 +507,42 @@ const GalleryDetail = () => {
             </div>
           </Col>
 
-          {/* Đơn vị thực hiện */}
+          {/* Phong cách */}
           <Col xs={24} md={8}>
             <div 
-              className="glass-panel" 
-              style={{ padding: "26px 30px", border: "1px solid #E8DED2", background: "#FFFFFF", borderRadius: "0px" }}
+              style={{
+                padding: "16px 22px",
+                border: "1px solid #E8DED2",
+                background: "#FFFFFF",
+                borderRadius: "2px",
+                boxShadow: "0 8px 25px rgba(154, 138, 120, 0.06)",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
             >
-              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <CameraOutlined />
-                <span>Đơn vị thực hiện</span>
+              <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "11.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <CameraOutlined style={{ fontSize: "14px" }} />
+                <span>Phong cách</span>
               </div>
               <div
                 className="font-serif-luxury"
                 style={{
-                  fontSize: "22px",
+                  fontSize: "18px",
                   fontWeight: "300",
-                  color: "#2F2F2F",
-                  marginTop: 18,
+                  color: "#1F1F1F",
+                  marginTop: 6,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis"
                 }}
               >
-                Cao Hiển Studio
+                {categoryLabels[gallery.category] ? `${categoryLabels[gallery.category]} Fine-Art` : "Fine Art Cinematic"}
               </div>
             </div>
           </Col>
 
-          {/* Related service package */}
-          {gallery.service_ids && gallery.service_ids.length > 0 && (
-            <Col xs={24}>
-              <div 
-                style={{ 
-                  padding: "30px", 
-                  border: "1px solid #E8DED2", 
-                  background: "#FFFFFF", 
-                  borderRadius: "0px", 
-                  marginTop: "10px",
-                  position: "relative"
-                }}
-              >
-                <div style={{ color: PRIMARY_COLOR, fontWeight: "600", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", marginBottom: "15px" }}>
-                  <AppstoreOutlined />
-                  <span>Gói dịch vụ liên quan</span>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  {gallery.service_ids.map((service, index) => (
-                    <div key={index}>
-                      <div className="font-serif-luxury" style={{ fontSize: "24px", color: "#2F2F2F", fontWeight: "300", marginBottom: "10px" }}>
-                        {service.name}
-                      </div>
-
-                      {service.description && (
-                        <p style={{ color: "#555555", lineHeight: "1.8", fontSize: "14px", fontWeight: "300", margin: 0 }}>
-                          {service.description}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Col>
-          )}
         </Row>
       </div>
 
@@ -582,6 +625,140 @@ const GalleryDetail = () => {
           </Image.PreviewGroup>
         )}
       </div>
+
+      {/* GÓI CHỤP TƯƠNG TỰ (Đưa xuống DƯỚI phần Khoảnh khắc trong Album) */}
+      {relatedServices.length > 0 && (
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            padding: "20px 20px 100px 20px",
+          }}
+          className="scroll-reveal stagger-1"
+        >
+          <div style={{ marginBottom: "35px", textAlign: "center" }}>
+            <div
+              style={{
+                color: PRIMARY_COLOR,
+                fontSize: 11,
+                fontWeight: "600",
+                letterSpacing: 3,
+                marginBottom: 8,
+                textTransform: "uppercase"
+              }}
+            >
+              RECOMMENDED PACKAGES
+            </div>
+
+            <h2
+              className="font-serif-luxury"
+              style={{
+                fontSize: "36px",
+                fontWeight: "300",
+                margin: 0,
+                color: "#1F1F1F"
+              }}
+            >
+              GÓI CHỤP TƯƠNG TỰ
+            </h2>
+            <div style={{ width: "40px", height: "1px", background: "#BFA16A", margin: "18px auto 0 auto" }}></div>
+          </div>
+
+          <Row gutter={[24, 24]}>
+            {relatedServices.slice(0, 3).map((item, idx) => (
+              <Col xs={24} sm={12} md={8} key={item._id || idx}>
+                <div
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #E8DED2",
+                    borderRadius: "2px",
+                    padding: "20px",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 15px rgba(154, 138, 120, 0.04)"
+                  }}
+                  onClick={() => navigate(`/services/${item._id}`)}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = PRIMARY_COLOR;
+                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = "0 15px 30px rgba(191, 161, 106, 0.15)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = "#E8DED2";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(154, 138, 120, 0.04)";
+                  }}
+                >
+                  <div>
+                    {/* Thumbnail Image */}
+                    <div style={{ width: "100%", height: "200px", overflow: "hidden", marginBottom: "16px", borderRadius: "2px", background: "#FAF7F2" }}>
+                      <img
+                        src={
+                          isServerUploadUrl(item.thumbnail)
+                            ? item.thumbnail
+                            : upgradeGoogleImageUrl(item.thumbnail, "s800") || FALLBACK_IMAGE
+                        }
+                        alt={item.name}
+                        onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
+                      />
+                    </div>
+
+                    {/* Service Name */}
+                    <h3
+                      className="font-serif-luxury"
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: "400",
+                        color: "#1F1F1F",
+                        marginBottom: "10px",
+                        lineHeight: "1.3"
+                      }}
+                    >
+                      {item.name}
+                    </h3>
+
+                    {/* Price */}
+                    <div
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: "600",
+                        color: PRIMARY_COLOR,
+                        marginBottom: "16px"
+                      }}
+                    >
+                      {Number(item.base_price || 0).toLocaleString("vi-VN")}đ
+                    </div>
+                  </div>
+
+                  {/* Action Link */}
+                  <div
+                    style={{
+                      borderTop: "1px solid #F0E8DD",
+                      paddingTop: "14px",
+                      marginTop: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      color: PRIMARY_COLOR,
+                      fontWeight: "500",
+                      fontSize: "13px",
+                      letterSpacing: "1px"
+                    }}
+                  >
+                    <span>Xem chi tiết</span>
+                    <ArrowRightOutlined />
+                  </div>
+                </div>
+              </Col>
+            ))}
+          </Row>
+        </div>
+      )}
 
       <style>{`
         .masonry-detail-container {

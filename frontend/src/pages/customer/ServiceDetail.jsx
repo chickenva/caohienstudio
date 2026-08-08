@@ -1,6 +1,7 @@
 /**
  * ServiceDetail.jsx
  * Trang chi tiết gói dịch vụ và CTA đặt lịch.
+ * - Ưu tiên ảnh thumbnail đại diện (upload từ server hoặc Drive link).
  */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -9,14 +10,17 @@ import {
   ArrowLeftOutlined,
   ShoppingCartOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import "../../Home.css";
+import {
+  upgradeGoogleImageUrl,
+  isServerUploadUrl,
+} from "../../utils/imageUtils";
 
 const PRIMARY_COLOR = "#BFA16A";
-const FONT_SERIF = '"Playfair Display", Georgia, serif';
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800";
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const CATEGORY_LABELS = {
@@ -27,7 +31,13 @@ const CATEGORY_LABELS = {
   OTHER: "DỊCH VỤ KHÁC",
 };
 
-// Trang chi tiết gói dịch vụ, hiển thị giá, mô tả và nút đặt lịch.
+// Chọn src ảnh chính — ưu tiên server upload, fallback sang Drive thumbnail
+const resolvePrimaryThumbnail = (thumbnail) => {
+  if (!thumbnail) return FALLBACK_IMG;
+  if (isServerUploadUrl(thumbnail)) return thumbnail;
+  return upgradeGoogleImageUrl(thumbnail, "s1200") || FALLBACK_IMG;
+};
+
 const ServiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -37,6 +47,7 @@ const ServiceDetail = () => {
 
   const fromCategory = location.state?.fromCategory;
 
+  // Fetch service detail
   useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
 
@@ -52,36 +63,19 @@ const ServiceDetail = () => {
     };
     fetchDetail();
 
-    return () => {
-      document.body.style.backgroundColor = "";
-    };
+    return () => { document.body.style.backgroundColor = ""; };
   }, [id]);
 
   // Scroll reveals trigger
   useEffect(() => {
     if (loading) return;
-
     const revealElements = document.querySelectorAll(".scroll-reveal");
-    const observerOptions = {
-      root: null,
-      threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px"
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("active");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, observerOptions);
-
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("active"); observer.unobserve(e.target); } }),
+      { root: null, threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
     revealElements.forEach((el) => observer.observe(el));
-
-    return () => {
-      revealElements.forEach((el) => observer.unobserve(el));
-    };
+    return () => revealElements.forEach((el) => observer.unobserve(el));
   }, [loading, service]);
 
   if (loading) {
@@ -99,6 +93,8 @@ const ServiceDetail = () => {
       </div>
     );
   }
+
+  const primaryThumbnail = resolvePrimaryThumbnail(service.thumbnail);
 
   return (
     <div className="home-page-container" style={{ background: "#FAF7F2", minHeight: "100vh", width: "100%" }}>
@@ -123,48 +119,49 @@ const ServiceDetail = () => {
         </button>
 
         <Row gutter={[60, 50]} className="scroll-reveal stagger-1">
-          {/* Left Column: Image wrapper */}
+          {/* ── Left Column: Thumbnail Image ── */}
           <Col xs={24} md={12}>
             <div
               style={{
                 background: "#FFFFFF",
                 border: "1px solid #E8DED2",
-                borderRadius: "0px",
                 padding: "16px",
-                boxShadow: "0 5px 15px rgba(154, 138, 120, 0.02)"
+                boxShadow: "0 5px 15px rgba(154, 138, 120, 0.02)",
+                overflow: "hidden",
+                borderRadius: "4px",
               }}
             >
               <img
-                src={
-                  service.thumbnail ||
-                  "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800"
-                }
+                src={primaryThumbnail}
                 alt={service.name}
+                onError={(e) => {
+                  if (!e.currentTarget.dataset.driveAttempted && service.thumbnail && !isServerUploadUrl(service.thumbnail)) {
+                    e.currentTarget.dataset.driveAttempted = "true";
+                    e.currentTarget.src = upgradeGoogleImageUrl(service.thumbnail, "s1200") || FALLBACK_IMG;
+                  } else {
+                    e.currentTarget.src = FALLBACK_IMG;
+                  }
+                }}
                 style={{
                   width: "100%",
-                  height: "550px",
+                  height: "clamp(280px, 45vh, 520px)",
                   objectFit: "cover",
                   display: "block",
-                  border: "1px solid #E8DED2"
+                  borderRadius: "2px",
                 }}
               />
             </div>
           </Col>
 
-          {/* Right Column: Info detail metadata */}
+          {/* ── Right Column: Info ── */}
           <Col xs={24} md={12}>
             {/* Category tag */}
             <span
               style={{
-                fontSize: "10px",
-                letterSpacing: "1.5px",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                padding: "4px 12px",
+                fontSize: "10px", letterSpacing: "1.5px", fontWeight: "600",
+                textTransform: "uppercase", padding: "4px 12px",
                 border: "1px solid rgba(191, 161, 106, 0.3)",
-                background: "rgba(191, 161, 106, 0.05)",
-                color: "#BFA16A",
-                display: "inline-block"
+                background: "rgba(191, 161, 106, 0.05)", color: "#BFA16A", display: "inline-block",
               }}
             >
               {service.category ? CATEGORY_LABELS[service.category] || service.category.toUpperCase() : "CAO HIỂN STUDIO"}
@@ -173,53 +170,17 @@ const ServiceDetail = () => {
             {/* Title */}
             <h1
               className="font-serif-luxury"
-              style={{
-                fontSize: "clamp(32px, 5vw, 44px)",
-                margin: "20px 0",
-                fontWeight: "300",
-                color: "#1F1F1F",
-                lineHeight: "1.2"
-              }}
+              style={{ fontSize: "clamp(32px, 5vw, 44px)", margin: "20px 0", fontWeight: "300", color: "#1F1F1F", lineHeight: "1.2" }}
             >
               {service.name}
             </h1>
 
             {/* Pricing */}
-            <div
-              style={{
-                fontSize: "28px",
-                color: PRIMARY_COLOR,
-                fontWeight: "600",
-                marginBottom: "20px",
-              }}
-            >
+            <div style={{ fontSize: "28px", color: PRIMARY_COLOR, fontWeight: "600", marginBottom: "20px" }}>
               {service.base_price?.toLocaleString("vi-VN")}đ
             </div>
 
-            {/* Estimated shoot hours duration */}
-            <div
-              style={{
-                fontSize: "14px",
-                color: "#555555",
-                marginBottom: "30px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontWeight: "300"
-              }}
-            >
-              <ClockCircleOutlined style={{ color: "#BFA16A" }} /> 
-              <span>Thời lượng chụp ước tính: <strong style={{ fontWeight: "500" }}>{service.duration_hours || 4} giờ</strong></span>
-            </div>
-
-            {/* Description */}
-            <p style={{ color: "#555555", lineHeight: "2.1", fontSize: "14.5px", fontWeight: "300", marginBottom: "35px" }}>
-              {service.details ||
-                service.description ||
-                "Gói chụp ảnh cao cấp được thiết kế tinh tế nhằm ghi lại từng khoảnh khắc ý nghĩa nhất của bạn."}
-            </p>
-
-            {/* Features check list divider */}
+            {/* Features divider */}
             <div style={{ height: "1px", background: "#E8DED2", width: "100%", margin: "30px 0" }}></div>
 
             <h4 style={{ marginBottom: "20px", letterSpacing: "1.5px", fontSize: "12px", fontWeight: "600", color: "#2F2F2F" }}>
@@ -237,19 +198,9 @@ const ServiceDetail = () => {
                 <Col
                   span={24}
                   key={idx}
-                  style={{
-                    marginBottom: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    fontSize: "14.5px",
-                    color: "#555555",
-                    fontWeight: "300"
-                  }}
+                  style={{ marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px", fontSize: "14.5px", color: "#555555", fontWeight: "300" }}
                 >
-                  <CheckCircleOutlined
-                    style={{ color: PRIMARY_COLOR }}
-                  />
+                  <CheckCircleOutlined style={{ color: PRIMARY_COLOR }} />
                   <span>{feat}</span>
                 </Col>
               ))}
@@ -257,23 +208,9 @@ const ServiceDetail = () => {
 
             {/* Booking Action */}
             <button
-              onClick={() =>
-                navigate("/booking", {
-                  state: {
-                    service_id: service._id,
-                    serviceName: service.name,
-                    base_price: service.base_price,
-                  },
-                })
-              }
+              onClick={() => navigate("/booking", { state: { service_id: service._id, serviceName: service.name, base_price: service.base_price } })}
               className="btn-premium-gold"
-              style={{
-                height: "52px",
-                padding: "0 50px",
-                marginTop: "40px",
-                fontSize: "12px",
-                display: "inline-flex"
-              }}
+              style={{ height: "52px", padding: "0 50px", marginTop: "40px", fontSize: "12px", display: "inline-flex" }}
             >
               ĐẶT LỊCH HẸN NGAY <ShoppingCartOutlined />
             </button>
@@ -285,56 +222,36 @@ const ServiceDetail = () => {
                   <InfoCircleOutlined style={{ color: PRIMARY_COLOR, fontSize: "14px" }} />
                   Bạn có thắc mắc?
                 </span>
-                
+
                 {(() => {
-                  const serviceNameLower = service.name?.toLowerCase() || "";
-                  const categoryLower = service.category?.toLowerCase() || "";
-                  
-                  const hasPhoto = serviceNameLower.includes("chụp") || serviceNameLower.includes("ảnh") || serviceNameLower.includes("photo") || categoryLower === "combo" || (!serviceNameLower.includes("quay") && !serviceNameLower.includes("phim") && !serviceNameLower.includes("video"));
-                  const hasVideo = serviceNameLower.includes("quay") || serviceNameLower.includes("phim") || serviceNameLower.includes("video") || categoryLower === "combo";
-                  
+                  const nameL = service.name?.toLowerCase() || "";
+                  const catL = service.category?.toLowerCase() || "";
+                  const hasPhoto = nameL.includes("chụp") || nameL.includes("ảnh") || nameL.includes("photo") || catL === "combo" || (!nameL.includes("quay") && !nameL.includes("phim") && !nameL.includes("video"));
+                  const hasVideo = nameL.includes("quay") || nameL.includes("phim") || nameL.includes("video") || catL === "combo";
                   const links = [];
-                  
-                  if (hasPhoto && (service.category === "TRADITIONAL" || service.category === "PHOTOJOURNALISM" || service.category === "COMBO")) {
-                    links.push(
-                      <a href="/faq#photo-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
-                        Phong cách chụp
-                      </a>
-                    );
+
+                  if (hasPhoto && ["TRADITIONAL", "PHOTOJOURNALISM", "COMBO"].includes(service.category)) {
+                    links.push(<a key="photo" href="/faq#photo-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", fontWeight: "400", borderBottom: "1px solid transparent", transition: "all 0.3s" }} onMouseOver={(e) => { e.target.style.borderBottomColor = PRIMARY_COLOR; }} onMouseOut={(e) => { e.target.style.borderBottomColor = "transparent"; }}>Phong cách chụp</a>);
                   }
-                  
-                  if (hasVideo && (service.category === "TRADITIONAL" || service.category === "PHOTOJOURNALISM" || service.category === "COMBO")) {
-                    links.push(
-                      <a href="/faq#video-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
-                        Phong cách quay
-                      </a>
-                    );
+                  if (hasVideo && ["TRADITIONAL", "PHOTOJOURNALISM", "COMBO"].includes(service.category)) {
+                    links.push(<a key="video" href="/faq#video-styles" style={{ color: PRIMARY_COLOR, textDecoration: "none", fontWeight: "400", borderBottom: "1px solid transparent", transition: "all 0.3s" }} onMouseOver={(e) => { e.target.style.borderBottomColor = PRIMARY_COLOR; }} onMouseOut={(e) => { e.target.style.borderBottomColor = "transparent"; }}>Phong cách quay</a>);
                   }
-                  
+
                   if (links.length === 0) return null;
-                  
-                  return links.map((link, index) => (
-                    <React.Fragment key={index}>
-                      {link}
-                      <span style={{ color: "#E8DED2" }}>•</span>
-                    </React.Fragment>
+                  return links.map((link, i) => (
+                    <React.Fragment key={i}>{link}<span style={{ color: "#E8DED2" }}>•</span></React.Fragment>
                   ));
                 })()}
 
-                <a href="/faq#delivery-time" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                <a href="/faq#delivery-time" style={{ color: PRIMARY_COLOR, textDecoration: "none", fontWeight: "400", borderBottom: "1px solid transparent", transition: "all 0.3s" }} onMouseOver={(e) => { e.target.style.borderBottomColor = PRIMARY_COLOR; }} onMouseOut={(e) => { e.target.style.borderBottomColor = "transparent"; }}>
                   Thời gian nhận sản phẩm
                 </a>
-
                 <span style={{ color: "#E8DED2" }}>•</span>
-
-                <a href="/faq#printing" style={{ color: PRIMARY_COLOR, textDecoration: "none", transition: "all 0.3s", fontWeight: "400", borderBottom: "1px solid transparent" }} onMouseOver={(e) => e.target.style.borderBottomColor = PRIMARY_COLOR} onMouseOut={(e) => e.target.style.borderBottomColor = "transparent"}>
+                <a href="/faq#printing" style={{ color: PRIMARY_COLOR, textDecoration: "none", fontWeight: "400", borderBottom: "1px solid transparent", transition: "all 0.3s" }} onMouseOver={(e) => { e.target.style.borderBottomColor = PRIMARY_COLOR; }} onMouseOut={(e) => { e.target.style.borderBottomColor = "transparent"; }}>
                   Quy định in ảnh
                 </a>
-
-
               </div>
             </div>
-
           </Col>
         </Row>
       </div>
@@ -343,4 +260,3 @@ const ServiceDetail = () => {
 };
 
 export default ServiceDetail;
-
