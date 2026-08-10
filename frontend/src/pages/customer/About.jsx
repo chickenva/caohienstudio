@@ -2,27 +2,50 @@
  * About.jsx
  * Trang giới thiệu studio: câu chuyện, phong cách và đội ngũ.
  */
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRightOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../../Home.css";
 
 const PRIMARY_COLOR = "#BFA16A";
 const BG_WARM = "#FAF7F2";
 const FONT_SERIF = '"Playfair Display", Georgia, serif';
 
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://caohienstudio-api.onrender.com/api");
+
+const FALLBACK_PORTRAIT =
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1000&auto=format&fit=crop";
+
 // Trang giới thiệu studio, phong cách chụp và thông tin thương hiệu.
 const About = () => {
-  const navigate = useNavigate();
+  const zaloUrl = import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602";
+  const [aboutImages, setAboutImages] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.body.style.backgroundColor = "#FAF7F2";
+
+    const fetchImages = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/website/images?page=ABOUT`);
+        if (res.data?.success && res.data?.images) {
+          setAboutImages(res.data.images);
+        }
+      } catch (error) {
+        console.warn("Lỗi khi tải hình ảnh trang giới thiệu:", error);
+      }
+    };
+
+    fetchImages();
 
     const revealElements = document.querySelectorAll(".scroll-reveal");
     const observerOptions = {
       root: null,
       threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px"
+      rootMargin: "0px 0px -50px 0px",
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -42,6 +65,11 @@ const About = () => {
     };
   }, []);
 
+  const artistPortraitObj = aboutImages.find(
+    (img) => img.key === "artist_portrait" && img.isActive
+  );
+  const artistPortraitUrl = artistPortraitObj?.imageUrl || FALLBACK_PORTRAIT;
+
   return (
     <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", color: "#2F2F2F" }}>
       {/* Ambient Glow spotlights */}
@@ -52,8 +80,8 @@ const About = () => {
       <div style={{ display: "flex", minHeight: "calc(100vh - 90px)", flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 500px", padding: "40px 40px 40px 40px" }} className="scroll-reveal">
           <img
-            src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1000&auto=format&fit=crop"
-            alt="Portrait"
+            src={artistPortraitUrl}
+            alt={artistPortraitObj?.altText || "Portrait"}
             style={{
               width: "100%",
               height: "100%",
@@ -119,12 +147,15 @@ const About = () => {
             </p>
           </div>
           <div>
-            <button
-              onClick={() => navigate("/contact")}
+            <a
+              href={zaloUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-premium-gold"
+              style={{ textDecoration: "none" }}
             >
               LIÊN HỆ VỚI TÔI <ArrowRightOutlined />
-            </button>
+            </a>
           </div>
         </div>
       </div>

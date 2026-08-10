@@ -37,9 +37,10 @@ const API_URL =
     ? "http://localhost:5000/api"
     : "https://caohienstudio-api.onrender.com/api");
 
-const roleOptions = [
-  { value: "ALL", label: "Tất cả" },
-  { value: "ADMIN", label: "Quản trị viên" },
+const statusOptions = [
+  { value: "ALL", label: "Tất cả trạng thái" },
+  { value: "ACTIVE", label: "Đang hoạt động" },
+  { value: "LOCKED", label: "Đã khóa" },
 ];
 
 const roleColors = {
@@ -58,7 +59,7 @@ const AdminAccountsList = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [searchText, setSearchText] = useState("");
-  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => {
     fetchAccounts();
@@ -66,8 +67,10 @@ const AdminAccountsList = () => {
 
   useEffect(() => {
     let data = Array.isArray(accounts) ? [...accounts] : [];
-    if (roleFilter !== "ALL") {
-      data = data.filter((a) => a && a.role === roleFilter);
+    if (statusFilter === "ACTIVE") {
+      data = data.filter((a) => a && a.is_active === true);
+    } else if (statusFilter === "LOCKED") {
+      data = data.filter((a) => a && a.is_active === false);
     }
     if (searchText.trim()) {
       const keyword = searchText.trim().toLowerCase();
@@ -80,7 +83,7 @@ const AdminAccountsList = () => {
       );
     }
     setFiltered(data);
-  }, [accounts, roleFilter, searchText]);
+  }, [accounts, statusFilter, searchText]);
 
   const getToken = () => localStorage.getItem("token");
 
@@ -240,7 +243,7 @@ const AdminAccountsList = () => {
       >
         <div>
           <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>
-            Danh sách tài khoản
+            Danh sách tài khoản Quản trị viên
           </Title>
         </div>
 
@@ -290,12 +293,12 @@ const AdminAccountsList = () => {
                 color: "#595959",
               }}
             >
-              Lọc theo vai trò
+              Lọc theo trạng thái
             </span>
             <Select
-              value={roleFilter}
-              onChange={setRoleFilter}
-              options={roleOptions}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
               style={{ width: "100%" }}
               size="large"
               dropdownStyle={{ borderRadius: 8 }}

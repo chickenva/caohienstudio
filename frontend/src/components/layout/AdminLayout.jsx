@@ -3,8 +3,9 @@
  * Layout tổng cho Admin: sidebar điều hướng, header và vùng nội dung.
  */
 import React, { useEffect, useMemo, useState } from "react";
-import { Layout, Menu, Button, message, Avatar, Dropdown, Divider, Tooltip } from "antd";
+import { Layout, Menu, Button, message, Avatar, Dropdown, Divider, Tooltip, Switch } from "antd";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import Logo from "../Logo";
 import {
   DashboardOutlined,
@@ -20,7 +21,12 @@ import {
   MenuUnfoldOutlined,
   PictureOutlined,
   SettingOutlined,
+  GlobalOutlined,
+  LockOutlined,
+  UnlockOutlined,
 } from "@ant-design/icons";
+
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const { Sider, Content } = Layout;
 
@@ -37,6 +43,9 @@ const AdminLayout = () => {
   const [admin, setAdmin] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState([]);
+  const [siteLocked, setSiteLocked] = useState(false);
+  const [lockLoading, setLockLoading] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -57,6 +66,15 @@ const AdminLayout = () => {
       }
 
       setAdmin(userData);
+
+      // Detect super admin from JWT payload
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          setIsSuperAdmin(payload.isSuperAdmin === true);
+        }
+      } catch (_) {}
     } catch (error) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -64,10 +82,48 @@ const AdminLayout = () => {
     }
   }, [navigate]);
 
+  // Kiểm tra trạng thái khóa website
+  useEffect(() => {
+    if (!admin) return;
+    axios
+      .get(`${API_URL}/website/site-lock`)
+      .then((res) => {
+        const locked = res.data?.isLocked === true;
+        setSiteLocked(locked);
+
+        // Nếu website bị khóa và không phải Super Admin -> đăng xuất và về trang login
+        if (locked && !isSuperAdmin) {
+          message.error("Website đang bị tạm khóa. Chỉ Super Admin mới có quyền truy cập!");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login", { replace: true });
+        }
+      })
+      .catch(() => {});
+  }, [admin, isSuperAdmin, navigate]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
+  };
+
+  const handleToggleLock = async (checked) => {
+    setLockLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${API_URL}/website/admin/site-lock`,
+        { isLocked: checked },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSiteLocked(res.data.isLocked);
+      message.success(res.data.message);
+    } catch (err) {
+      message.error(err?.response?.data?.message || "Không thể thay đổi trạng thái website");
+    } finally {
+      setLockLoading(false);
+    }
   };
 
   const menuItems = [
@@ -110,9 +166,18 @@ const AdminLayout = () => {
       icon: <TeamOutlined />,
       label: "Tài khoản",
       children: [
-        { key: "/admin/accounts", label: "Danh sách tài khoản" },
-        { key: "/admin/accounts/add", label: "Thêm tài khoản" },
-        { key: "/admin/customers", label: "Danh sách khách hàng" },
+        { key: "/admin/customers", label: "Khách hàng" },
+        { key: "/admin/accounts", label: "Quản trị viên" },
+        { key: "/admin/accounts/add", label: "Thêm quản trị viên" },
+      ],
+    },
+    {
+      key: "/admin/website",
+      icon: <GlobalOutlined />,
+      label: "Website",
+      children: [
+        { key: "/admin/website/home-images", label: "Trang chủ" },
+        { key: "/admin/website/about-images", label: "Trang Giới thiệu" },
       ],
     },
   ];
@@ -266,6 +331,48 @@ const AdminLayout = () => {
             }}
           />
         </div>
+
+        {/* ── Site Lock (chỉ Super Admin) ── */}
+        {isSuperAdmin && (
+          <div
+            style={{
+              borderTop: `1px solid ${BORDER_COLOR}`,
+              padding: collapsed ? "10px 0" : "12px 14px",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "space-between",
+              gap: 8,
+            }}
+          >
+            {!collapsed && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {siteLocked ? (
+                  <LockOutlined style={{ color: "#cf1322", fontSize: 15 }} />
+                ) : (
+                  <UnlockOutlined style={{ color: "#52c41a", fontSize: 15 }} />
+                )}
+                <span style={{ fontSize: 12, color: siteLocked ? "#cf1322" : "#555", fontWeight: 600 }}>
+                  {siteLocked ? "Website đang khóa" : "Website mở"}
+                </span>
+              </div>
+            )}
+            <Tooltip
+              title={siteLocked ? "Nhấn để mở khóa website" : "Nhấn để khóa website (bảo trì)"}
+              placement="right"
+            >
+              <Switch
+                checked={siteLocked}
+                loading={lockLoading}
+                onChange={handleToggleLock}
+                size="small"
+                style={{
+                  backgroundColor: siteLocked ? "#cf1322" : undefined,
+                }}
+              />
+            </Tooltip>
+          </div>
+        )}
 
         {/* ── User panel ── */}
         <div

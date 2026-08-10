@@ -48,9 +48,13 @@ import CreateOrder from "./pages/admin/CreateOrder";
 import ServiceForm from "./pages/admin/ServiceForm";
 import GalleryForm from "./pages/admin/GalleryForm";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminWebsiteImages from "./pages/admin/AdminWebsiteImages";
 
 // --- Payment VNPay Pages ---
 import VnpayReturn from "./pages/customer/VnpayReturn";
+// --- Special Pages ---
+import NotFound from "./pages/NotFound";
+import MaintenancePage from "./pages/MaintenancePage";
 // ----------------------------------
 
 // Component gốc khai báo toàn bộ route public, customer và admin.
@@ -115,7 +119,14 @@ function App() {
           <Route path="accounts" element={<AdminAccountsList />} />
           <Route path="accounts/add" element={<AdminAccountForm />} />
 
+          <Route path="website/home-images" element={<AdminWebsiteImages defaultPage="HOME" />} />
+          <Route path="website/about-images" element={<AdminWebsiteImages defaultPage="ABOUT" />} />
         </Route>
+        {/* TRANG BẢO TRÌ (truy cập trực tiếp qua URL) */}
+        <Route path="/maintenance" element={<MaintenancePage />} />
+
+        {/* 404 — KHÔNG TÌM THẤY TRANG */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

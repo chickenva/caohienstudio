@@ -4,6 +4,10 @@
  */
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import MaintenancePage from "../../pages/MaintenancePage";
+
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 import { Button, Space, Dropdown, Avatar, message, Drawer } from "antd";
 import {
   ArrowRightOutlined,
@@ -37,6 +41,14 @@ const CustomerLayout = () => {
   const [user, setUser] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [siteLocked, setSiteLocked] = useState(false);
+
+  // Kiểm tra trạng thái khóa website khi load layout
+  useEffect(() => {
+    axios.get(`${API_URL}/website/site-lock`)
+      .then(res => setSiteLocked(res.data?.isLocked === true))
+      .catch(() => setSiteLocked(false));
+  }, []);
 
   // Tự động cuộn lên đầu trang khi chuyển trang
   useEffect(() => {
@@ -158,6 +170,11 @@ const CustomerLayout = () => {
       onClick: handleLogout,
     },
   ];
+
+  // Nếu website đang bị khóa, hiển thị trang bảo trì cho toàn bộ khách hàng (ngoại trừ trang /login để admin có thể đăng nhập)
+  if (siteLocked && location.pathname !== "/login") {
+    return <MaintenancePage />;
+  }
 
   return (
     <div

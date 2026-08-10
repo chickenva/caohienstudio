@@ -82,7 +82,7 @@ const AdminAccountForm = () => {
         <div style={{ marginBottom: 24 }}>
           <Title level={4} style={{ marginBottom: 0 }}>
             <UserAddOutlined style={{ marginRight: 8, color: "#BFA16A" }} />
-            Thêm tài khoản mới
+            Thêm quản trị viên mới
           </Title>
         </div>
 

@@ -439,10 +439,6 @@ const AdminProfile = () => {
                 >
                   Cập nhật mật khẩu
                 </Button>
-
-                <Button onClick={() => passwordForm.resetFields()}>
-                  Xóa form
-                </Button>
               </Space>
             </Form>
           </Card>

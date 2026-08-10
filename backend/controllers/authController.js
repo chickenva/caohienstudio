@@ -5,6 +5,7 @@
  */
 const User       = require("../models/User");
 const OTP        = require("../models/OTP");
+const SiteLock   = require("../models/SiteLock");
 const bcrypt     = require("bcryptjs");
 const jwt        = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -136,10 +137,50 @@ exports.register = async (req, res) => {
  * [POST] /api/auth/login
  * Đăng nhập. Kiểm tra email, trạng thái tài khoản và mật khẩu.
  * Trả về JWT token (1 ngày) nếu thành công.
+ * Tài khoản Super Admin được kiểm tra trước từ biến môi trường (không lưu DB).
  */
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // --- Super Admin hardcoded (chỉ lưu trong .env, không cần có trong DB) ---
+    const SUPER_ADMIN_EMAIL    = process.env.SUPER_ADMIN_EMAIL    || process.env.ADMIN_EMAIL;
+    const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+    const SUPER_ADMIN_NAME     = process.env.ADMIN_FULL_NAME || "Admin Cao Hiển Studio";
+
+    if (
+      SUPER_ADMIN_EMAIL &&
+      SUPER_ADMIN_PASSWORD &&
+      email === SUPER_ADMIN_EMAIL &&
+      password === SUPER_ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign(
+        { isSuperAdmin: true, email: SUPER_ADMIN_EMAIL, full_name: SUPER_ADMIN_NAME },
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+      return res.status(200).json({
+        message: "Đăng nhập thành công",
+        token,
+        user: {
+          id: "super-admin",
+          email: SUPER_ADMIN_EMAIL,
+          full_name: SUPER_ADMIN_NAME,
+          phone: "",
+          role: "ADMIN",
+        },
+      });
+    }
+    // -------------------------------------------------------------------------
+
+    // --- Nếu website đang bị khóa, chặn toàn bộ tài khoản ngoại trừ Super Admin ---
+    const siteLock = await SiteLock.findOne();
+    if (siteLock && siteLock.isLocked) {
+      return res.status(403).json({
+        message: "Website hiện đang trong trạng thái bảo trì/tạm khóa. Chỉ Super Admin mới có quyền truy cập.",
+      });
+    }
+    // -----------------------------------------------------------------------------
 
     const user = await User.findOne({ email });
     if (!user) {

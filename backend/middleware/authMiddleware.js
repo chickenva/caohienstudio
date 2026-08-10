@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const SiteLock = require("../models/SiteLock");
 
 // Tách JWT token ra khỏi header Authorization dạng "Bearer <token>".
 const getTokenFromHeader = (req) => {
@@ -44,6 +45,7 @@ exports.verifyToken = (req, res, next) => {
  * Middleware xác thực quyền ADMIN.
  * Lấy user thực từ DB (thay vì chỉ dùng payload token) để đảm bảo
  * role luôn được kiểm tra theo dữ liệu hiện tại, tránh dùng token cũ.
+ * Super Admin (isSuperAdmin: true) bypass hoàn toàn việc tra DB.
  */
 exports.verifyAdmin = async (req, res, next) => {
   const token = getTokenFromHeader(req);
@@ -56,6 +58,29 @@ exports.verifyAdmin = async (req, res, next) => {
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
+
+    // --- Super Admin bypass: không cần tra DB ---
+    if (verified.isSuperAdmin === true) {
+      req.user = {
+        id: "super-admin",
+        email: verified.email,
+        full_name: verified.full_name,
+        role: "ADMIN",
+        isSuperAdmin: true,
+      };
+      return next();
+    }
+    // --------------------------------------------
+
+    // --- Nếu website bị khóa, ngắt quyền truy cập của Admin thường ---
+    const siteLock = await SiteLock.findOne();
+    if (siteLock && siteLock.isLocked) {
+      return res.status(403).json({
+        message: "Website hiện đang trong trạng thái tạm khóa. Chỉ Super Admin mới có quyền truy cập.",
+      });
+    }
+    // ------------------------------------------------------------------
+
     const userId = verified.id || verified._id;
 
     if (!userId) {

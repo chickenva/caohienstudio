@@ -109,14 +109,22 @@ exports.searchCustomersForAdmin = async (req, res) => {
 /**
  * [GET] /api/users/admin/accounts
  * Admin lấy toàn bộ danh sách tài khoản ADMIN.
+ * Tài khoản Super Admin (hardcoded trong env) không hiển thị.
  */
 exports.getAllAccountsForAdmin = async (req, res) => {
   try {
+    const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL;
+
     const accounts = await User.find({ role: "ADMIN" })
       .select("full_name email phone role is_active createdAt updatedAt")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(accounts);
+    // Ẩn tài khoản super admin khỏi danh sách
+    const filtered = accounts.filter(
+      (a) => !SUPER_ADMIN_EMAIL || a.email !== SUPER_ADMIN_EMAIL
+    );
+
+    res.status(200).json(filtered);
   } catch (error) {
     res.status(500).json({ message: "Lỗi lấy danh sách tài khoản", error: error.message });
   }

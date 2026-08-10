@@ -58,6 +58,7 @@ const Home = () => {
   // States for API Data
   const [services, setServices] = useState([]);
   const [galleries, setGalleries] = useState([]);
+  const [homeImages, setHomeImages] = useState([]);
   
   // Loading & Action states
   const [loading, setLoading] = useState(true);
@@ -77,10 +78,12 @@ const Home = () => {
         const endpoints = [
           axios.get(`${API_URL}/services`),
           axios.get(`${API_URL}/galleries`),
+          axios.get(`${API_URL}/website/images?page=HOME`),
         ];
 
-        const [servicesRes, galleriesRes] = await Promise.allSettled(endpoints);
+        const [servicesRes, galleriesRes, imagesRes] = await Promise.allSettled(endpoints);
 
+        let fetchedGalleries = [];
         if (servicesRes.status === "fulfilled") {
           const data = Array.isArray(servicesRes.value.data)
             ? servicesRes.value.data
@@ -88,22 +91,26 @@ const Home = () => {
           setServices(data);
         }
         if (galleriesRes.status === "fulfilled") {
-          const fetchedGalleries = Array.isArray(galleriesRes.value.data)
+          fetchedGalleries = Array.isArray(galleriesRes.value.data)
             ? galleriesRes.value.data
             : (galleriesRes.value.data?.galleries || []);
           setGalleries(fetchedGalleries);
-          try {
-            if (fetchedGalleries.length > 0) {
-              await preloadImages(
-                fetchedGalleries.slice(0, 4).map((item) =>
-                  getGalleryImageUrl(item, "cover", FALLBACK_PORTRAIT),
-                ),
-                { limit: 4, timeoutMs: 3200 },
-              );
-            }
-          } catch (preloadErr) {
-            console.warn("Preload images warning:", preloadErr);
+        }
+        if (imagesRes.status === "fulfilled" && imagesRes.value.data?.images) {
+          setHomeImages(imagesRes.value.data.images);
+        }
+
+        try {
+          if (fetchedGalleries.length > 0) {
+            await preloadImages(
+              fetchedGalleries.slice(0, 4).map((item) =>
+                getGalleryImageUrl(item, "cover", FALLBACK_PORTRAIT),
+              ),
+              { limit: 4, timeoutMs: 3200 },
+            );
           }
+        } catch (preloadErr) {
+          console.warn("Preload images warning:", preloadErr);
         }
       } catch (err) {
         console.error("Failed to load some resources", err);
@@ -212,6 +219,10 @@ const Home = () => {
   const displayServices = services.length > 0 ? services.slice(0, 3) : demoServices;
   const displayGalleries = galleries.length > 0 ? galleries.slice(0, 4) : demoGalleries;
 
+  // Lấy hình ảnh được cấu hình từ Admin (hoặc dùng mặc định)
+  const heroImageObj = homeImages.find((img) => img.key === "hero_banner" && img.isActive);
+  const heroImageUrl = heroImageObj?.imageUrl || FALLBACK_HERO;
+
   return (
     <div className="home-page-container">
       {/* Light glow spotlight effects */}
@@ -227,7 +238,7 @@ const Home = () => {
           style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: `linear-gradient(to bottom, rgba(250, 247, 242, 0.3) 0%, rgba(250, 247, 242, 0.95) 100%), url(${FALLBACK_HERO})`,
+            backgroundImage: `linear-gradient(to bottom, rgba(250, 247, 242, 0.3) 0%, rgba(250, 247, 242, 0.95) 100%), url(${heroImageUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             filter: "contrast(1.02) brightness(0.98)",
