@@ -1,6 +1,6 @@
 /**
  * WebsiteImage.js
- * Model quản lý hình ảnh hiển thị trên các trang của website (Trang chủ, Trang giới thiệu...).
+ * Model quản lý hình ảnh hiển thị trên các trang của website (Trang chủ, Trang giới thiệu, Cài đặt...).
  */
 const mongoose = require("mongoose");
 
@@ -8,8 +8,8 @@ const websiteImageSchema = new mongoose.Schema(
   {
     page: {
       type: String,
-      enum: ["HOME", "ABOUT"],
-      required: [true, "Trang hiển thị là bắt buộc (HOME hoặc ABOUT)"],
+      enum: ["HOME", "ABOUT", "SETTINGS"],
+      required: [true, "Trang hiển thị là bắt buộc (HOME, ABOUT hoặc SETTINGS)"],
       index: true,
     },
     key: {

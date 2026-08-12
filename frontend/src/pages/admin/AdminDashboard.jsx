@@ -240,7 +240,7 @@ const AdminDashboard = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} style={{ ...cardStyle, background: "linear-gradient(135deg, #ffffff 0%, #FAF7F2 100%)" }} loading={loading}>
             <Statistic
-              title={<span style={{ color: "#8c8c8c", fontSize: 13, textTransform: "uppercase", fontWeight: 600 }}>VNPay Đã Thanh Toán</span>}
+              title={<span style={{ color: "#8c8c8c", fontSize: 13, textTransform: "uppercase", fontWeight: 600 }}>Đã Nhận Cọc (Thủ Công)</span>}
               value={revenue.actualPaidRevenue || 0}
               formatter={formatMoney}
               prefix={<DollarOutlined style={{ color: "#0958d9", marginRight: 8 }} />}

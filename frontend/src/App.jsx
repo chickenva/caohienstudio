@@ -50,8 +50,6 @@ import GalleryForm from "./pages/admin/GalleryForm";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminWebsiteImages from "./pages/admin/AdminWebsiteImages";
 
-// --- Payment VNPay Pages ---
-import VnpayReturn from "./pages/customer/VnpayReturn";
 // --- Special Pages ---
 import NotFound from "./pages/NotFound";
 import MaintenancePage from "./pages/MaintenancePage";
@@ -85,7 +83,6 @@ function App() {
           <Route path="/customer/my-bookings" element={<MyBookings />} />
           <Route path="/customer/my-bookings/:id" element={<BookingDetail />} />
 
-          <Route path="/vnpay-return" element={<VnpayReturn />} />
           <Route path="/contract-review/:bookingId" element={<ContractReview />} />
         </Route>
 

@@ -1,12 +1,15 @@
 /**
  * bookingController.js
  * Xử lý toàn bộ luồng đặt lịch chụp của studio:
- *  - Customer: tạo yêu cầu đặt lịch, xem đơn, xác nhận hợp đồng, thanh toán VNPay.
- *  - Admin: tạo đơn hộ, gửi hợp đồng PDF, cập nhật trạng thái, phân công thợ, quản lý thanh toán.
+ *  - Customer: tạo yêu cầu đặt lịch, xem đơn, xác nhận hợp đồng.
+ *  - Admin: tạo đơn hộ, gửi hợp đồng PDF, xác nhận đã nhận cọc (tiền mặt/CK), cập nhật trạng thái, phân công thợ.
  *
- * LUỒNG TRẠNG THÁI MỚI:
+ * LUỒNG TRẠNG THÁI:
  *  REQUESTED → CONTRACT_SENT → WAITING_PAYMENT → CONFIRMED → IN_PROGRESS → COMPLETED
  *  Tại mọi bước đều có thể chuyển sang CANCELED (trừ COMPLETED).
+ *
+ * Thanh toán: Thủ công (tiền mặt hoặc chuyển khoản). Không dùng cổng thanh toán.
+ * Admin xác nhận đã nhận cọc qua API /confirm-deposit → booking chuyển CONFIRMED.
  *
  * LUỒNG LEGACY (backward-compat): PENDING → DEPOSITED → CONFIRMED → COMPLETED | CANCELED
  */
@@ -20,7 +23,6 @@ const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const mailService = require("../services/mailService");
 const { generateContractPdf, generateQrDataUrl } = require("../utils/contractPdf");
-
 
 // Trạng thái hợp lệ trong luồng mới
 const BOOKING_STATUSES = [
@@ -293,97 +295,6 @@ const sendConflictResponse = (res, conflictBooking, message) => {
   });
 };
 
-// ==========================================
-// VNPAY HELPERS
-// ==========================================
-
-// Sắp xếp object theo key và encode đúng định dạng VNPay.
-function sortObject(obj) {
-  const sorted = {};
-  const keys = [];
-
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      keys.push(encodeURIComponent(key));
-    }
-  }
-
-  keys.sort();
-
-  for (const encodedKey of keys) {
-    sorted[encodedKey] = encodeURIComponent(obj[encodedKey]).replace(
-      /%20/g,
-      "+",
-    );
-  }
-
-  return sorted;
-}
-
-// Tạo link thanh toán VNPay từ payment PENDING.
-const generateVnpayUrl = (req, payment) => {
-  const tmnCode = process.env.VNPAY_TMN_CODE || process.env.VNP_TMNCODE;
-  const secretKey = process.env.VNPAY_SECRET_KEY || process.env.VNP_HASHSECRET;
-  const vnpUrl =
-    process.env.VNPAY_URL ||
-    "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-  const returnUrl = process.env.VNPAY_RETURN_URL;
-
-  let vnpParams = {
-    vnp_Version: "2.1.0",
-    vnp_Command: "pay",
-    vnp_TmnCode: tmnCode,
-    vnp_Locale: "vn",
-    vnp_CurrCode: "VND",
-    vnp_TxnRef: payment._id.toString(),
-    vnp_OrderInfo: `Thanh toan don dat lich ${payment.reference_id}`,
-    vnp_OrderType: "other",
-    vnp_Amount: payment.amount * 100,
-    vnp_ReturnUrl: returnUrl,
-    vnp_IpAddr:
-      req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1",
-    vnp_CreateDate: moment(new Date()).format("YYYYMMDDHHmmss"),
-  };
-
-  if (payment.expires_at) {
-    vnpParams.vnp_ExpireDate = moment(payment.expires_at).format(
-      "YYYYMMDDHHmmss",
-    );
-  }
-
-  vnpParams = sortObject(vnpParams);
-
-  const signData = Object.keys(vnpParams)
-    .map((key) => `${key}=${vnpParams[key]}`)
-    .join("&");
-
-  const hmac = crypto.createHmac("sha512", secretKey);
-  const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-  vnpParams.vnp_SecureHash = signed;
-
-  return `${vnpUrl}?${Object.keys(vnpParams)
-    .map((key) => `${key}=${vnpParams[key]}`)
-    .join("&")}`;
-};
-
-// Xác thực chữ ký VNPay trả về.
-const verifyVnpaySignature = (params, secureHash) => {
-  const secretKey = process.env.VNPAY_SECRET_KEY || process.env.VNP_HASHSECRET;
-  const sortedParams = sortObject(params);
-
-  const signData = Object.keys(sortedParams)
-    .map((key) => `${key}=${sortedParams[key]}`)
-    .join("&");
-
-  const hmac = crypto.createHmac("sha512", secretKey);
-  const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-  return {
-    isValid: secureHash === signed,
-    sortedParams,
-  };
-};
 
 // ==========================================
 // CUSTOMER FUNCTIONS — LUỒNG MỚI
@@ -523,6 +434,20 @@ exports.createBookingRequest = async (req, res) => {
 
     const booking = await newBooking.save();
 
+    // 1. Khi khách gửi yêu cầu -> Gửi mail thông báo về cho admin
+    try {
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate("customer_id", "full_name email phone")
+        .populate("service_id", "name base_price")
+        .populate("extra_service_ids", "name base_price");
+      if (populatedBooking) {
+        mailService.sendBookingSuccessToAdminEmail(populatedBooking, populatedBooking.customer_id)
+          .catch(err => console.error("Lỗi gửi mail thông báo cho admin khi khách gửi yêu cầu:", err));
+      }
+    } catch (mailErr) {
+      console.error("Lỗi chuẩn bị email báo admin:", mailErr.message);
+    }
+
     return res.status(201).json({
       message: "Yêu cầu đặt lịch đã được gửi thành công. Studio sẽ kiểm tra và gửi hợp đồng xác nhận.",
       booking_id: booking._id,
@@ -631,127 +556,6 @@ exports.checkPaymentStatus = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Lỗi lấy trạng thái thanh toán",
-      error: error.message,
-    });
-  }
-};
-
-// Customer tạo lại link thanh toán nếu đơn còn PENDING và chưa quá hạn (legacy).
-exports.repayBooking = async (req, res) => {
-  try {
-    if (req.user?.role === "ADMIN") {
-      return res.status(403).json({
-        message: "Tài khoản quản trị không thể sử dụng chức năng này.",
-        code: "ADMIN_NOT_ALLOWED",
-      });
-    }
-
-    const customerId = getCurrentUserId(req);
-
-    await markExpiredPendingBookings(customerId);
-
-    const booking = await Booking.findOne({
-      _id: req.params.id,
-      customer_id: customerId,
-    });
-
-    if (!booking) {
-      return res.status(404).json({
-        message: "Không tìm thấy đơn đặt lịch",
-      });
-    }
-
-    // Luong moi: WAITING_PAYMENT co the lay lai link VNPay hoac tao giao dich moi.
-    if (booking.status === "WAITING_PAYMENT") {
-      const activePayment = await Payment.findOne({
-        reference_id: booking._id,
-        reference_type: "BOOKING",
-        status: "PENDING",
-      }).sort({ createdAt: -1 });
-
-      if (activePayment && (!activePayment.expires_at || activePayment.expires_at > new Date())) {
-        const paymentUrl = generateVnpayUrl(req, activePayment);
-        return res.status(200).json({ paymentUrl, expires_at: activePayment.expires_at });
-      }
-
-      if (activePayment) {
-        activePayment.status = "EXPIRED";
-        await activePayment.save();
-      }
-
-      const totalAmount = getTotalAmount(booking);
-      const depositAmount = booking.deposit_amount > 0
-        ? booking.deposit_amount
-        : Math.round((totalAmount * (booking.deposit_percent || 30)) / 100);
-
-      if (depositAmount <= 0) {
-        return res.status(400).json({ message: "So tien coc khong hop le" });
-      }
-
-      const expiresAt = moment().add(24, "hours").toDate();
-      booking.expires_at = expiresAt;
-      await booking.save();
-
-      const payment = await Payment.create({
-        reference_id: booking._id,
-        reference_type: "BOOKING",
-        amount: depositAmount,
-        payment_method: "VNPAY",
-        payment_type: "DEPOSIT",
-        status: "PENDING",
-        expires_at: expiresAt,
-      });
-
-      const paymentUrl = generateVnpayUrl(req, payment);
-      return res.status(200).json({ paymentUrl, expires_at: expiresAt });
-    }
-
-    // Legacy PENDING flow
-    if (booking.status !== "PENDING") {
-      return res.status(400).json({
-        message: "Đơn hàng này không ở trạng thái chờ thanh toán",
-      });
-    }
-
-    if (!booking.expires_at || booking.expires_at <= new Date()) {
-      booking.status = "CANCELED";
-      await booking.save();
-
-      await Payment.updateMany(
-        {
-          reference_id: booking._id,
-          reference_type: "BOOKING",
-          status: "PENDING",
-        },
-        { status: "EXPIRED" },
-      );
-
-      return res.status(400).json({
-        message: "Đơn hàng đã quá hạn thanh toán, vui lòng đặt lịch lại",
-      });
-    }
-
-    const payment = await Payment.findOne({
-      reference_id: booking._id,
-      reference_type: "BOOKING",
-      status: "PENDING",
-    }).sort({ createdAt: -1 });
-
-    if (!payment) {
-      return res.status(400).json({
-        message: "Không tìm thấy giao dịch chờ thanh toán",
-      });
-    }
-
-    const paymentUrl = generateVnpayUrl(req, payment);
-
-    return res.status(200).json({
-      paymentUrl,
-      expires_at: booking.expires_at,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Lỗi tạo lại link thanh toán",
       error: error.message,
     });
   }
@@ -869,48 +673,40 @@ exports.sendContract = async (req, res) => {
         : "Ekip ngoại cảnh đã có lịch trong buổi này. Vui lòng đổi ngày hoặc buổi chụp trước khi gửi hợp đồng.";
       return sendConflictResponse(res, scheduleConflict, conflictMessage);
     }
-    // Tạo token bảo mật ngẫu nhiên
-    const contractToken = crypto.randomBytes(32).toString("hex");
+    // Tạo token bảo mật ngẫu nhiên nếu chưa có
+    if (!booking.contract_token) {
+      booking.contract_token = crypto.randomBytes(32).toString("hex");
+    }
 
-    booking.contract_token = contractToken;
+    if (req.body?.contract_file_url) {
+      booking.contract_file_url = req.body.contract_file_url;
+    }
+
     booking.contract_sent_at = new Date();
     booking.status = "CONTRACT_SENT";
+    booking.hold_expires_at = moment().add(24, "hours").toDate();
     await booking.save();
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
-    const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${contractToken}`;
+    const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
 
-    // Sinh QR code (data URL để embed trong response)
+    // Sinh QR code dẫn tới link xem hợp đồng
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
 
-    // Sinh PDF hợp đồng
-    let pdfUrl = null;
-    try {
-      const { fileName } = await generateContractPdf(booking, contractLink);
-      pdfUrl = `${backendUrl}/public/contracts/${fileName}`;
-    } catch (pdfErr) {
-      // Không để lỗi PDF làm fail toàn bộ request
-      console.error("[sendContract] Lỗi sinh PDF:", pdfErr.message);
-    }
-
-    await mailService.sendContractEmail(booking, booking.customer_id, {
-      contractLink,
-      pdfUrl,
-    });
+    // KHÔNG GỬI MAIL HỢP ĐỒNG Ở BƯỚC NÀY
 
     return res.status(200).json({
-      message: "Đã gửi hợp đồng thành công",
+      message: "Đã tạo đơn & hợp đồng thành công",
       contract_link: contractLink,
-      contract_token: contractToken,
+      contract_token: booking.contract_token,
       qr_code: qrCodeDataUrl,
-      pdf_url: pdfUrl,
+      pdf_url: booking.contract_file_url || null,
       booking_id: booking._id,
     });
   } catch (error) {
     console.error("Send contract error:", error);
     return res.status(500).json({
-      message: "Lỗi gửi hợp đồng",
+      message: "Lỗi tạo hợp đồng",
       error: error.message,
     });
   }
@@ -944,17 +740,21 @@ exports.getContractByToken = async (req, res) => {
     }
 
     const bookingObj = booking.toObject();
-
-    // Che giấu token trong response
     delete bookingObj.contract_token;
 
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
-    const pdfUrl = `${backendUrl}/public/contracts/contract_${booking._id}.pdf`;
+    // Lấy QR thanh toán mặc định của Studio từ DB (do Admin upload trong Cài đặt)
+    const WebsiteImage = require("../models/WebsiteImage");
+    const qrImage = await WebsiteImage.findOne({ page: "SETTINGS", key: "payment_qr" });
+    const paymentQrUrl = qrImage?.imageUrl || process.env.PAYMENT_QR_URL || "";
+
+    // PDF hợp đồng do Admin upload
+    const pdfUrl = booking.contract_file_url || null;
 
     return res.status(200).json({
       booking: bookingObj,
       pdf_url: pdfUrl,
-      already_confirmed: ["WAITING_PAYMENT", "CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status),
+      payment_qr_url: paymentQrUrl,
+      already_confirmed: ["CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status),
     });
   } catch (error) {
     console.error("Get contract by token error:", error);
@@ -965,7 +765,8 @@ exports.getContractByToken = async (req, res) => {
   }
 };
 
-// Khách xác nhận hợp đồng. Chuyển booking sang WAITING_PAYMENT, tạo Payment và VNPay URL.
+// Khách xác nhận hợp đồng. Chuyển booking sang WAITING_PAYMENT.
+// Không tạo link thanh toán — khách thanh toán thủ công (tiền mặt/chuyển khoản).
 exports.confirmContract = async (req, res) => {
   try {
     const { id } = req.params;
@@ -991,37 +792,33 @@ exports.confirmContract = async (req, res) => {
       return res.status(400).json({ message: "Đơn đặt lịch này đã bị hủy" });
     }
 
-    // Nếu đã xác nhận trước đó → trả lại paymentUrl nếu còn Payment PENDING
-    // Neu da thanh toan thanh cong truoc do thi khong tao giao dich moi.
+    // Đã thanh toán và xác nhận trước đó
     if (booking.status === "CONFIRMED") {
       return res.status(200).json({
-        message: "Hop dong da duoc xac nhan va thanh toan thanh cong truoc do",
+        message: "Hợp đồng đã được xác nhận và studio đã ghi nhận thanh toán cọc trước đó",
         already_paid: true,
         booking_status: booking.status,
       });
     }
 
-    // WAITING_PAYMENT: tra lai giao dich PENDING con han; neu khong co thi tao giao dich moi ben duoi.
+    // Đã xác nhận hợp đồng trước đó, đang chờ admin xác nhận cọc
     if (booking.status === "WAITING_PAYMENT") {
-      const existingPayment = await Payment.findOne({
-        reference_id: booking._id,
-        reference_type: "BOOKING",
-        status: "PENDING",
-      }).sort({ createdAt: -1 });
+      const totalAmount = getTotalAmount(booking);
+      const depositAmount = booking.deposit_amount > 0
+        ? booking.deposit_amount
+        : Math.round((totalAmount * (booking.deposit_percent || 30)) / 100);
 
-      if (existingPayment && (!existingPayment.expires_at || existingPayment.expires_at > new Date())) {
-        const paymentUrl = generateVnpayUrl(req, existingPayment);
-        return res.status(200).json({
-          message: "Hop dong da duoc xac nhan truoc do, day la link thanh toan",
-          already_confirmed: true,
-          paymentUrl,
-        });
-      }
+      // Tạo nội dung chuyển khoản gợi ý
+      const bookingCode = booking._id.toString().slice(-6).toUpperCase();
+      const customerPhone = booking.customer_id?.phone || "";
+      const transferContent = `CHS ${bookingCode} ${customerPhone}`.trim();
 
-      if (existingPayment) {
-        existingPayment.status = "EXPIRED";
-        await existingPayment.save();
-      }
+      return res.status(200).json({
+        message: "Bạn đã xác nhận hợp đồng trước đó. Vui lòng thanh toán tiền cọc để giữ lịch chính thức.",
+        already_confirmed: true,
+        deposit_amount: depositAmount,
+        transfer_content: transferContent,
+      });
     }
 
     if (!["CONTRACT_SENT", "WAITING_PAYMENT"].includes(booking.status)) {
@@ -1040,181 +837,31 @@ exports.confirmContract = async (req, res) => {
       return res.status(400).json({ message: "Số tiền cọc không hợp lệ" });
     }
 
-    // Hạn thanh toán: 24 giờ kể từ khi khách xác nhận
-    const expiresAt = moment().add(24, "hours").toDate();
+    // Hạn giữ tạm 24h kể từ khi khách xác nhận hợp đồng
+    const holdExpiresAt = moment().add(24, "hours").toDate();
 
-    // Chuyển booking sang WAITING_PAYMENT
-    booking.status = "WAITING_PAYMENT";
+    // Giữ trạng thái CONTRACT_SENT — chờ admin xác nhận đã nhận cọc
+    booking.status = "CONTRACT_SENT";
     booking.contract_confirmed_at = booking.contract_confirmed_at || new Date();
     booking.deposit_amount = depositAmount;
-    booking.expires_at = expiresAt;
+    booking.hold_expires_at = holdExpiresAt;
     await booking.save();
 
-    // Tạo Payment PENDING
-    const payment = await Payment.create({
-      reference_id: booking._id,
-      reference_type: "BOOKING",
-      amount: depositAmount,
-      payment_method: "VNPAY",
-      payment_type: "DEPOSIT",
-      status: "PENDING",
-      expires_at: expiresAt,
-    });
-
-    const paymentUrl = generateVnpayUrl(req, payment);
+    // Tạo nội dung chuyển khoản gợi ý cho khách
+    const bookingCode = booking._id.toString().slice(-6).toUpperCase();
+    const customerPhone = booking.customer_id?.phone || "";
+    const transferContent = `CHS ${bookingCode} ${customerPhone}`.trim();
 
     return res.status(200).json({
-      message: "Xác nhận hợp đồng thành công. Vui lòng thanh toán để giữ lịch.",
-      paymentUrl,
+      message: "Xác nhận hợp đồng thành công. Vui lòng thanh toán tiền cọc để giữ lịch.",
       deposit_amount: depositAmount,
-      expires_at: expiresAt,
+      transfer_content: transferContent,
+      hold_expires_at: holdExpiresAt,
     });
   } catch (error) {
     console.error("Confirm contract error:", error);
     return res.status(500).json({
       message: "Lỗi xác nhận hợp đồng",
-      error: error.message,
-    });
-  }
-};
-
-// VNPay return: xác thực chữ ký và cập nhật payment/booking sau khi VNPay trả về.
-exports.vnpayReturn = async (req, res) => {
-  try {
-    const rawParams = {
-      ...(req.method === "GET" ? req.query : req.body),
-    };
-
-    const secureHash = rawParams.vnp_SecureHash;
-
-    delete rawParams.vnp_SecureHash;
-    delete rawParams.vnp_SecureHashType;
-
-    const { isValid, sortedParams } = verifyVnpaySignature(
-      rawParams,
-      secureHash,
-    );
-
-    if (!isValid) {
-      return res.status(400).json({
-        message: "Sai chữ ký xác thực (Invalid Signature) - Phát hiện giả mạo!",
-      });
-    }
-
-    const paymentId = sortedParams.vnp_TxnRef;
-    const responseCode = sortedParams.vnp_ResponseCode;
-    const transactionStatus = sortedParams.vnp_TransactionStatus;
-    const transactionNo = sortedParams.vnp_TransactionNo;
-    const payDateString = sortedParams.vnp_PayDate;
-
-    const payment = await Payment.findById(paymentId);
-
-    if (!payment) {
-      return res.status(404).json({
-        message: "Không tìm thấy giao dịch",
-      });
-    }
-
-    const booking = await Booking.findById(payment.reference_id)
-      .populate("customer_id")
-      .populate("original_service_ids", "name base_price").populate("service_id", "name")
-      .populate("extra_service_ids", "name");
-
-    if (!booking) {
-      return res.status(404).json({
-        message: "Không tìm thấy đơn đặt lịch",
-      });
-    }
-
-    const isSuccess =
-      responseCode === "00" &&
-      (!transactionStatus || transactionStatus === "00");
-
-    // Thanh toán thành công.
-    if (isSuccess) {
-      const paidAt = payDateString
-        ? moment(payDateString, "YYYYMMDDHHmmss").toDate()
-        : new Date();
-
-      if (payment.status === "SUCCESS") {
-        return res.status(200).json({
-          message: "Giao dịch đã được xử lý thành công trước đó",
-          code: "00",
-          booking_id: booking._id,
-        });
-      }
-
-      if (payment.status === "FAILED") {
-        return res.status(400).json({
-          message: "Giao dịch này đã bị hủy hoặc thất bại trước đó",
-          code: "PAYMENT_ALREADY_FAILED",
-          booking_id: booking._id,
-        });
-      }
-
-      // Nếu đơn đã bị hủy thủ công trước đó thì không mở lại đơn.
-      if (booking.status === "CANCELED") {
-        return res.status(400).json({
-          message: "Đơn đặt lịch đã bị hủy trước đó",
-          code: "BOOKING_CANCELED",
-          booking_id: booking._id,
-        });
-      }
-
-      payment.status = "SUCCESS";
-      payment.transaction_id = transactionNo;
-      payment.paid_at = paidAt;
-      await payment.save();
-
-      // Luồng mới: thanh toán xong → CONFIRMED (không phải DEPOSITED)
-      if (["WAITING_PAYMENT", "PENDING"].includes(booking.status)) {
-        booking.status = "CONFIRMED";
-        await booking.save();
-      }
-
-      // Gửi email xác nhận booking
-      await mailService.sendBookingSuccessEmail(booking, booking.customer_id);
-      await mailService.sendBookingSuccessToAdminEmail(booking, booking.customer_id);
-
-      return res.status(200).json({
-        message: "Giao dịch thành công, đã xác nhận đơn đặt lịch",
-        code: "00",
-        booking_id: booking._id,
-      });
-    }
-
-    // Thanh toán thất bại hoặc khách bấm hủy trên VNPay.
-    if (payment.status === "SUCCESS") {
-      return res.status(200).json({
-        message: "Giao dịch đã thành công trước đó, không cập nhật thất bại",
-        code: "00",
-        booking_id: booking._id,
-      });
-    }
-
-    payment.status = "FAILED";
-    payment.transaction_id = transactionNo;
-    await payment.save();
-
-    // Neu thanh toan that bai, giu WAITING_PAYMENT de khach co the tao lai link thanh toan.
-    if (booking.status === "WAITING_PAYMENT") {
-      booking.expires_at = null;
-      await booking.save();
-    } else if (booking.status === "PENDING") {
-      booking.status = "CANCELED";
-      await booking.save();
-    }
-
-    return res.status(400).json({
-      message: "Giao dịch thất bại hoặc bị hủy",
-      code: responseCode,
-      booking_id: booking._id,
-    });
-  } catch (error) {
-    console.error("VNPay return error:", error);
-
-    return res.status(500).json({
-      message: "Lỗi xử lý kết quả VNPay",
       error: error.message,
     });
   }
@@ -1473,6 +1120,8 @@ exports.updateBookingInfo = async (req, res) => {
       total_amount,
       deposit_amount,
       contract_note,
+      contract_file_url,
+      contract_original_name,
     } = req.body;
 
     const booking = await Booking.findById(id)
@@ -1482,11 +1131,11 @@ exports.updateBookingInfo = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
     }
 
-    // Chỉ cho chỉnh khi đơn chưa được khách xác nhận hợp đồng
-    const editableStatuses = ["REQUESTED", "CONTRACT_SENT"];
+    // Cho phép chỉnh sửa ở các trạng thái chưa hoàn thành / hủy
+    const editableStatuses = ["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED", "IN_PROGRESS"];
     if (!editableStatuses.includes(booking.status)) {
       return res.status(400).json({
-        message: `Không thể chỉnh sửa đơn ở trạng thái "${booking.status}". Chỉ có thể chỉnh đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT.`,
+        message: `Không thể chỉnh sửa đơn ở trạng thái "${booking.status}".`,
       });
     }
 
@@ -1550,6 +1199,8 @@ exports.updateBookingInfo = async (req, res) => {
 
     if (note !== undefined) booking.note = note;
     if (contract_note !== undefined) booking.contract_note = contract_note;
+    if (contract_file_url !== undefined) booking.contract_file_url = contract_file_url;
+    if (contract_original_name !== undefined) booking.contract_original_name = contract_original_name;
 
     // Cập nhật nhân sự
     if (assigned_staff_ids !== undefined) booking.assigned_staff_ids = assigned_staff_ids;
@@ -1719,8 +1370,24 @@ exports.updateBookingStatus = async (req, res) => {
 
     await booking.save();
 
-    // Gửi email thông báo thay đổi trạng thái
-    await mailService.sendStatusChangeEmail(booking, booking.customer_id);
+    // Chỉ gửi email cho khách khi đơn đã được xác nhận cọc (CONFIRMED), hoàn thành (COMPLETED) hoặc bị hủy (CANCELED)
+    if (["CONFIRMED", "COMPLETED", "CANCELED"].includes(status)) {
+      if (status === "CONFIRMED") {
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        const contractLink = booking.contract_token
+          ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
+          : null;
+        const pdfUrl = booking.contract_file_url || null;
+        await mailService.sendDepositConfirmedEmail(booking, booking.customer_id, {
+          contractLink,
+          pdfUrl,
+          payment_method: "MANUAL",
+          confirmedAmount: booking.deposit_amount || 0,
+        });
+      } else {
+        await mailService.sendStatusChangeEmail(booking, booking.customer_id);
+      }
+    }
 
     // Nếu admin chuyển hoàn thành, tạo payment phần còn lại để đơn hiển thị đã tất toán.
     if (status === "COMPLETED") {
@@ -1855,11 +1522,125 @@ exports.updateBookingStaff = async (req, res) => {
   }
 };
 
-// Backward-compat alias: createVnpayPayment vẫn hoạt động nhưng gọi sang createBookingRequest
-// để tránh vỡ code cũ nếu có chỗ nào còn gọi thẳng tên hàm này.
-exports.createVnpayPayment = exports.createBookingRequest;
+// ==========================================
+// ADMIN — XÁC NHẬN ĐÃ NHẬN CỌC (CASH/TRANSFER)
+// ==========================================
 
+/**
+ * Admin xác nhận đã nhận tiền cọc từ khách (tiền mặt hoặc chuyển khoản).
+ * Quy trình:
+ *  1. Kiểm tra đơn hợp lệ (đang WAITING_PAYMENT).
+ *  2. Tạo Payment SUCCESS với phương thức CASH hoặc TRANSFER.
+ *  3. Chuyển booking sang CONFIRMED.
+ *  4. Gửi email xác nhận đơn chính thức cho khách.
+ */
+exports.adminConfirmDeposit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      payment_method, // "CASH" hoặc "TRANSFER"
+      amount,         // Số tiền đã nhận (mặc định = deposit_amount)
+      payment_note,   // Ghi chú đối soát (vd: "Khách gửi bill qua Zalo")
+      transaction_id, // Mã giao dịch ngân hàng (nếu có - legacy)
+      bill_image_url, // URL ảnh bill thanh toán (nếu có)
+    } = req.body;
 
+    // Chỉ chấp nhận phương thức thủ công
+    if (!payment_method || !["CASH", "TRANSFER"].includes(payment_method)) {
+      return res.status(400).json({
+        message: "Phương thức thanh toán không hợp lệ. Chọn CASH hoặc TRANSFER.",
+      });
+    }
+
+    const booking = await Booking.findById(id)
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
+
+    // Cho phép xác nhận cọc cho các đơn ở trạng thái CONTRACT_SENT, WAITING_PAYMENT hoặc REQUESTED
+    if (!["CONTRACT_SENT", "WAITING_PAYMENT", "REQUESTED"].includes(booking.status)) {
+      return res.status(400).json({
+        message: `Không thể xác nhận cọc cho đơn ở trạng thái "${booking.status}".`,
+        code: "INVALID_STATUS",
+      });
+    }
+
+    const totalAmount = getTotalAmount(booking);
+    const depositAmount = booking.deposit_amount > 0
+      ? booking.deposit_amount
+      : Math.round((totalAmount * (booking.deposit_percent || 30)) / 100);
+
+    // Số tiền admin xác nhận — mặc định bằng deposit_amount
+    const confirmedAmount = (amount !== undefined && amount !== null)
+      ? Number(amount)
+      : depositAmount;
+
+    if (isNaN(confirmedAmount) || confirmedAmount <= 0) {
+      return res.status(400).json({ message: "Số tiền xác nhận không hợp lệ" });
+    }
+
+    const now = new Date();
+
+    // Tạo Payment SUCCESS — admin ghi nhận đã nhận tiền
+    const payment = await Payment.create({
+      reference_id: booking._id,
+      reference_type: "BOOKING",
+      amount: confirmedAmount,
+      payment_method,        // CASH hoặc TRANSFER
+      payment_type: "DEPOSIT",
+      status: "SUCCESS",
+      paid_at: now,
+      payment_note: payment_note || "",
+      transaction_id: transaction_id || "",
+      bill_image_url: bill_image_url || "",
+    });
+
+    // Chuyển booking sang CONFIRMED — lịch được giữ chính thức
+    booking.status = "CONFIRMED";
+    booking.hold_expires_at = null; // Không còn hết hạn khi đã CONFIRMED
+    if (bill_image_url) {
+      booking.deposit_bill_url = bill_image_url;
+    }
+    await booking.save();
+
+    // Gửi email xác nhận đặt lịch chính thức cho khách
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
+    const contractLink = booking.contract_token
+      ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
+      : null;
+    const pdfUrl = `${backendUrl}/public/contracts/contract_${booking._id}.pdf`;
+
+    await mailService.sendDepositConfirmedEmail(booking, booking.customer_id, {
+      contractLink,
+      pdfUrl,
+      payment_method,
+      confirmedAmount,
+    });
+
+    return res.status(200).json({
+      message: "Xác nhận nhận cọc thành công. Đơn đặt lịch đã chuyển sang CONFIRMED.",
+      booking_id: booking._id,
+      payment_id: payment._id,
+      payment_method,
+      confirmed_amount: confirmedAmount,
+    });
+  } catch (error) {
+    console.error("Admin confirm deposit error:", error);
+    return res.status(500).json({
+      message: "Lỗi xác nhận nhận cọc",
+      error: error.message,
+    });
+  }
+};
+
+// Alias không còn dùng — giữ để tránh vỡ import cũ nếu có
+// exports.createVnpayPayment đã được xóa, đổi sang createBookingRequest
 
 // ==========================================
 // ADMIN — DỜI LỊCH ĐƠN CONFIRMED
@@ -2029,13 +1810,72 @@ exports.rescheduleBooking = async (req, res) => {
 };
 
 // ==========================================
+// ADMIN — TẠO / GỬI HỢP ĐỒNG (UPLOAD PDF)
+// ==========================================
+
+/**
+ * Admin tạo đơn / gửi hợp đồng cho khách (REQUESTED / CONTRACT_SENT -> CONTRACT_SENT).
+ * Nhận file PDF hợp đồng do Admin upload (contract_file_url).
+ * KHÔNG GỬI MAIL ở bước này! (Chỉ tạo token & link/QR hợp đồng trả về cho Admin).
+ */
+exports.sendContract = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { contract_file_url, contract_original_name } = req.body;
+
+    const booking = await Booking.findById(id).populate("customer_id");
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
+
+    if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
+      return res.status(400).json({
+        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT. Đơn hiện tại: "${booking.status}".`
+      });
+    }
+
+    if (contract_file_url) {
+      booking.contract_file_url = contract_file_url;
+    }
+    if (contract_original_name) {
+      booking.contract_original_name = contract_original_name;
+    }
+
+    if (!booking.contract_token) {
+      booking.contract_token = crypto.randomBytes(24).toString("hex");
+    }
+
+    booking.status = "CONTRACT_SENT";
+    booking.contract_sent_at = new Date();
+    booking.hold_expires_at = moment().add(24, "hours").toDate();
+    await booking.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
+    const qrCodeDataUrl = await generateQrDataUrl(contractLink);
+
+    return res.status(200).json({
+      message: "Tạo hợp đồng thành công!",
+      contract_link: contractLink,
+      qr_code: qrCodeDataUrl,
+      pdf_url: booking.contract_file_url || null,
+      booking,
+    });
+  } catch (error) {
+    console.error("Send contract error:", error);
+    return res.status(500).json({
+      message: "Lỗi tạo hợp đồng",
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
 // ADMIN — XEM LẠI QR/LINK HĐ
 // ==========================================
 
 /**
  * Admin xem lại QR/link hợp đồng của một đơn đã có contract_token.
- * Không thay đổi gì trên DB — chỉ build lại link và generate QR mới.
- * Hoạt động với mọi trạng thái đơn có contract_token.
  */
 exports.getContractInfo = async (req, res) => {
   try {
@@ -2051,15 +1891,14 @@ exports.getContractInfo = async (req, res) => {
 
     if (!booking.contract_token) {
       return res.status(400).json({
-        message: "Đơn này chưa có hợp đồng. Hãy gửi hợp đồng trước.",
+        message: "Đơn này chưa có hợp đồng. Hãy bấm tạo hợp đồng trước.",
         code: "NO_CONTRACT_TOKEN",
       });
     }
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
     const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
-    const pdfUrl = `${backendUrl}/public/contracts/contract_${booking._id}.pdf`;
+    const pdfUrl = booking.contract_file_url || null;
 
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
 
@@ -2080,4 +1919,5 @@ exports.getContractInfo = async (req, res) => {
     });
   }
 };
+
 

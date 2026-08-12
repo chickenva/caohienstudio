@@ -540,7 +540,7 @@ const Home = () => {
                 step: "02",
                 icon: <CreditCardOutlined style={{ fontSize: "28px", color: "#BFA16A" }} />,
                 title: "Đăng Ký & Đặt Cọc",
-                desc: "Thực hiện ký hợp đồng điện tử và đặt cọc giữ ngày chụp cực kỳ tiện lợi thông qua hệ thống thanh toán VNPay trực tiếp."
+                desc: "Thực hiện ký hợp đồng điện tử và đặt cọc giữ ngày chụp tiện lợi bằng tiền mặt hoặc chuyển khoản qua QR cố định."
               },
               {
                 step: "03",
@@ -640,7 +640,7 @@ const Home = () => {
             Hãy Để Chúng Tôi Kể Lại Câu Chuyện Của Bạn
           </h2>
           <p style={{ color: "#555555", fontSize: "16px", lineHeight: "1.8", marginBottom: "40px", fontWeight: "300" }}>
-            Mỗi khung hình là một kỉ niệm vô giá lưu giữ mãi về sau. Đặt lịch cọc hôm nay qua cổng VNPay/PayOS để giữ ngày đẹp và nhận nhiều phần quà ý nghĩa từ studio.
+            Mỗi khung hình là một kỉ niệm vô giá lưu giữ mãi về sau. Đặt lịch cọc ngay hôm nay để giữ ngày đẹp và nhận nhiều phần quà ý nghĩa từ studio.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
             <button className="btn-premium-gold" onClick={() => navigate("/booking")}>

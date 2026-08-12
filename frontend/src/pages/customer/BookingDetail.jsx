@@ -51,16 +51,10 @@ const isExpiredPendingBooking = (booking) => {
     dayjs(booking.expires_at).isBefore(dayjs());
 };
 
-// Kiểm tra đơn hiện tại có còn được thanh toán qua VNPay không.
+// Kiểm tra đơn hiện tại có hợp đồng chờ xem/xác nhận hoặc chờ cọc không.
 const isPayableBooking = (booking) => {
   if (!booking) return false;
-  if (booking.status === "WAITING_PAYMENT") return true;
-
-  return (
-    booking.status === "PENDING" &&
-    booking.expires_at &&
-    dayjs(booking.expires_at).isAfter(dayjs())
-  );
+  return ["CONTRACT_SENT", "WAITING_PAYMENT"].includes(booking.status);
 };
 
 // Quy đổi trạng thái legacy/lỗi thanh toán về trạng thái dễ hiểu để hiển thị.
@@ -172,33 +166,12 @@ const BookingDetail = () => {
     }
   };
 
-  // Tạo lại link VNPay khi đơn đang chờ thanh toán/cọc.
-  const handleRepay = async () => {
-    setRepayLoading(true);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.post(
-        `${API_URL}/bookings/${id}/repay`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (res.data.paymentUrl) {
-        window.location.href = res.data.paymentUrl;
-      } else {
-        message.error("Không tìm thấy link thanh toán");
-      }
-    } catch (err) {
-      message.error(
-        err.response?.data?.message || "Lỗi khởi tạo thanh toán lại",
-      );
-      fetchBooking();
-    } finally {
-      setRepayLoading(false);
+  // Điều hướng tới trang hợp đồng & hướng dẫn thanh toán.
+  const handleGoToContract = () => {
+    if (booking?.contract_token) {
+      navigate(`/contract-review/${id}?token=${booking.contract_token}`);
+    } else {
+      message.error("Không tìm thấy thông tin hợp đồng.");
     }
   };
 
@@ -464,47 +437,35 @@ const BookingDetail = () => {
             }}
           >
             <Alert
-              type="warning"
+              type={booking.status === "WAITING_PAYMENT" ? "info" : "warning"}
               showIcon
-              message={booking.status === "WAITING_PAYMENT" ? "Đơn hàng đang chờ đặt cọc" : "Đơn hàng đang chờ thanh toán"}
+              message={booking.status === "WAITING_PAYMENT" ? "Đơn hàng đang chờ thanh toán cọc" : "Studio đã gửi hợp đồng đặt lịch"}
               description={
                 booking.status === "WAITING_PAYMENT"
-                  ? "Bạn cần hoàn tất đặt cọc qua VNPay để xác nhận lịch. Nếu link thanh toán hết hạn, bạn có thể tạo lại link mới."
-                  : "Bạn cần hoàn tất thanh toán trong thời gian giữ chỗ. Nếu quá hạn, đơn có thể bị hủy."
+                  ? "Bạn đã xác nhận hợp đồng. Vui lòng thanh toán tiền cọc bằng tiền mặt tại studio hoặc chuyển khoản qua QR. Studio sẽ kiểm tra và xác nhận đơn của bạn."
+                  : "Vui lòng xem và xác nhận hợp đồng để tiến hành thanh toán cọc giữ lịch."
               }
               style={{ marginBottom: 18 }}
             />
 
             <div style={{ textAlign: "center" }}>
-              {deadline ? (
-                <Countdown
-                  title="Thời gian thanh toán còn lại"
-                  value={deadline}
-                  format="HH:mm:ss"
-                  onFinish={handleCountdownFinish}
-                />
-              ) : (
-                <div style={{ color: "#8c6d1f", fontWeight: 600 }}>
-                  Bạn có thể tạo lại link thanh toán để tiếp tục đặt cọc.
-                </div>
-              )}
-
-              <Space wrap style={{ marginTop: 18 }}>
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<CreditCardOutlined />}
-                  onClick={handleRepay}
-                  loading={repayLoading}
-                  style={{
-                    background: PRIMARY_COLOR,
-                    borderColor: PRIMARY_COLOR,
-                    height: "46px",
-                    padding: "0 32px",
-                  }}
-                >
-                  THANH TOÁN NGAY QUA VNPAY
-                </Button>
+              <Space wrap style={{ marginTop: 10 }}>
+                {booking.contract_token && (
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<FileTextOutlined />}
+                    onClick={handleGoToContract}
+                    style={{
+                      background: PRIMARY_COLOR,
+                      borderColor: PRIMARY_COLOR,
+                      height: "46px",
+                      padding: "0 32px",
+                    }}
+                  >
+                    {booking.status === "WAITING_PAYMENT" ? "XEM HƯỚNG DẪN THANH TOÁN & HỢP ĐỒNG" : "XEM & XÁC NHẬN HỢP ĐỒNG"}
+                  </Button>
+                )}
 
                 <Button
                   danger

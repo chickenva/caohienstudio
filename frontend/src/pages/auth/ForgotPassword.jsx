@@ -129,17 +129,6 @@ const ForgotPassword = () => {
         {/* ================= BƯỚC 1 ================= */}
         {step === 1 && (
           <Form layout="vertical" onFinish={onFinishStep1} requiredMark={false}>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#888",
-                letterSpacing: "0.5px",
-                marginBottom: "20px",
-                textAlign: "center",
-              }}
-            >
-              Nhập email tài khoản để nhận mã xác thực
-            </p>
             <Form.Item
               label={
                 <span

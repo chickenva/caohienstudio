@@ -2,6 +2,7 @@
  * Mongoose Schema: Booking (Đơn đặt lịch)
  * Lưu toàn bộ thông tin lịch chụp: dịch vụ, thợ chụp, buổi chụp,
  * trạng thái, hợp đồng và tiền cọc.
+ * Thanh toán thực hiện thủ công (tiền mặt hoặc chuyển khoản), admin xác nhận trên hệ thống.
  */
 const mongoose = require("mongoose");
 
@@ -106,10 +107,10 @@ const bookingSchema = new mongoose.Schema(
     },
 
     // Trạng thái đơn — luồng chính:
-    //   REQUESTED       → Khách gửi yêu cầu đặt lịch
-    //   CONTRACT_SENT   → Admin gửi hợp đồng cho khách
-    //   WAITING_PAYMENT → Khách xác nhận hợp đồng, chờ thanh toán VNPay
-    //   CONFIRMED       → Thanh toán cọc thành công, lịch được giữ chính thức
+    //   REQUESTED       → Khách gửi yêu cầu đặt lịch, chờ studio xử lý
+    //   CONTRACT_SENT   → Admin gửi hợp đồng cho khách, đơn được giữ tạm 24h
+    //   WAITING_PAYMENT → Khách xác nhận hợp đồng, chờ admin ghi nhận đã nhận cọc
+    //   CONFIRMED       → Admin xác nhận đã nhận cọc (tiền mặt/CK), lịch giữ chính thức
     //   IN_PROGRESS     → Admin bấm khi buổi chụp bắt đầu
     //   COMPLETED       → Hoàn thành toàn bộ
     //   CANCELED        → Đã hủy
@@ -130,8 +131,12 @@ const bookingSchema = new mongoose.Schema(
       default: "REQUESTED",
     },
 
-    // Thời điểm hết hạn đơn (dùng cho legacy PENDING và WAITING_PAYMENT)
+    // Thời điểm hết hạn đơn (dùng cho legacy PENDING)
     expires_at: { type: Date, default: null },
+
+    // Hạn giữ tạm 24h kể từ khi admin gửi hợp đồng (CONTRACT_SENT/WAITING_PAYMENT)
+    // Sau thời điểm này, nếu chưa xác nhận cọc, admin xử lý thủ công
+    hold_expires_at: { type: Date, default: null },
 
     // Ghi chú từ khách hàng khi đặt lịch
     note: { type: String, default: "" },
@@ -151,6 +156,22 @@ const bookingSchema = new mongoose.Schema(
 
     // Điều khoản / ghi chú hợp đồng do admin soạn (thêm vào PDF)
     contract_note: { type: String, default: "" },
+
+    // ==========================================
+    // FILE HỢP ĐỒNG UPLOAD (admin upload PDF ngoài hệ thống)
+    // ==========================================
+
+    // URL truy cập file PDF hợp đồng (hệ thống tự sinh hoặc admin upload)
+    contract_file_url: { type: String, default: null },
+
+    // Đường dẫn lưu file trên server (nếu upload lên local)
+    contract_file_path: { type: String, default: null },
+
+    // Tên file gốc khi admin upload (hiển thị cho UX)
+    contract_original_name: { type: String, default: null },
+
+    // URL ảnh bill thanh toán cọc do admin upload khi xác nhận nhận cọc
+    deposit_bill_url: { type: String, default: null },
   },
   { timestamps: true },
 );

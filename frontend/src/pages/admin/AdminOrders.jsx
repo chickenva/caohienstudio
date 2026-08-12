@@ -43,6 +43,9 @@ import {
   QrcodeOutlined,
   CalendarOutlined,
   PlusOutlined,
+  BankOutlined,
+  DollarOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -58,25 +61,24 @@ const { Title, Text, Paragraph } = Typography;
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const statusOptions = [
-  { value: "ALL", label: "Tất cả" },
-  { value: "REQUESTED", label: "Đã gửi yêu cầu" },
-  { value: "CONTRACT_SENT", label: "Đã gửi hợp đồng" },
-  { value: "WAITING_PAYMENT", label: "Chờ thanh toán" },
+  { value: "ALL", label: "Tất cả trạng thái" },
+  { value: "REQUESTED", label: "Yêu cầu mới" },
+  { value: "CONTRACT_SENT", label: "Đã gửi HĐ / Chờ cọc" },
   { value: "CONFIRMED", label: "Đã xác nhận" },
-  { value: "IN_PROGRESS", label: "Đang thực hiện" },
+  { value: "IN_PROGRESS", label: "Đang chụp" },
   { value: "COMPLETED", label: "Hoàn thành" },
   { value: "CANCELED", label: "Đã hủy" },
 ];
 
 const statusConfig = {
   REQUESTED: { color: "orange", text: "Yêu cầu mới" },
-  CONTRACT_SENT: { color: "purple", text: "Đã gửi HĐ" },
-  WAITING_PAYMENT: { color: "gold", text: "Chờ thanh toán" },
+  CONTRACT_SENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+  WAITING_PAYMENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
   CONFIRMED: { color: "blue", text: "Đã xác nhận" },
   IN_PROGRESS: { color: "geekblue", text: "Đang chụp" },
   COMPLETED: { color: "green", text: "Hoàn thành" },
   CANCELED: { color: "red", text: "Đã hủy" },
-  PENDING: { color: "gold", text: "Chờ TT (cũ)" },
+  PENDING: { color: "gold", text: "Chờ cọc (cũ)" },
   DEPOSITED: { color: "cyan", text: "Đã cọc (cũ)" },
 };
 
@@ -143,6 +145,26 @@ export default function AdminOrders() {
   const [contractViewData, setContractViewData] = useState(null);
   const [loadingContractView, setLoadingContractView] = useState(false);
 
+  // File PDF hợp đồng upload trong modal tạo hợp đồng
+  const [contractPdfUrl, setContractPdfUrl] = useState("");
+  const [contractPdfName, setContractPdfName] = useState("");
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+
+  // Modal Cài đặt QR Thanh toán Studio Mặc định
+  const [studioQrModalOpen, setStudioQrModalOpen] = useState(false);
+  const [studioQrUrl, setStudioQrUrl] = useState("");
+  const [studioQrInputUrl, setStudioQrInputUrl] = useState("");
+  const [loadingStudioQr, setLoadingStudioQr] = useState(false);
+  const [savingStudioQr, setSavingStudioQr] = useState(false);
+
+  // Modal xác nhận đã nhận cọc (CASH/TRANSFER)
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [depositTarget, setDepositTarget] = useState(null);
+  const [confirmingDeposit, setConfirmingDeposit] = useState(false);
+  const [depositBillUrl, setDepositBillUrl] = useState("");
+  const [uploadingDepositBill, setUploadingDepositBill] = useState(false);
+  const [depositForm] = Form.useForm();
+
   useEffect(() => { fetchBookings(); }, [statusFilter]);
 
   // Lấy JWT admin để gọi API quản trị đơn.
@@ -199,7 +221,133 @@ export default function AdminOrders() {
   const openSendContractModal = (record) => {
     setSendContractTarget(record);
     setContractResult(null);
+    setContractPdfUrl(record.contract_file_url || "");
+    setContractPdfName(record.contract_original_name || "");
     setSendContractModalOpen(true);
+  };
+
+  // Mở modal cài đặt QR Studio
+  const openStudioQrModal = async () => {
+    setStudioQrModalOpen(true);
+    setLoadingStudioQr(true);
+    try {
+      const res = await axios.get(`${API_URL}/website/payment-qr`);
+      const url = res.data.paymentQrUrl || "";
+      setStudioQrUrl(url);
+      setStudioQrInputUrl(url);
+    } catch (err) {
+      console.error("Lỗi lấy QR studio:", err);
+    } finally {
+      setLoadingStudioQr(false);
+    }
+  };
+
+  // Upload file PDF hợp đồng lên server
+  const handleUploadContractPdf = async (file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("pdf", file);
+    setUploadingPdf(true);
+    try {
+      const res = await axios.post(`${API_URL}/upload/pdf`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+      setContractPdfUrl(res.data.url);
+      setContractPdfName(file.name || res.data.originalName);
+      message.success("Tải file PDF hợp đồng thành công!");
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi upload file PDF");
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  // Upload ảnh QR Studio thanh toán mặc định từ file
+  const handleUploadStudioQr = async (file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    setSavingStudioQr(true);
+    try {
+      const uploadRes = await axios.post(`${API_URL}/upload/image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+      const imgUrl = uploadRes.data.url;
+      await axios.post(
+        `${API_URL}/website/admin/payment-qr`,
+        { imageUrl: imgUrl },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setStudioQrUrl(imgUrl);
+      setStudioQrInputUrl(imgUrl);
+      message.success("Cập nhật QR thanh toán mặc định của Studio thành công!");
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi lưu QR thanh toán Studio");
+    } finally {
+      setSavingStudioQr(false);
+    }
+  };
+
+  // Lưu URL ảnh QR Studio trực tiếp từ Input
+  const handleSaveStudioQrUrl = async (url) => {
+    if (!url) {
+      message.error("Vui lòng nhập hoặc dán URL hình ảnh QR!");
+      return;
+    }
+    setSavingStudioQr(true);
+    try {
+      await axios.post(
+        `${API_URL}/website/admin/payment-qr`,
+        { imageUrl: url },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setStudioQrUrl(url);
+      message.success("Lưu URL QR thanh toán Studio thành công!");
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi lưu QR thanh toán Studio");
+    } finally {
+      setSavingStudioQr(false);
+    }
+  };
+
+  // Upload ảnh bill thanh toán cọc từ máy
+  const handleUploadDepositBill = async (file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    setUploadingDepositBill(true);
+    try {
+      const res = await axios.post(`${API_URL}/upload/image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+      setDepositBillUrl(res.data.url);
+      message.success("Tải lên ảnh bill thanh toán thành công!");
+    } catch (err) {
+      message.error(err.response?.data?.message || "Lỗi upload ảnh bill thanh toán");
+    } finally {
+      setUploadingDepositBill(false);
+    }
+  };
+
+  // Mở modal xác nhận đã nhận cọc (CASH/TRANSFER).
+  const openDepositModal = (record) => {
+    setDepositTarget(record);
+    setDepositBillUrl(record.deposit_bill_url || "");
+    depositForm.setFieldsValue({
+      payment_method: "TRANSFER",
+      amount: record.deposit_amount || 0,
+      payment_note: "",
+    });
+    setDepositModalOpen(true);
   };
 
   // Lấy busy slots cho modal dời lịch (loại trừ chính đơn đang dời)
@@ -263,6 +411,8 @@ export default function AdminOrders() {
   const openEditModal = async (record) => {
     await fetchServices();
     setEditTarget(record);
+    setContractPdfUrl(record.contract_file_url || "");
+    setContractPdfName(record.contract_original_name || "");
     const total = record.total_amount || 0;
     const depositAmt = record.deposit_amount || Math.round(total * (record.deposit_percent || 30) / 100);
 
@@ -385,18 +535,55 @@ export default function AdminOrders() {
     });
   };
 
+  // Admin xác nhận đã nhận cọc thủ công (CASH/TRANSFER) → booking chuyển CONFIRMED.
+  const handleConfirmDeposit = async () => {
+    if (!depositTarget) return;
+    try {
+      const values = await depositForm.validateFields();
+      setConfirmingDeposit(true);
+      await axios.post(
+        `${API_URL}/bookings/${depositTarget._id}/confirm-deposit`,
+        {
+          payment_method: values.payment_method,
+          amount: values.amount,
+          payment_note: values.payment_note || "",
+          bill_image_url: depositBillUrl || "",
+        },
+        { headers: { Authorization: `Bearer ${getToken()}` } },
+      );
+      message.success("Xác nhận nhận cọc thành công! Đơn đã chuyển sang CONFIRMED.");
+      setDepositModalOpen(false);
+      setDepositTarget(null);
+      setDepositBillUrl("");
+      depositForm.resetFields();
+      fetchBookings();
+      if (selectedBooking?._id === depositTarget._id) {
+        setSelectedBooking(prev => ({ ...prev, status: "CONFIRMED", deposit_bill_url: depositBillUrl }));
+        setDetailOpen(false);
+      }
+    } catch (err) {
+      if (err?.errorFields) return; // form validation error
+      message.error(err.response?.data?.message || "Không thể xác nhận nhận cọc");
+    } finally {
+      setConfirmingDeposit(false);
+    }
+  };
+
   // Tạo PDF, QR/link hợp đồng và chuyển đơn sang CONTRACT_SENT.
-  /**
-   * Hàm Admin gửi hợp đồng cho khách hàng.
-   * Xử lý: Kiểm tra tính hợp lệ của đơn, gọi API sinh PDF và QR, sau đó gửi mail.
-   */
   const handleSendContract = async () => {
     if (!sendContractTarget) return;
+    if (!contractPdfUrl && !sendContractTarget.contract_file_url) {
+      message.error("Vui lòng chọn upload file PDF hợp đồng trước khi bấm Tạo đơn!");
+      return;
+    }
     setSendingContract(true);
     try {
       const res = await axios.post(
         `${API_URL}/bookings/${sendContractTarget._id}/send-contract`,
-        {},
+        {
+          contract_file_url: contractPdfUrl || sendContractTarget.contract_file_url,
+          contract_original_name: contractPdfName || sendContractTarget.contract_original_name,
+        },
         { headers: { Authorization: `Bearer ${getToken()}` } },
       );
       setContractResult({
@@ -404,13 +591,13 @@ export default function AdminOrders() {
         qr_code: res.data.qr_code,
         pdf_url: res.data.pdf_url,
       });
-      message.success("Đã tạo hợp đồng thành công!");
+      message.success("Tạo đơn & hợp đồng thành công!");
       fetchBookings();
       if (selectedBooking?._id === sendContractTarget._id) {
-        setSelectedBooking(prev => ({ ...prev, status: "CONTRACT_SENT" }));
+        setSelectedBooking(prev => ({ ...prev, status: "CONTRACT_SENT", contract_file_url: res.data.pdf_url }));
       }
     } catch (err) {
-      message.error(err.response?.data?.message || "Không thể gửi hợp đồng");
+      message.error(err.response?.data?.message || "Không thể tạo hợp đồng");
     } finally {
       setSendingContract(false);
     }
@@ -448,18 +635,50 @@ export default function AdminOrders() {
     try {
       const values = await editForm.validateFields();
       setSavingEdit(true);
-      // Chuyển dayjs sang định dạng YYYY-MM-DD
+      // Chuyển dayjs sang định dạng YYYY-MM-DD và đính kèm thông tin file PDF hợp đồng
       const payload = {
         ...values,
         shoot_date: values.shoot_date ? values.shoot_date.format("YYYY-MM-DD") : undefined,
+        contract_file_url: contractPdfUrl,
+        contract_original_name: contractPdfName,
       };
       await axios.put(
         `${API_URL}/bookings/${editTarget._id}/info`,
         payload,
         { headers: { Authorization: `Bearer ${getToken()}` } },
       );
-      message.success("Cập nhật thông tin đơn thành công");
-      setEditModalOpen(false); setEditTarget(null);
+
+      // Nếu đơn ở trạng thái REQUESTED: Tiến hành Tạo đơn và gửi Hợp đồng
+      if (editTarget.status === "REQUESTED") {
+        const finalPdfUrl = contractPdfUrl || editTarget.contract_file_url;
+        const finalPdfName = contractPdfName || editTarget.contract_original_name;
+        if (!finalPdfUrl) {
+          message.error("Vui lòng upload file PDF hợp đồng trước khi bấm Tạo đơn!");
+          setSavingEdit(false);
+          return;
+        }
+        const contractRes = await axios.post(
+          `${API_URL}/bookings/${editTarget._id}/send-contract`,
+          {
+            contract_file_url: finalPdfUrl,
+            contract_original_name: finalPdfName,
+          },
+          { headers: { Authorization: `Bearer ${getToken()}` } },
+        );
+        setContractResult({
+          contract_link: contractRes.data.contract_link,
+          qr_code: contractRes.data.qr_code,
+          pdf_url: contractRes.data.pdf_url,
+        });
+        setSendContractTarget(editTarget);
+        setSendContractModalOpen(true);
+        message.success("Tạo đơn hàng & khởi tạo hợp đồng thành công!");
+      } else {
+        message.success("Cập nhật thông tin đơn thành công!");
+      }
+
+      setEditModalOpen(false);
+      setEditTarget(null);
       fetchBookings();
     } catch (err) {
       if (err?.errorFields) return;
@@ -532,47 +751,41 @@ export default function AdminOrders() {
       key: "action",
       align: "right",
       render: (_, record) => (
-        <Space size={4} wrap>
-          {["REQUESTED", "CONTRACT_SENT"].includes(record.status) && (
-            <Tooltip title={record.status === "CONTRACT_SENT" ? "Gửi lại hợp đồng" : "Gửi hợp đồng"}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
+          {record.status === "REQUESTED" && (
+            <Tooltip title="Chỉnh thông tin đơn & Upload hợp đồng">
+              <Button icon={<EditOutlined />} size="small" style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => openEditModal(record)}>Chỉnh sửa</Button>
+            </Tooltip>
+          )}
+          {["CONTRACT_SENT", "WAITING_PAYMENT"].includes(record.status) && (
+            <Tooltip title="Xác nhận đã nhận tiền cọc từ khách">
               <Button
-                icon={<SendOutlined />}
                 size="small"
-                type={record.status === "REQUESTED" ? "primary" : "default"}
-                style={record.status === "REQUESTED" ? { background: "#722ed1", borderColor: "#722ed1" } : {}}
-                onClick={() => openSendContractModal(record)}
+                type="primary"
+                style={{ background: "#BFA16A", borderColor: "#BFA16A" }}
+                onClick={() => openDepositModal(record)}
               >
-                {record.status === "REQUESTED" ? "Gửi HĐ" : "Gửi lại"}
+                Xác nhận đã cọc
               </Button>
             </Tooltip>
           )}
-          {["REQUESTED", "CONTRACT_SENT"].includes(record.status) && (
-            <Tooltip title="Chỉnh toàn bộ thông tin đơn">
-              <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(record)}>Sửa</Button>
-            </Tooltip>
-          )}
           {record.status === "CONFIRMED" && (
-            <Tooltip title="Dời lịch/địa điểm cho đơn đã xác nhận">
-              <Button icon={<CalendarOutlined />} size="small" style={{ color: "#d46b08", borderColor: "#d46b08" }} onClick={() => openRescheduleModal(record)}>Dời lịch</Button>
+            <Tooltip title="Đánh dấu bắt đầu buổi chụp">
+              <Button size="small" type="primary" style={{ background: "#BFA16A", borderColor: "#BFA16A" }} onClick={() => openProgressModal(record)}>Bắt đầu</Button>
             </Tooltip>
           )}
-          {record.status === "CONFIRMED" && (
-            <Tooltip title="Đánh dấu đang chụp">
-              <Button icon={<PlayCircleOutlined />} size="small" style={{ color: "#2f54eb", borderColor: "#2f54eb" }} onClick={() => openProgressModal(record)}>Bắt đầu</Button>
-            </Tooltip>
-          )}
-          {record.contract_token && (
-            <Tooltip title="Xem lại QR/link hợp đồng">
-              <Button icon={<QrcodeOutlined />} size="small" style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => openContractViewModal(record)}>Xem HĐ</Button>
+          {record.status === "IN_PROGRESS" && (
+            <Tooltip title="Xác nhận hoàn thành đơn hàng">
+              <Button size="small" type="primary" style={{ background: "#BFA16A", borderColor: "#BFA16A" }} onClick={() => openCompleteModal(record)}>Hoàn thành</Button>
             </Tooltip>
           )}
           <Button icon={<EyeOutlined />} size="small" onClick={() => handleViewDetail(record)}>Chi tiết</Button>
-        </Space>
+        </div>
       ),
     },
   ];
 
-  // Lọc danh sách đơn theo mã/tên khách/ngày chụp trên giao diện.
+  // Lọc danh sách đơn theo mã/tên khách/ngày chụp/trạng thái trên giao diện.
   const filteredBookings = bookings.filter((b) => {
     const matchId =
       !searchId ||
@@ -582,7 +795,11 @@ export default function AdminOrders() {
       !dateRange || !dateRange[0] || !dateRange[1] ||
       (dayjs(b.start_time).isSameOrAfter(dateRange[0].startOf("day")) &&
         dayjs(b.start_time).isSameOrBefore(dateRange[1].endOf("day")));
-    return matchId && matchDate;
+    const matchStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "CONTRACT_SENT" && ["CONTRACT_SENT", "WAITING_PAYMENT"].includes(b.status)) ||
+      b.status === statusFilter;
+    return matchId && matchDate && matchStatus;
   });
 
   // Kiểm tra có filter đang bật để hiển thị số lượng kết quả.
@@ -604,6 +821,9 @@ export default function AdminOrders() {
           <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>Quản Lý Đơn Đặt Lịch</Title>
         </div>
         <Space>
+          <Button icon={<QrcodeOutlined />} onClick={openStudioQrModal} style={{ borderColor: "#000", color: "#000", background: "#fff" }}>
+            QR Thanh toán Studio
+          </Button>
           <Button icon={<ReloadOutlined />} onClick={fetchBookings} loading={loading} />
         </Space>
       </div>
@@ -680,55 +900,85 @@ export default function AdminOrders() {
         }
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailOpen(false)}>Đóng</Button>,
-          ["REQUESTED", "CONTRACT_SENT"].includes(selectedBooking?.status) && (
-            <Button key="send-contract" type="primary" icon={<SendOutlined />}
-              onClick={() => { setDetailOpen(false); openSendContractModal(selectedBooking); }}
-              style={{ background: "#722ed1", borderColor: "#722ed1" }}>
-              {selectedBooking?.status === "CONTRACT_SENT" ? "Gửi lại HĐ" : "Gửi hợp đồng"}
-            </Button>
-          ),
-          ["REQUESTED", "CONTRACT_SENT"].includes(selectedBooking?.status) && (
-            <Button key="edit" icon={<EditOutlined />}
-              onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
-              Chỉnh đơn
-            </Button>
-          ),
-          selectedBooking?.status === "CONFIRMED" && (
-            <Button key="reschedule" icon={<CalendarOutlined />}
-              onClick={() => { setDetailOpen(false); openRescheduleModal(selectedBooking); }}
-              style={{ color: "#d46b08", borderColor: "#d46b08" }}>
-              Dời lịch
-            </Button>
-          ),
-          selectedBooking?.contract_token && (
-            <Button key="view-contract" icon={<QrcodeOutlined />}
-              onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}
-              style={{ color: "#08979c", borderColor: "#08979c" }}>
-              Xem HĐ/QR
-            </Button>
-          ),
-          selectedBooking?.status === "CONFIRMED" && (
-            <Button key="progress" type="primary" icon={<PlayCircleOutlined />}
-              onClick={() => { setDetailOpen(false); openProgressModal(selectedBooking); }}
-              style={{ background: "#2f54eb", borderColor: "#2f54eb" }}>
-              Bắt đầu chụp
-            </Button>
-          ),
-          selectedBooking?.status === "IN_PROGRESS" && (
-            <Button key="complete" type="primary" icon={<CheckSquareOutlined />}
-              onClick={() => { setDetailOpen(false); openCompleteModal(selectedBooking); }}>
-              Hoàn thành
-            </Button>
-          ),
-          ["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED", "PENDING", "DEPOSITED"].includes(selectedBooking?.status) && (
-            <Button key="cancel" danger icon={<CloseCircleOutlined />}
-              onClick={() => { setDetailOpen(false); openCancelModal(selectedBooking); }}>
-              Hủy đơn
-            </Button>
-          ),
-        ]}
+        footer={(() => {
+          if (!selectedBooking) return [<Button key="close" onClick={() => setDetailOpen(false)}>Đóng</Button>];
+          const st = selectedBooking.status;
+
+          if (st === "REQUESTED") {
+            return [
+              <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => { setDetailOpen(false); openCancelModal(selectedBooking); }}>
+                Hủy đơn
+              </Button>,
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+                Chỉnh sửa
+              </Button>,
+              <Button key="close" onClick={() => setDetailOpen(false)}>
+                Đóng
+              </Button>,
+            ];
+          }
+
+          if (["CONTRACT_SENT", "WAITING_PAYMENT"].includes(st)) {
+            return [
+              <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => { setDetailOpen(false); openCancelModal(selectedBooking); }}>
+                Hủy đơn
+              </Button>,
+              <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
+                Hợp đồng
+              </Button>,
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+                Chỉnh sửa
+              </Button>,
+              <Button key="close" onClick={() => setDetailOpen(false)}>
+                Đóng
+              </Button>,
+            ];
+          }
+
+          if (st === "CONFIRMED") {
+            return [
+              <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => { setDetailOpen(false); openCancelModal(selectedBooking); }}>
+                Hủy đơn
+              </Button>,
+              <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
+                Hợp đồng
+              </Button>,
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+                Chỉnh sửa
+              </Button>,
+              <Button key="close" onClick={() => setDetailOpen(false)}>
+                Đóng
+              </Button>,
+            ];
+          }
+
+          if (st === "IN_PROGRESS") {
+            return [
+              <Button key="complete" type="primary" onClick={() => { setDetailOpen(false); openCompleteModal(selectedBooking); }} style={{ background: "#BFA16A", borderColor: "#BFA16A" }}>
+                Hoàn thành
+              </Button>,
+              (selectedBooking.contract_token || selectedBooking.contract_file_url) && (
+                <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
+                  Hợp đồng
+                </Button>
+              ),
+              <Button key="close" onClick={() => setDetailOpen(false)}>
+                Đóng
+              </Button>,
+            ].filter(Boolean);
+          }
+
+          return [
+            (selectedBooking.contract_token || selectedBooking.contract_file_url) && (
+              <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
+                Hợp đồng
+              </Button>
+            ),
+            <Button key="close" onClick={() => setDetailOpen(false)}>
+              Đóng
+            </Button>,
+          ].filter(Boolean);
+        })()}
         width={800}
       >
         {selectedBooking && (
@@ -781,6 +1031,17 @@ export default function AdminOrders() {
                 {dayjs(selectedBooking.contract_sent_at).format("HH:mm DD/MM/YYYY")}
               </Descriptions.Item>
             )}
+            {selectedBooking.deposit_bill_url && (
+              <Descriptions.Item label="Ảnh bill cọc">
+                <a href={selectedBooking.deposit_bill_url} target="_blank" rel="noreferrer">
+                  <img
+                    src={selectedBooking.deposit_bill_url}
+                    alt="Bill thanh toán"
+                    style={{ maxHeight: 120, borderRadius: 6, border: "1px solid #eee" }}
+                  />
+                </a>
+              </Descriptions.Item>
+            )}
             {selectedBooking.contract_note && (
               <Descriptions.Item label="Điều khoản HĐ">
                 <div style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>{selectedBooking.contract_note}</div>
@@ -801,7 +1062,6 @@ export default function AdminOrders() {
         maskClosable={!sendingContract}
       >
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-          <FileTextOutlined style={{ fontSize: 52, color: "#722ed1", marginBottom: 16 }} />
           <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", marginBottom: 10 }}>
             {sendContractTarget?.status === "CONTRACT_SENT" ? "Gửi lại hợp đồng?" : "Tạo & Gửi hợp đồng"}
           </div>
@@ -809,24 +1069,70 @@ export default function AdminOrders() {
           {!contractResult ? (
             <>
               <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 16 }}>
-                Hệ thống sẽ tạo <strong>file PDF hợp đồng</strong> và <strong>QR code</strong> liên kết đến trang ký kết trực tuyến.
-                Trạng thái đơn sẽ chuyển sang <strong>HĐ Đã Gửi</strong>.
+                Chọn file <strong>PDF hợp đồng</strong> đã đính kèm. Khi bấm <strong>"Tạo đơn"</strong>, đơn hàng chuyển sang <strong>HĐ Đã Gửi</strong> và tạo QR link trực tuyến (không gửi email).
               </Paragraph>
-              <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
+
+              <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 16, textAlign: "left" }}>
                 <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{sendContractTarget?.customer_id?.full_name}</Text></div>
                 <div style={{ marginBottom: 4 }}><Text type="secondary">Dịch vụ: </Text><Text strong>{sendContractTarget?.service_id?.name}</Text></div>
                 <div style={{ marginBottom: 4 }}>
-                  <Text type="secondary">Tiền cọc: </Text>
+                  <Text type="secondary">Tiền cọc quy định: </Text>
                   <Text strong style={{ color: "#BFA16A" }}>{(sendContractTarget?.deposit_amount || 0).toLocaleString("vi-VN")}đ</Text>
                 </div>
-                <div><Text type="secondary">Tổng: </Text><Text strong>{(sendContractTarget?.total_amount || 0).toLocaleString("vi-VN")}đ</Text></div>
+                <div><Text type="secondary">Tổng hợp đồng: </Text><Text strong>{(sendContractTarget?.total_amount || 0).toLocaleString("vi-VN")}đ</Text></div>
               </div>
+
+              {/* Ô upload file PDF hợp đồng */}
+              <div style={{ marginBottom: 20, textAlign: "left", background: "#f6ffed", border: "1px dashed #b7eb8f", padding: "14px 16px", borderRadius: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, color: "#274e13" }}>
+                  📄 Upload File PDF Hợp Đồng
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    id="pdf-contract-file-input"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleUploadContractPdf(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <Button
+                    icon={<UploadOutlined />}
+                    loading={uploadingPdf}
+                    onClick={() => document.getElementById("pdf-contract-file-input")?.click()}
+                    style={{ color: "#000", borderColor: "#d9d9d9" }}
+                  >
+                    {contractPdfUrl ? "Đổi file PDF hợp đồng" : "Chọn file PDF từ máy"}
+                  </Button>
+                  {contractPdfName && (
+                    <Tag color="green" style={{ fontSize: 12, padding: "4px 8px" }}>
+                      ✓ {contractPdfName}
+                    </Tag>
+                  )}
+                  {(contractPdfUrl || contractPdfName) && (
+                    <Button
+                      type="text"
+                      danger
+                      onClick={() => {
+                        setContractPdfUrl("");
+                        setContractPdfName("");
+                      }}
+                    >
+                      Xóa file
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <Space>
                 <Button size="large" onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); }} disabled={sendingContract}>Hủy</Button>
-                <Button type="primary" size="large" icon={sendingContract ? <Spin size="small" /> : <SendOutlined />}
+                <Button type="primary" size="large"
                   loading={sendingContract} onClick={handleSendContract}
-                  style={{ background: "#722ed1", borderColor: "#722ed1", minWidth: 180 }}>
-                  Tạo PDF & Gửi hợp đồng
+                  style={{ background: "#BFA16A", borderColor: "#BFA16A", minWidth: 160 }}>
+                  Tạo đơn
                 </Button>
               </Space>
             </>
@@ -845,12 +1151,12 @@ export default function AdminOrders() {
               {/* Trạng thái thành công */}
               <div style={{ background: "#f6ffed", border: "1px solid #b7eb8f", borderRadius: 8, padding: "10px 16px", marginBottom: 16 }}>
                 <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 8 }} />
-                <Text strong style={{ color: "#389e0d" }}>Hợp đồng PDF đã được tạo thành công!</Text>
+                <Text strong style={{ color: "#389e0d" }}>Đơn hàng & Hợp đồng đã được tạo thành công!</Text>
               </div>
 
               {/* Link hợp đồng */}
               <div style={{ marginBottom: 16, textAlign: "left" }}>
-                <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>Link hợp đồng trực tuyến (gửi cho khách qua Zalo/Email):</div>
+                <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>Link hợp đồng trực tuyến:</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Input value={contractResult.contract_link} readOnly style={{ borderRadius: 6, fontSize: 12 }} />
                   <Tooltip title="Copy link">
@@ -859,26 +1165,22 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Nút tải PDF */}
-              {contractResult.pdf_url && (
+              {/* Nút Đi đến trang hợp đồng */}
+              {(contractResult.contract_link || contractResult.pdf_url) && (
                 <div style={{ marginBottom: 16 }}>
-                  <a href={contractResult.pdf_url} target="_blank" rel="noreferrer">
-                    <Button type="default" icon={<DownloadOutlined />} style={{ width: "100%", height: 44, fontWeight: 600 }}>
-                      Tải xuống file PDF hợp đồng
+                  <a href={contractResult.contract_link || contractResult.pdf_url} target="_blank" rel="noreferrer">
+                    <Button style={{ width: "100%", height: 44, fontWeight: 600, background: "#fff", borderColor: "#BFA16A", color: "#BFA16A" }}>
+                      Đi đến trang hợp đồng
                     </Button>
                   </a>
                 </div>
               )}
 
-              <Alert
-                type="info"
-                showIcon
-                message="Gửi link hoặc QR code cho khách qua Zalo/Email. Khách xem hợp đồng PDF, xác nhận trực tuyến và thanh toán VNPay."
-                style={{ marginBottom: 20, textAlign: "left" }}
-              />
-              <Button type="primary" onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); }} style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}>
-                Đóng
-              </Button>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+                <Button onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); }}>
+                  Đóng
+                </Button>
+              </div>
             </>
           )}
         </div>
@@ -887,8 +1189,8 @@ export default function AdminOrders() {
       {/* ===== MODAL CHỈNH THÔNG TIN ĐƠN ===== */}
       <Modal
         title={
-          <span>
-            Chỉnh thông tin đơn hàng{" "}
+          <span style={{ color: "#BFA16A" }}>
+            Chỉnh sửa thông tin đơn{" "}
             {editTarget && <Text code style={{ fontSize: 13 }}>#{editTarget._id?.slice(-6).toUpperCase()}</Text>}
           </span>
         }
@@ -898,17 +1200,18 @@ export default function AdminOrders() {
         maskClosable={!savingEdit}
         footer={[
           <Button key="cancel" onClick={() => { setEditModalOpen(false); setEditTarget(null); }} disabled={savingEdit}>Hủy</Button>,
-          <Button key="save" type="primary" loading={savingEdit} onClick={handleSaveEdit} style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}>Lưu thay đổi</Button>,
+          <Button
+            key="save"
+            type="primary"
+            loading={savingEdit}
+            onClick={handleSaveEdit}
+            style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
+          >
+            {editTarget?.status === "REQUESTED" ? "Tạo đơn" : "Lưu thay đổi"}
+          </Button>,
         ]}
         width={720}
       >
-        <Alert
-          type="info"
-          showIcon
-          message="Thay đổi dịch vụ sẽ tự động tính lại tổng tiền và tiền cọc. Bạn vẫn có thể điều chỉnh thủ công sau đó."
-          style={{ marginBottom: 20 }}
-        />
-
         <Spin spinning={servicesLoading}>
           <Form form={editForm} layout="vertical">
 
@@ -1012,16 +1315,63 @@ export default function AdminOrders() {
               </Col>
             </Row>
 
+            {/* HỢP ĐỒNG */}
+            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Hợp đồng & File PDF</Divider>
+            <div style={{ marginBottom: 16, background: "#f6ffed", border: "1px dashed #b7eb8f", padding: "14px 16px", borderRadius: 8 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, color: "#274e13" }}>
+                📄 Upload File PDF Hợp Đồng
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  id="edit-pdf-contract-file-input"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleUploadContractPdf(e.target.files[0]);
+                    }
+                  }}
+                />
+                <Button
+                  icon={<UploadOutlined />}
+                  loading={uploadingPdf}
+                  onClick={() => document.getElementById("edit-pdf-contract-file-input")?.click()}
+                  style={{ color: "#000", borderColor: "#d9d9d9" }}
+                >
+                  {contractPdfUrl ? "Đổi file PDF hợp đồng" : "Chọn file PDF từ máy"}
+                </Button>
+                {contractPdfName && (
+                  <Tag color="green" style={{ fontSize: 12, padding: "4px 8px" }}>
+                    ✓ {contractPdfName}
+                  </Tag>
+                )}
+                {(contractPdfUrl || contractPdfName) && (
+                  <Button
+                    type="text"
+                    danger
+                    onClick={() => {
+                      setContractPdfUrl("");
+                      setContractPdfName("");
+                    }}
+                  >
+                    Xóa file
+                  </Button>
+                )}
+              </div>
+              {contractPdfUrl && (
+                <div style={{ marginTop: 8 }}>
+                  <a href={contractPdfUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#096dd9" }}>
+                    Xem file PDF đã tải lên
+                  </a>
+                </div>
+              )}
+            </div>
+
             {/* GHI CHÚ */}
             <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Ghi chú</Divider>
             <Form.Item label="Ghi chú đơn hàng" name="note">
               <Input.TextArea rows={2} placeholder="Ghi chú từ khách hoặc studio" />
-            </Form.Item>
-            <Form.Item label="Điều khoản / Ghi chú hợp đồng" name="contract_note">
-              <Input.TextArea
-                rows={4}
-                placeholder="Nhập điều khoản riêng cho hợp đồng này (sẽ in trong file PDF và hiển thị trên trang hợp đồng)"
-              />
             </Form.Item>
           </Form>
         </Spin>
@@ -1050,16 +1400,27 @@ export default function AdminOrders() {
       <Modal open={progressModalOpen} onCancel={() => { if (!updatingId) { setProgressModalOpen(false); setProgressTarget(null); } }}
         footer={null} centered width={440} closable={!updatingId} maskClosable={!updatingId}>
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-          <PlayCircleOutlined style={{ fontSize: 56, color: "#2f54eb", marginBottom: 16 }} />
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Bắt đầu buổi chụp?</div>
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
             <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{progressTarget?.customer_id?.full_name}</Text></div>
+            <div style={{ marginBottom: 4 }}>
+              <Text type="secondary">Lịch chụp: </Text>
+              <Text strong style={{ color: "#BFA16A" }}>
+                {progressTarget?.start_time
+                  ? `${dayjs(progressTarget.start_time).format("DD/MM/YYYY")} (${dayjs(progressTarget.start_time).format("HH:mm")} - ${dayjs(progressTarget.end_time).format("HH:mm")})`
+                  : "Chưa chọn lịch"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 4 }}>
+              <Text type="secondary">Địa điểm: </Text>
+              <Text strong>{progressTarget?.location || (progressTarget?.shooting_type === "STUDIO" ? "Cao Hiển Studio" : "Ngoại cảnh")}</Text>
+            </div>
             <div><Text type="secondary">Mã đơn: </Text><Text code>#{progressTarget?._id?.slice(-8).toUpperCase()}</Text></div>
           </div>
           <Space>
             <Button size="large" onClick={() => { setProgressModalOpen(false); setProgressTarget(null); }} disabled={!!updatingId} style={{ minWidth: 120 }}>Hủy</Button>
-            <Button type="primary" size="large" icon={<PlayCircleOutlined />} loading={!!updatingId} onClick={handleStartProgress} style={{ minWidth: 160, background: "#2f54eb", borderColor: "#2f54eb" }}>
-              Đang thực hiện
+            <Button type="primary" size="large" loading={!!updatingId} onClick={handleStartProgress} style={{ minWidth: 160, background: "#BFA16A", borderColor: "#BFA16A" }}>
+              Bắt đầu
             </Button>
           </Space>
         </div>
@@ -1069,16 +1430,27 @@ export default function AdminOrders() {
       <Modal open={completeModalOpen} onCancel={() => { if (!updatingId) { setCompleteModalOpen(false); setCompleteTarget(null); } }}
         footer={null} centered width={440} closable={!updatingId} maskClosable={!updatingId}>
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-          <CheckCircleOutlined style={{ fontSize: 56, color: "#52c41a", marginBottom: 16 }} />
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Xác nhận hoàn thành?</div>
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
             <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{completeTarget?.customer_id?.full_name}</Text></div>
+            <div style={{ marginBottom: 4 }}>
+              <Text type="secondary">Lịch chụp: </Text>
+              <Text strong style={{ color: "#BFA16A" }}>
+                {completeTarget?.start_time
+                  ? `${dayjs(completeTarget.start_time).format("DD/MM/YYYY")} (${dayjs(completeTarget.start_time).format("HH:mm")} - ${dayjs(completeTarget.end_time).format("HH:mm")})`
+                  : "Chưa chọn lịch"}
+              </Text>
+            </div>
+            <div style={{ marginBottom: 4 }}>
+              <Text type="secondary">Địa điểm: </Text>
+              <Text strong>{completeTarget?.location || (completeTarget?.shooting_type === "STUDIO" ? "Cao Hiển Studio" : "Ngoại cảnh")}</Text>
+            </div>
             <div><Text type="secondary">Mã đơn: </Text><Text code>#{completeTarget?._id?.slice(-8).toUpperCase()}</Text></div>
           </div>
           <Space>
             <Button size="large" onClick={() => { setCompleteModalOpen(false); setCompleteTarget(null); }} disabled={!!updatingId} style={{ minWidth: 120 }}>Hủy</Button>
-            <Button type="primary" size="large" icon={<CheckSquareOutlined />} loading={!!updatingId} onClick={handleConfirmComplete} style={{ minWidth: 160, background: "#52c41a", borderColor: "#52c41a" }}>
-              Xác nhận hoàn thành
+            <Button type="primary" size="large" loading={!!updatingId} onClick={handleConfirmComplete} style={{ minWidth: 160, background: "#BFA16A", borderColor: "#BFA16A" }}>
+              Hoàn thành
             </Button>
           </Space>
         </div>
@@ -1214,28 +1586,196 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Nút tải PDF */}
-              {contractViewData.pdf_url && (
+              {/* Nút Đi đến trang hợp đồng */}
+              {(contractViewData.contract_link || contractViewData.pdf_url) && (
                 <div style={{ marginBottom: 14 }}>
-                  <a href={contractViewData.pdf_url} target="_blank" rel="noreferrer">
-                    <Button type="default" icon={<DownloadOutlined />} style={{ width: "100%", height: 44, fontWeight: 600 }}>
-                      Tải xuống file PDF hợp đồng
+                  <a href={contractViewData.contract_link || contractViewData.pdf_url} target="_blank" rel="noreferrer">
+                    <Button style={{ width: "100%", height: 44, fontWeight: 600, background: "#fff", borderColor: "#BFA16A", color: "#BFA16A" }}>
+                      Đi đến trang hợp đồng
                     </Button>
                   </a>
                 </div>
               )}
-
-              <Alert
-                type="info"
-                showIcon
-                message="Gửi link hoặc QR code cho khách qua Zalo/Email để khách xem hợp đồng."
-                style={{ textAlign: "left" }}
-              />
             </div>
           )}
           {!loadingContractView && !contractViewData && (
             <div style={{ textAlign: "center", color: "#888", padding: 20 }}>Đang tải...</div>
           )}
+        </Spin>
+      </Modal>
+
+      {/* ===== MODAL XÁC NHẬN ĐÃ NHẬN CỌC ===== */}
+      <Modal
+        title={
+          <span>
+            <BankOutlined style={{ color: "#096dd9", marginRight: 8 }} />
+            Xác nhận đã nhận cọc{" "}
+            {depositTarget && <Text code style={{ fontSize: 13 }}>#{depositTarget._id?.slice(-6).toUpperCase()}</Text>}
+          </span>
+        }
+        open={depositModalOpen}
+        onCancel={() => { if (!confirmingDeposit) { setDepositModalOpen(false); setDepositTarget(null); } }}
+        closable={!confirmingDeposit}
+        maskClosable={!confirmingDeposit}
+        footer={[
+          <Button key="cancel" onClick={() => { setDepositModalOpen(false); setDepositTarget(null); }} disabled={confirmingDeposit}>
+            Hủy
+          </Button>,
+          <Button key="submit" type="primary" loading={confirmingDeposit} onClick={handleConfirmDeposit} style={{ background: "#BFA16A", borderColor: "#BFA16A" }}>
+            Xác nhận đã nhận tiền
+          </Button>,
+        ]}
+        width={520}
+      >
+        {depositTarget && (
+          <Form form={depositForm} layout="vertical">
+
+            <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+              <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{depositTarget.customer_id?.full_name}</Text></div>
+              <div style={{ marginBottom: 4 }}><Text type="secondary">SĐT/Email: </Text><Text strong>{depositTarget.customer_id?.phone || depositTarget.customer_id?.email}</Text></div>
+              <div style={{ marginBottom: 4 }}>
+                <Text type="secondary">Tiền cọc quy định ({depositTarget.deposit_percent || 30}%): </Text>
+                <Text strong style={{ color: "#BFA16A" }}>{(depositTarget.deposit_amount || 0).toLocaleString("vi-VN")}đ</Text>
+              </div>
+              <div><Text type="secondary">Tổng hợp đồng: </Text><Text strong>{(depositTarget.total_amount || 0).toLocaleString("vi-VN")}đ</Text></div>
+            </div>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Hình thức thanh toán" name="payment_method" rules={[{ required: true, message: "Chọn hình thức thanh toán" }]}>
+                  <Select size="large">
+                    <Select.Option value="TRANSFER">Chuyển khoản (QR / STK)</Select.Option>
+                    <Select.Option value="CASH">Tiền mặt</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Số tiền đã nhận (VND)" name="amount" rules={[{ required: true, message: "Nhập số tiền đã nhận" }]}>
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    size="large"
+                    formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    parser={(val) => val.replace(/\$\s?|(,*)/g, "")}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item label="Upload Ảnh Bill thanh toán (nếu có)">
+              <div style={{ background: "#fafafa", border: "1px dashed #d9d9d9", padding: "12px 14px", borderRadius: 8 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="deposit-bill-file-input"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleUploadDepositBill(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <Button
+                    icon={<UploadOutlined />}
+                    loading={uploadingDepositBill}
+                    onClick={() => document.getElementById("deposit-bill-file-input")?.click()}
+                    style={{ background: "#fff", borderColor: "#d9d9d9", color: "#000" }}
+                  >
+                    {depositBillUrl ? "Đổi ảnh bill" : "Chọn ảnh bill từ máy"}
+                  </Button>
+                  {depositBillUrl && (
+                    <Button
+                      type="text"
+                      danger
+                      onClick={() => setDepositBillUrl("")}
+                    >
+                      Xóa ảnh
+                    </Button>
+                  )}
+                </div>
+                {depositBillUrl && (
+                  <div style={{ marginTop: 10 }}>
+                    <a href={depositBillUrl} target="_blank" rel="noreferrer">
+                      <img
+                        src={depositBillUrl}
+                        alt="Bill thanh toán"
+                        style={{ maxWidth: "100%", maxHeight: 180, borderRadius: 6, border: "1px solid #d9d9d9" }}
+                      />
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Form.Item>
+
+            <Form.Item label="Ghi chú đối soát" name="payment_note">
+              <Input.TextArea rows={2} placeholder="Ví dụ: Khách chuyển tiền cọc qua ứng dụng chuyển khoản lúc 14:30" />
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
+
+      {/* ===== MODAL CÀI ĐẶT QR THANH TOÁN STUDIO MẶC ĐỊNH ===== */}
+      <Modal
+        title={
+          <span>
+            <QrcodeOutlined style={{ color: "#BFA16A", marginRight: 8 }} />
+            Cài đặt QR Thanh toán Studio Mặc định
+          </span>
+        }
+        open={studioQrModalOpen}
+        onCancel={() => setStudioQrModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setStudioQrModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={500}
+      >
+        <Spin spinning={loadingStudioQr}>
+          <div style={{ textAlign: "center", padding: "12px 0" }}>
+            {studioQrUrl ? (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>Ảnh QR thanh toán hiện tại:</div>
+                <div style={{ display: "inline-block", border: "2px solid #BFA16A", borderRadius: 12, padding: 10, background: "#fff" }}>
+                  <img
+                    src={studioQrUrl}
+                    alt="Studio Payment QR"
+                    style={{ width: 200, height: 200, display: "block", objectFit: "contain" }}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      message.error("Lỗi tải ảnh QR. Vui lòng tải lên file mới.");
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <Alert type="warning" message="Chưa thiết lập ảnh QR thanh toán mặc định" style={{ marginBottom: 20 }} />
+            )}
+
+            {/* Upload file từ máy */}
+            <div style={{ background: "#fafafa", padding: 14, borderRadius: 8, border: "1px solid #f0f0f0" }}>
+              <input
+                type="file"
+                accept="image/*"
+                id="studio-qr-file-input"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleUploadStudioQr(e.target.files[0]);
+                  }
+                }}
+              />
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                loading={savingStudioQr}
+                onClick={() => document.getElementById("studio-qr-file-input")?.click()}
+                style={{ background: "#BFA16A", borderColor: "#BFA16A" }}
+              >
+                {studioQrUrl ? "Tải lên file ảnh QR mới" : "Chọn file ảnh QR từ máy"}
+              </Button>
+            </div>
+          </div>
         </Spin>
       </Modal>
     </div>

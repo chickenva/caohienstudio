@@ -54,7 +54,7 @@ const Contract = () => {
             <Text strong style={{ color: '#000' }}>3.1. Giá trị hợp đồng:</Text> Là tổng số tiền được hệ thống tính toán và hiển thị rõ ràng tại bước Thanh Toán Đặt Lịch, bao gồm giá các gói dịch vụ và các ưu đãi (nếu có).
           </Paragraph>
           <Paragraph>
-            <Text strong style={{ color: '#000' }}>3.2. Tiền cọc:</Text> Để Hợp đồng có hiệu lực và Bên A tiến hành giữ lịch, Bên B có nghĩa vụ thanh toán trước khoản tiền cọc tương đương <Text strong style={{ color: '#000', textDecoration: 'underline' }}>30% giá trị hợp đồng</Text>.
+            <Text strong style={{ color: '#000' }}>3.2. Tiền cọc & Phương thức thanh toán:</Text> Để Hợp đồng có hiệu lực và Bên A tiến hành giữ lịch, Bên B có nghĩa vụ thanh toán khoản tiền cọc tương đương <Text strong style={{ color: '#000', textDecoration: 'underline' }}>30% giá trị hợp đồng</Text>. Khách hàng có thể thanh toán tiền cọc bằng tiền mặt tại studio hoặc chuyển khoản theo QR/thông tin tài khoản cố định của Studio. Hợp đồng chính thức có hiệu lực giữ lịch sau khi Bên B xác nhận hợp đồng trực tuyến và Bên A ghi nhận đã nhận tiền cọc.
           </Paragraph>
           <Paragraph>
             <Text strong style={{ color: '#000' }}>3.3. Thanh toán phần còn lại:</Text> Khoản tiền còn lại (70% giá trị hợp đồng + chi phí phát sinh nếu có) sẽ được Bên B thanh toán đầy đủ cho Bên A sau <Text strong style={{ color: '#000' }}>3 đến 4 ngày</Text> kể từ ngày hoàn tất buổi chụp (tức là tại thời điểm Bên A bàn giao toàn bộ sản phẩm/ảnh gốc cho Bên B).

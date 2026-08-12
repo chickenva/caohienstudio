@@ -38,8 +38,8 @@ const DEFAULT_IMAGES = {
  */
 const ensureDefaultImages = async (page) => {
   try {
-    // Chỉ giữ lại 1 hình ảnh duy nhất cho mỗi trang: hero_banner (HOME) và artist_portrait (ABOUT)
-    await WebsiteImage.deleteMany({ key: { $nin: ["hero_banner", "artist_portrait"] } });
+    // Chỉ giữ lại 1 hình ảnh duy nhất cho mỗi vị trí: hero_banner (HOME), artist_portrait (ABOUT) và payment_qr (SETTINGS)
+    await WebsiteImage.deleteMany({ key: { $nin: ["hero_banner", "artist_portrait", "payment_qr"] } });
 
     const pagesToCheck = page ? [page] : ["HOME", "ABOUT"];
     for (const p of pagesToCheck) {
@@ -263,3 +263,68 @@ exports.toggleSiteLock = async (req, res) => {
     return res.status(500).json({ message: "Lỗi khi thay đổi trạng thái khóa website", error: error.message });
   }
 };
+
+// PAYMENT QR CODE SETTINGS (QR Thanh toán Studio mặc định)
+// ==========================================
+
+/**
+ * Lấy QR thanh toán mặc định của Studio (Công khai)
+ * GET /api/website/payment-qr
+ */
+exports.getPaymentQr = async (req, res) => {
+  try {
+    const qrImage = await WebsiteImage.findOne({ page: "SETTINGS", key: "payment_qr" });
+    const qrUrl = qrImage?.imageUrl || process.env.PAYMENT_QR_URL || "";
+    return res.status(200).json({
+      success: true,
+      paymentQrUrl: qrUrl,
+    });
+  } catch (error) {
+    console.error("Error in getPaymentQr:", error);
+    return res.status(500).json({ message: "Lỗi khi lấy QR thanh toán studio", error: error.message });
+  }
+};
+
+/**
+ * Lưu/Cập nhật QR thanh toán mặc định của Studio — Admin
+ * POST /api/website/admin/payment-qr
+ * Body: { imageUrl: "..." }
+ */
+exports.savePaymentQr = async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ message: "Thiếu URL hình ảnh QR thanh toán!" });
+    }
+
+    let qrImage = await WebsiteImage.findOne({ page: "SETTINGS", key: "payment_qr" });
+
+    if (qrImage) {
+      qrImage.imageUrl = imageUrl;
+      qrImage.isActive = true;
+      await qrImage.save();
+    } else {
+      qrImage = new WebsiteImage({
+        page: "SETTINGS",
+        key: "payment_qr",
+        title: "QR Thanh toán Studio Mặc định",
+        description: "Hình ảnh QR tài khoản ngân hàng của Studio hiển thị trên tất cả đơn hàng",
+        imageUrl,
+        altText: "QR Code Thanh Toán Cao Hiển Studio",
+        order: 1,
+        isActive: true,
+      });
+      await qrImage.save();
+    }
+
+    return res.status(200).json({
+      message: "Cập nhật QR thanh toán mặc định của Studio thành công!",
+      paymentQrUrl: qrImage.imageUrl,
+    });
+  } catch (error) {
+    console.error("Error in savePaymentQr:", error);
+    return res.status(500).json({ message: "Lỗi khi lưu QR thanh toán studio", error: error.message });
+  }
+};
+

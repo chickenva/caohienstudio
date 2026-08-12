@@ -1,4 +1,4 @@
-// Router booking: đặt lịch, hợp đồng, VNPay và quản trị đơn.
+// Router booking: đặt lịch, hợp đồng, thanh toán thủ công và quản trị đơn.
 const express = require("express");
 const router = express.Router();
 
@@ -8,12 +8,6 @@ const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 // ==========================================
 // PUBLIC ROUTES
 // ==========================================
-
-// VNPay có thể redirect GET về backend
-router.get("/vnpay-return", bookingController.vnpayReturn);
-
-// Frontend cũng có thể POST params về backend để xác thực chữ ký
-router.post("/vnpay-return", bookingController.vnpayReturn);
 
 // Lấy danh sách khung giờ bận của studio (dùng cho booking mới)
 router.get("/studio-busy-slots", bookingController.getStudioBusySlots);
@@ -26,14 +20,14 @@ router.get("/contract/:bookingId", bookingController.getContractByToken);
 // CUSTOMER ROUTES
 // ==========================================
 
-// Khách gửi yêu cầu đặt lịch (luồng mới — không thanh toán ngay)
+// Khách gửi yêu cầu đặt lịch (không thanh toán ngay)
 router.post(
   "/request",
   verifyToken,
   bookingController.createBookingRequest,
 );
 
-// Khách xác nhận hợp đồng → tạo Payment VNPay
+// Khách xác nhận hợp đồng → chuyển sang WAITING_PAYMENT (không tạo link VNPay)
 // POST /api/bookings/:id/confirm-contract  { token: "..." }
 router.post("/:id/confirm-contract", bookingController.confirmContract);
 
@@ -47,13 +41,10 @@ router.get(
   bookingController.checkPaymentStatus,
 );
 
-// Khách tạo lại link thanh toán (dùng cho WAITING_PAYMENT hoặc legacy PENDING)
-router.post("/:id/repay", verifyToken, bookingController.repayBooking);
-
 // Khách hủy đơn nếu đơn còn REQUESTED hoặc CONTRACT_SENT
 router.post("/:id/cancel", verifyToken, bookingController.cancelMyBooking);
 
-// Admin xem lại QR/link hợp đồng của đơn đã có contract_token (không phụ thuộc state tạm thời)
+// Admin xem lại QR/link hợp đồng của đơn đã có contract_token
 // Phải đặt TRƯỚC route /:id của customer để Express không nhầm route
 router.get("/:id/contract-info", verifyAdmin, bookingController.getContractInfo);
 
@@ -80,6 +71,9 @@ router.post(
 
 // Admin gửi hợp đồng cho khách (chuyển sang CONTRACT_SENT, tạo contract_token)
 router.post("/:id/send-contract", verifyAdmin, bookingController.sendContract);
+
+// Admin xác nhận đã nhận cọc (tiền mặt/chuyển khoản) → chuyển WAITING_PAYMENT → CONFIRMED
+router.post("/:id/confirm-deposit", verifyAdmin, bookingController.adminConfirmDeposit);
 
 // Admin chỉnh thông tin đơn (trước khi gửi hợp đồng)
 router.put("/:id/info", verifyAdmin, bookingController.updateBookingInfo);

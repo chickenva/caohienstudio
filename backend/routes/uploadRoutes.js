@@ -1,6 +1,6 @@
 /**
  * uploadRoutes.js
- * Route upload file ảnh từ máy tính lên server.
+ * Route upload file ảnh & file PDF từ máy tính lên server.
  */
 const express = require("express");
 const multer = require("multer");
@@ -29,10 +29,11 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+// Multer cho file ảnh
+const imageUpload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // Giới hạn 10MB
+    fileSize: 20 * 1024 * 1024, // 20MB
   },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
@@ -42,7 +43,37 @@ const upload = multer({
   },
 });
 
-// Route POST /api/upload/image
-router.post("/image", verifyAdmin, upload.single("image"), uploadController.uploadSingleImage);
+// Multer cho file PDF hợp đồng
+const pdfUpload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (file.mimetype !== "application/pdf" && ext !== ".pdf") {
+      return cb(new Error("Chỉ cho phép tải lên file hợp đồng định dạng PDF (.pdf)!"));
+    }
+    cb(null, true);
+  },
+});
+
+// Middleware bọc bắt lỗi Multer để trả về JSON 400 thay vì crash HTML 500
+const handleMulter = (multerSingle) => (req, res, next) => {
+  multerSingle(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        message: err.message || "Lỗi tải file lên server",
+      });
+    }
+    next();
+  });
+};
+
+// Route POST /api/upload/image (Upload ảnh thumbnail/album/QR)
+router.post("/image", verifyAdmin, handleMulter(imageUpload.single("image")), uploadController.uploadSingleImage);
+
+// Route POST /api/upload/pdf (Upload PDF hợp đồng)
+router.post("/pdf", verifyAdmin, handleMulter(pdfUpload.single("pdf")), uploadController.uploadSinglePdf);
 
 module.exports = router;
