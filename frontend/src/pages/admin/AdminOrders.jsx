@@ -980,6 +980,7 @@ export default function AdminOrders() {
           ].filter(Boolean);
         })()}
         width={800}
+        style={{ maxWidth: "95vw" }}
       >
         {selectedBooking && (
           <Descriptions bordered column={1} size="small">
@@ -1058,6 +1059,7 @@ export default function AdminOrders() {
         footer={null}
         centered
         width={560}
+        style={{ maxWidth: "95vw" }}
         closable={!sendingContract}
         maskClosable={!sendingContract}
       >
@@ -1195,6 +1197,7 @@ export default function AdminOrders() {
           </span>
         }
         open={editModalOpen}
+        style={{ maxWidth: "95vw" }}
         onCancel={() => { if (!savingEdit) { setEditModalOpen(false); setEditTarget(null); } }}
         closable={!savingEdit}
         maskClosable={!savingEdit}
@@ -1397,7 +1400,7 @@ export default function AdminOrders() {
       </Modal>
 
       {/* ===== MODAL BẮT ĐẦU CHỤP ===== */}
-      <Modal open={progressModalOpen} onCancel={() => { if (!updatingId) { setProgressModalOpen(false); setProgressTarget(null); } }}
+      <Modal open={progressModalOpen} style={{ maxWidth: "95vw" }} onCancel={() => { if (!updatingId) { setProgressModalOpen(false); setProgressTarget(null); } }}
         footer={null} centered width={440} closable={!updatingId} maskClosable={!updatingId}>
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Bắt đầu buổi chụp?</div>
@@ -1427,7 +1430,7 @@ export default function AdminOrders() {
       </Modal>
 
       {/* ===== MODAL HOÀN THÀNH ===== */}
-      <Modal open={completeModalOpen} onCancel={() => { if (!updatingId) { setCompleteModalOpen(false); setCompleteTarget(null); } }}
+      <Modal open={completeModalOpen} style={{ maxWidth: "95vw" }} onCancel={() => { if (!updatingId) { setCompleteModalOpen(false); setCompleteTarget(null); } }}
         footer={null} centered width={440} closable={!updatingId} maskClosable={!updatingId}>
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Xác nhận hoàn thành?</div>

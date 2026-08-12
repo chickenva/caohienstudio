@@ -76,4 +76,7 @@ router.post("/image", verifyAdmin, handleMulter(imageUpload.single("image")), up
 // Route POST /api/upload/pdf (Upload PDF hợp đồng)
 router.post("/pdf", verifyAdmin, handleMulter(pdfUpload.single("pdf")), uploadController.uploadSinglePdf);
 
+// Route GET /api/upload/drive-proxy/:fileId (Proxy ảnh Google Drive công khai, không cần auth)
+router.get("/drive-proxy/:fileId", uploadController.proxyDriveImage);
+
 module.exports = router;

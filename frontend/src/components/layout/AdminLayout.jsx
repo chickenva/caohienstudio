@@ -41,11 +41,21 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const [admin, setAdmin] = useState(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const [openKeys, setOpenKeys] = useState([]);
   const [siteLocked, setSiteLocked] = useState(false);
   const [lockLoading, setLockLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCollapsed(true);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");

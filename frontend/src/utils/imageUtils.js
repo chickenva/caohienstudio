@@ -4,6 +4,8 @@
  * Hỗ trợ nâng chất lượng ảnh (upgrade size), tải lười (lazy load),
  * phát hiện màu chủ đạo và sinh palette cho thumbnail gallery.
  */
+import { API_URL } from "../config/api";
+
 export const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop";
 
@@ -174,11 +176,49 @@ export const getGalleryImageSrcSet = (url) => {
   ].join(", ");
 };
 
-// Fallback ảnh nếu ảnh chính lỗi, tránh giao diện bị vỡ.
+const getBackendBaseUrl = () => {
+  return (API_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
+};
+
+/**
+ * Chuẩn hóa và tối ưu URL hình ảnh (Local upload, Server, Google Drive)
+ */
+export const formatImageUrl = (url, size = "s2560") => {
+  if (!url) return "";
+  const trimmed = String(url).trim();
+
+  // 1. Google Drive URLs
+  if (isGoogleDriveUrl(trimmed) || isGoogleUserContentUrl(trimmed)) {
+    return upgradeGoogleImageUrl(trimmed, size);
+  }
+
+  // 2. Relative URLs (/public/uploads/...)
+  if (trimmed.startsWith("/")) {
+    return `${getBackendBaseUrl()}${trimmed}`;
+  }
+
+  // 3. Localhost URLs when accessed from non-localhost (e.g. mobile/domain)
+  if (trimmed.includes("localhost:5000") || trimmed.includes("127.0.0.1:5000")) {
+    const backendBase = getBackendBaseUrl();
+    return trimmed.replace(/^http:\/\/(localhost|127\.0\.0\.1):5000/, backendBase);
+  }
+
+  return trimmed;
+};
+
+// Fallback ảnh nếu ảnh chính lỗi, sử dụng smart proxy & fallback an toàn.
 export const getImageErrorHandler = (fallback = FALLBACK_GALLERY_IMAGE) => (event) => {
   const image = event.currentTarget;
+  const currentSrc = image.src || "";
 
   if (image.dataset.fallbackApplied === "true") return;
+
+  const fileId = extractGoogleDriveFileId(currentSrc) || extractGoogleDriveFileId(image.dataset.originalUrl);
+  if (fileId && !image.dataset.proxyAttempted) {
+    image.dataset.proxyAttempted = "true";
+    image.src = `${API_URL}/upload/drive-proxy/${fileId}`;
+    return;
+  }
 
   image.dataset.fallbackApplied = "true";
   image.src = fallback;

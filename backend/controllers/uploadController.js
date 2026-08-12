@@ -75,3 +75,40 @@ exports.uploadSinglePdf = async (req, res) => {
     });
   }
 };
+
+/**
+ * Proxy ảnh Google Drive tốc độ cao & chống lỗi CORS/HTTP 403
+ */
+exports.proxyDriveImage = async (req, res) => {
+  try {
+    const axios = require("axios");
+    const { fileId } = req.params;
+    const { sz = "w2560" } = req.query;
+    if (!fileId) {
+      return res.status(400).send("File ID required");
+    }
+
+    const driveUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=${sz}`;
+
+    const response = await axios({
+      method: "get",
+      url: driveUrl,
+      responseType: "stream",
+      timeout: 10000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+
+    res.set({
+      "Content-Type": response.headers["content-type"] || "image/jpeg",
+      "Cache-Control": "public, max-age=86400, immutable",
+      "Access-Control-Allow-Origin": "*",
+    });
+
+    response.data.pipe(res);
+  } catch (error) {
+    console.error("Proxy drive image error:", error.message);
+    return res.status(404).send("Image not found or blocked");
+  }
+};

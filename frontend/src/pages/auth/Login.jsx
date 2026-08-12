@@ -2,8 +2,8 @@
  * Login.jsx
  * Trang đăng nhập: email + mật khẩu, redirect theo role.
  */
-import React, { useState } from "react";
-import { Form, Input, Button, message } from "antd";
+import React, { useState, useEffect } from "react";
+import { Form, Input, Button, Checkbox, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../../config/api";
@@ -14,7 +14,21 @@ const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 // Trang đăng nhập, lưu token và điều hướng theo role user.
 const Login = () => {
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+
+  // Tự động điền email và mật khẩu nếu người dùng từng chọn "Nhớ mật khẩu"
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    if (savedEmail && savedPassword) {
+      form.setFieldsValue({
+        email: savedEmail,
+        password: savedPassword,
+        remember: true,
+      });
+    }
+  }, [form]);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -22,10 +36,22 @@ const Login = () => {
     try {
       const res = await axios.post(
         `${API_URL}/auth/login`,
-        values,
+        {
+          email: values.email,
+          password: values.password,
+        },
       );
 
       const user = res.data.user;
+
+      // Xử lý lưu / xóa mật khẩu ghi nhớ
+      if (values.remember) {
+        localStorage.setItem("rememberedEmail", values.email);
+        localStorage.setItem("rememberedPassword", values.password);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+      }
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(user));
@@ -81,7 +107,7 @@ const Login = () => {
           </h1>
         </div>
 
-        <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} initialValues={{ remember: false }}>
           <Form.Item
             label={
               <span
@@ -139,11 +165,18 @@ const Login = () => {
 
           <div
             style={{
-              textAlign: "right",
-              marginBottom: "30px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "25px",
               fontSize: "12px",
             }}
           >
+            <Form.Item name="remember" valuePropName="checked" noStyle>
+              <Checkbox style={{ fontSize: "12px", color: "#555" }}>
+                Nhớ mật khẩu
+              </Checkbox>
+            </Form.Item>
             <span
               onClick={() => navigate("/forgot-password")}
               style={{
