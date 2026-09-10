@@ -28,6 +28,7 @@ import {
 } from "@ant-design/icons";
 import AIChatWidget from "../AIChatWidget";
 import Logo from "../Logo";
+import PromoBanner from "../PromoBanner";
 
 // Design System đồng bộ (Light Luxury)
 const PRIMARY_COLOR = "#BFA16A";
@@ -228,6 +229,9 @@ const CustomerLayout = () => {
           <span onClick={() => handleMenuClick("/booking")} style={menuStyle("/booking")}>
             ĐẶT LỊCH
           </span>
+          <span onClick={() => handleMenuClick("/camera-rentals")} style={menuStyle("/camera-rentals")}>
+            THUÊ MÁY ẢNH
+          </span>
           <span onClick={() => handleMenuClick("/contact")} style={menuStyle("/contact")}>
             LIÊN HỆ
           </span>
@@ -316,6 +320,7 @@ const CustomerLayout = () => {
             { label: "THƯ VIỆN ẢNH", path: "/galleries" },
             { label: "DỊCH VỤ", path: "/services" },
             { label: "ĐẶT LỊCH HẸN", path: "/booking" },
+            { label: "THUÊ MÁY ẢNH", path: "/camera-rentals" },
             { label: "LIÊN HỆ", path: "/contact" },
           ].map((item) => (
             <div
@@ -397,6 +402,7 @@ const CustomerLayout = () => {
 
       {/* CONTENT */}
       <main className="customer-main-content">
+        <PromoBanner />
         <Outlet />
       </main>
 

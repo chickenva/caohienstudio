@@ -24,6 +24,7 @@ import {
   GlobalOutlined,
   LockOutlined,
   UnlockOutlined,
+  FileImageOutlined,
 } from "@ant-design/icons";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
@@ -152,6 +153,16 @@ const AdminLayout = () => {
       ],
     },
     {
+      key: "/admin/galleries",
+      icon: <PictureOutlined />,
+      label: "Thư viện ảnh",
+      children: [
+        { key: "/admin/galleries", label: "Danh sách album" },
+        { key: "/admin/galleries/create", label: "Thêm album" },
+        { key: "/admin/categories/gallery", label: "Quản lý danh mục" },
+      ],
+    },
+    {
       key: "/admin/services",
       icon: <AppstoreOutlined />,
       label: "Gói dịch vụ",
@@ -162,14 +173,18 @@ const AdminLayout = () => {
       ],
     },
     {
-      key: "/admin/galleries",
-      icon: <PictureOutlined />,
-      label: "Thư viện ảnh",
+      key: "/admin/camera-rentals",
+      icon: <CameraOutlined />,
+      label: "Thuê máy ảnh",
       children: [
-        { key: "/admin/galleries", label: "Danh sách album" },
-        { key: "/admin/galleries/create", label: "Thêm album" },
-        { key: "/admin/categories/gallery", label: "Quản lý danh mục" },
+        { key: "/admin/camera-rentals", label: "Danh sách máy ảnh" },
+        { key: "/admin/camera-rentals/create", label: "Thêm máy ảnh" },
       ],
+    },
+    {
+      key: "/admin/banners",
+      icon: <FileImageOutlined />,
+      label: "Banner quảng cáo",
     },
     {
       key: "/admin/accounts",

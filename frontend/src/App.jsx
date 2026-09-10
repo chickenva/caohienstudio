@@ -49,6 +49,12 @@ import ServiceForm from "./pages/admin/ServiceForm";
 import GalleryForm from "./pages/admin/GalleryForm";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminWebsiteImages from "./pages/admin/AdminWebsiteImages";
+import AdminBanners from "./pages/admin/AdminBanners";
+import AdminCameraRentals from "./pages/admin/AdminCameraRentals";
+
+// Customer: Camera Rental
+import CameraRental from "./pages/customer/CameraRental";
+import CameraRentalDetail from "./pages/customer/CameraRentalDetail";
 
 // --- Special Pages ---
 import NotFound from "./pages/NotFound";
@@ -76,6 +82,12 @@ function App() {
           <Route path="/booking" element={<Booking />} />
           <Route path="/booking/confirm" element={<BookingConfirm />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/promotions" element={<Navigate to="/" replace />} />
+          <Route path="/uu-dai" element={<Navigate to="/" replace />} />
+          <Route path="/camera-rental" element={<CameraRental />} />
+          <Route path="/camera-rentals" element={<CameraRental />} />
+          <Route path="/camera-rental/:id" element={<CameraRentalDetail />} />
+          <Route path="/camera-rentals/:id" element={<CameraRentalDetail />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/contract" element={<Contract />} />
 
@@ -118,6 +130,9 @@ function App() {
 
           <Route path="website/home-images" element={<AdminWebsiteImages defaultPage="HOME" />} />
           <Route path="website/about-images" element={<AdminWebsiteImages defaultPage="ABOUT" />} />
+          <Route path="banners" element={<AdminBanners />} />
+          <Route path="camera-rentals" element={<AdminCameraRentals />} />
+          <Route path="camera-rentals/create" element={<AdminCameraRentals defaultOpenAdd />} />
         </Route>
         {/* TRANG BẢO TRÌ (truy cập trực tiếp qua URL) */}
         <Route path="/maintenance" element={<MaintenancePage />} />

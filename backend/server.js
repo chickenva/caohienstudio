@@ -23,6 +23,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const aiChatRoutes = require("./routes/aiChatRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const websiteRoutes = require("./routes/websiteRoutes");
+const bannerRoutes = require("./routes/bannerRoutes");
+const cameraRentalRoutes = require("./routes/cameraRentalRoutes");
 
 // Cron jobs
 const setupCronJobs = require("./jobs/cronJobs");
@@ -58,6 +60,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai-chat", aiChatRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/website", websiteRoutes);
+app.use("/api/banners", bannerRoutes);
+app.use("/api/camera-rentals", cameraRentalRoutes);
 
 const PORT = process.env.PORT || 5000;
 
