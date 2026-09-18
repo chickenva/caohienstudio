@@ -183,10 +183,16 @@ const PromoBanner = () => {
 
           {/* Poster image */}
           <div
-            className="poster-container"
-            onClick={(e) => e.stopPropagation()}
+            className={`poster-container ${activeBanner.linkUrl ? "has-link" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (activeBanner.linkUrl) {
+                window.open(activeBanner.linkUrl, "_blank", "noopener,noreferrer");
+              }
+            }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            title={activeBanner.linkUrl ? "Bấm vào poster để xem bài viết trên Facebook" : undefined}
           >
             <img
               src={resolveImageUrl(activeBanner.imageUrl)}
@@ -334,12 +340,20 @@ const PromoBanner = () => {
 
         /* Poster container */
         .poster-container {
+          position: relative;
           max-width: 85vw;
           max-height: 85vh;
           display: flex;
           align-items: center;
           justify-content: center;
           animation: poster-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .poster-container.has-link {
+          cursor: pointer;
+        }
+        .poster-container.has-link:hover .poster-img {
+          transform: scale(1.012);
+          box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 35px rgba(24,119,242,0.3);
         }
         @keyframes poster-enter {
           from { transform: scale(0.8); opacity: 0; }

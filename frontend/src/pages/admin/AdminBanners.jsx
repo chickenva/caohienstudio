@@ -13,7 +13,8 @@ import {
   PlusOutlined, EditOutlined, DeleteOutlined,
   EyeOutlined, EyeInvisibleOutlined,
   UploadOutlined, PictureOutlined, MenuOutlined,
-  InfoCircleOutlined,
+  InfoCircleOutlined, FacebookOutlined, LinkOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -112,6 +113,9 @@ const AdminBanners = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [form] = Form.useForm();
 
   const getToken = () => localStorage.getItem("token");
@@ -175,6 +179,7 @@ const AdminBanners = () => {
     if (banner) {
       form.setFieldsValue({
         imageUrl: banner.imageUrl,
+        linkUrl: banner.linkUrl || "",
         start_date: dayjs(banner.start_date),
         end_date: dayjs(banner.end_date),
         is_active: banner.is_active,
@@ -182,7 +187,7 @@ const AdminBanners = () => {
       setPreviewUrl(resolveImageUrl(banner.imageUrl));
     } else {
       form.resetFields();
-      form.setFieldsValue({ is_active: true });
+      form.setFieldsValue({ is_active: true, linkUrl: "" });
       setPreviewUrl("");
     }
     setModalOpen(true);
@@ -193,6 +198,7 @@ const AdminBanners = () => {
       const values = await form.validateFields();
       const payload = {
         imageUrl: values.imageUrl,
+        linkUrl: values.linkUrl ? values.linkUrl.trim() : "",
         start_date: values.start_date.toISOString(),
         end_date: values.end_date.toISOString(),
         is_active: values.is_active,
@@ -250,13 +256,24 @@ const AdminBanners = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const openDeleteModal = (banner) => {
+    setBannerToDelete(banner);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!bannerToDelete) return;
+    setDeleting(true);
     try {
-      await axios.delete(`${API_URL}/banners/admin/${id}`, authHeaders());
+      await axios.delete(`${API_URL}/banners/admin/${bannerToDelete._id}`, authHeaders());
       message.success("Xóa banner thành công");
+      setDeleteModalOpen(false);
+      setBannerToDelete(null);
       fetchBanners();
     } catch (err) {
-      message.error("Lỗi khi xóa banner");
+      message.error(err.response?.data?.message || "Lỗi khi xóa banner");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -362,6 +379,39 @@ const AdminBanners = () => {
       },
     },
     {
+      title: "Bài viết Facebook",
+      dataIndex: "linkUrl",
+      key: "linkUrl",
+      width: 170,
+      align: "center",
+      render: (url) =>
+        url ? (
+          <Tooltip title={url}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                color: "#1877F2",
+                fontWeight: 600,
+                fontSize: 12,
+                background: "#f0f5ff",
+                padding: "4px 10px",
+                borderRadius: 20,
+                border: "1px solid #adc6ff",
+              }}
+            >
+              <FacebookOutlined style={{ fontSize: 14 }} /> Xem bài viết
+            </a>
+          </Tooltip>
+        ) : (
+          <span style={{ color: "#bbb", fontSize: 12 }}>—</span>
+        ),
+    },
+    {
       title: "Trạng thái",
       key: "status",
       width: 130,
@@ -388,16 +438,14 @@ const AdminBanners = () => {
           <Tooltip title="Sửa">
             <Button size="small" icon={<EditOutlined />} onClick={() => openModal(record)} />
           </Tooltip>
-          <Popconfirm
-            title="Xóa banner này?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Xóa">
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Xóa">
+            <Button
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => openDeleteModal(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -439,7 +487,7 @@ const AdminBanners = () => {
               rowKey="_id"
               loading={loading}
               pagination={false}
-              scroll={{ x: 820 }}
+              scroll={{ x: 990 }}
             />
           </SortableContext>
         </DndContext>
@@ -503,6 +551,18 @@ const AdminBanners = () => {
             </div>
           )}
 
+          <Form.Item
+            label="Đường dẫn bài viết Facebook (tùy chọn)"
+            name="linkUrl"
+            tooltip="Khi khách bấm vào banner trên website sẽ tự động mở bài viết chi tiết này trên Facebook"
+          >
+            <Input
+              prefix={<FacebookOutlined style={{ color: "#1877F2" }} />}
+              placeholder="https://www.facebook.com/.../posts/..."
+              allowClear
+            />
+          </Form.Item>
+
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -528,6 +588,123 @@ const AdminBanners = () => {
             <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal Xác nhận Xóa Banner */}
+      <Modal
+        open={deleteModalOpen}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#cf1322" }}>
+            <ExclamationCircleOutlined style={{ fontSize: 22 }} />
+            <span style={{ fontWeight: 600, fontSize: 16 }}>Xác nhận xóa banner</span>
+          </div>
+        }
+        onCancel={() => {
+          if (!deleting) {
+            setDeleteModalOpen(false);
+            setBannerToDelete(null);
+          }
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setDeleteModalOpen(false);
+              setBannerToDelete(null);
+            }}
+            disabled={deleting}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={deleting}
+            icon={<DeleteOutlined />}
+            onClick={confirmDelete}
+          >
+            Xóa vĩnh viễn
+          </Button>,
+        ]}
+        width={480}
+        destroyOnClose
+        centered
+      >
+        {bannerToDelete && (
+          <div style={{ marginTop: 16 }}>
+            <p style={{ color: "#444", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+              Bạn có chắc chắn muốn xóa banner này? Thao tác này sẽ xóa vĩnh viễn dữ liệu và <strong>không thể khôi phục</strong>.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 14,
+                padding: 12,
+                background: "#faf7f2",
+                borderRadius: 8,
+                border: "1px solid #efebe4",
+                alignItems: "center",
+              }}
+            >
+              {bannerToDelete.imageUrl ? (
+                <img
+                  src={resolveImageUrl(bannerToDelete.imageUrl)}
+                  alt="Poster"
+                  style={{
+                    width: 90,
+                    height: 60,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    border: "1px solid #e0d8cc",
+                    flexShrink: 0,
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 90,
+                    height: 60,
+                    background: "#eee",
+                    borderRadius: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#999",
+                    flexShrink: 0,
+                  }}
+                >
+                  <PictureOutlined style={{ fontSize: 20 }} />
+                </div>
+              )}
+
+              <div style={{ fontSize: 13, color: "#333", lineHeight: 1.6, overflow: "hidden" }}>
+                <div>
+                  <span style={{ color: "#888" }}>Thời gian:</span>{" "}
+                  <strong>{dayjs(bannerToDelete.start_date).format("DD/MM/YYYY HH:mm")}</strong>
+                  {" ~ "}
+                  <strong>{dayjs(bannerToDelete.end_date).format("DD/MM/YYYY HH:mm")}</strong>
+                </div>
+                {bannerToDelete.linkUrl ? (
+                  <div style={{ color: "#1877F2", fontSize: 12, marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                    <FacebookOutlined style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {bannerToDelete.linkUrl}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ color: "#999", fontSize: 12, marginTop: 2 }}>
+                    Chưa gắn link bài viết
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

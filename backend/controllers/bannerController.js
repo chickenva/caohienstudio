@@ -60,7 +60,7 @@ exports.getAllBanners = async (req, res) => {
  */
 exports.createBanner = async (req, res) => {
   try {
-    const { imageUrl, start_date, end_date, is_active, order } = req.body;
+    const { imageUrl, linkUrl, start_date, end_date, is_active, order } = req.body;
 
     if (!start_date || !end_date) {
       return res.status(400).json({
@@ -76,6 +76,7 @@ exports.createBanner = async (req, res) => {
 
     const banner = await Banner.create({
       imageUrl: imageUrl || "",
+      linkUrl: linkUrl ? linkUrl.trim() : "",
       start_date: new Date(start_date),
       end_date: new Date(end_date),
       is_active: is_active !== undefined ? is_active : true,
@@ -102,7 +103,7 @@ exports.createBanner = async (req, res) => {
 exports.updateBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { imageUrl, start_date, end_date, is_active, order } = req.body;
+    const { imageUrl, linkUrl, start_date, end_date, is_active, order } = req.body;
 
     if (start_date && end_date && new Date(end_date) <= new Date(start_date)) {
       return res.status(400).json({
@@ -112,6 +113,7 @@ exports.updateBanner = async (req, res) => {
 
     const updatePayload = {};
     if (imageUrl !== undefined) updatePayload.imageUrl = imageUrl;
+    if (linkUrl !== undefined) updatePayload.linkUrl = linkUrl ? linkUrl.trim() : "";
     if (start_date !== undefined) updatePayload.start_date = new Date(start_date);
     if (end_date !== undefined) updatePayload.end_date = new Date(end_date);
     if (is_active !== undefined) updatePayload.is_active = is_active;

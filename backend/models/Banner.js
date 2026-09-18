@@ -11,6 +11,9 @@ const bannerSchema = new mongoose.Schema(
     // URL ảnh poster (Google Drive hoặc upload)
     imageUrl: { type: String, default: "" },
 
+    // URL bài viết chi tiết (Facebook, Fanpage, v.v.)
+    linkUrl: { type: String, default: "", trim: true },
+
     // Thời gian bắt đầu hiển thị
     start_date: { type: Date, required: true },
 
