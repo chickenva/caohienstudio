@@ -417,3 +417,51 @@ exports.reorderGalleries = async (req, res) => {
   }
 };
 
+/**
+ * [POST] /api/galleries/admin/:id/refresh-images
+ * Admin xóa cache ảnh Drive của một album để cập nhật ảnh mới nhất
+ * khi đã thao tác trực tiếp trên Google Drive (thêm/xóa ảnh).
+ */
+exports.refreshGalleryImages = async (req, res) => {
+  try {
+    const gallery = await PublicGallery.findById(req.params.id);
+    if (!gallery) {
+      return res.status(404).json({ message: "Không tìm thấy album" });
+    }
+
+    if (!gallery.drive_folder_id) {
+      return res.status(400).json({ message: "Album chưa liên kết folder Google Drive" });
+    }
+
+    // Xóa cache server-side để lần truy cập tiếp theo sẽ lấy ảnh mới từ Drive
+    googleDriveService.clearFolderImageCache(gallery.drive_folder_id);
+
+    // Lấy lại danh sách ảnh mới nhất từ Drive (force refresh)
+    const images = await googleDriveService.listImagesInFolder(
+      gallery.drive_folder_id,
+      { forceRefresh: true },
+    );
+
+    // Cập nhật lại coverImage nếu ảnh bìa cũ không còn
+    const updatedCover = await getCoverFromDrive({
+      coverImage:      gallery.coverImage,
+      drive_folder_id: gallery.drive_folder_id,
+    });
+
+    if (updatedCover !== gallery.coverImage) {
+      gallery.coverImage = updatedCover;
+      await gallery.save();
+    }
+
+    res.status(200).json({
+      message: `Đã làm mới ${images.length} ảnh từ Google Drive`,
+      imageCount: images.length,
+      gallery: toGalleryObject(gallery, images),
+    });
+  } catch (error) {
+    console.error("Refresh gallery images error:", error);
+    res.status(500).json({ message: "Lỗi làm mới ảnh từ Drive", error: error.message });
+  }
+};
+
+

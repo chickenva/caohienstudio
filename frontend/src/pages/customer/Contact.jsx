@@ -371,7 +371,7 @@ const Contact = () => {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "30px", color: "#555555", fontSize: "14.5px", fontWeight: "300" }}>
               {[
-                { icon: <EnvironmentOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Địa Chỉ", value: "34B4 TL 887, phường An Hội, Vĩnh Long" },
+                { icon: <EnvironmentOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Địa Chỉ", value: "02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam" },
                 { 
                   icon: <PhoneOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, 
                   label: "Hotline / Zalo", 
@@ -396,7 +396,7 @@ const Contact = () => {
                   )
                 },
                 { icon: <MailOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Email", value: "caohienstudio@gmail.com" },
-                { icon: <ClockCircleOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Giờ Làm Việc", value: "Thứ 2 - Chủ Nhật: 09:00 AM - 05:00 PM" },
+                { icon: <ClockCircleOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Giờ Làm Việc", value: "Thứ 2 - Chủ Nhật: 09:00 AM - 07:00 PM" },
               ].map(({ icon, label, value }) => (
                 <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: "18px" }}>
                   {icon}
@@ -414,10 +414,10 @@ const Contact = () => {
             <div style={{ marginTop: "35px", overflow: "hidden", border: "1px solid #E8DED2" }}>
               <iframe
                 title="CaoHien Studio Map"
-                src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d583.697091199096!2d106.3687414401994!3d10.210644960730347!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTDCsDEyJzM5LjgiTiAxMDbCsDIyJzA4LjEiRQ!5e0!3m2!1svi!2s!4v1778813420109!5m2!1svi!2s"
-                width="100%" height="220"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d245.41391560178442!2d106.36884713194925!3d10.211267347089796!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x310aa9b6c333b933%3A0xa752a7b499449ab!2sStudio%20Cao%20Hi%E1%BB%83n!5e0!3m2!1svi!2sus!4v1790706671870!5m2!1svi!2sus"
+                width="100%" height="240"
                 style={{ border: 0, display: "block" }}
-                allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
               />
             </div>
 
@@ -608,7 +608,7 @@ const Contact = () => {
                         popupClassName="booking-select-dropdown"
                         disabled={isStudio}
                       >
-                        <Input size="large" prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />} placeholder="VD: Studio Cao Hiển, 34B4 TL 887..." style={{ borderRadius: 0 }} disabled={isStudio} />
+                        <Input size="large" prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />} placeholder="VD: Studio Cao Hiển, 02 Hai Bà Trưng..." style={{ borderRadius: 0 }} disabled={isStudio} />
                       </AutoComplete>
                     </Form.Item>
                   </Col>

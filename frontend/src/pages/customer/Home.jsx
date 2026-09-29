@@ -212,8 +212,7 @@ const Home = () => {
   const demoGalleries = [
     { _id: "demo-gal-1", title: "Eternal Romance in Da Lat", category: "WEDDING", coverImage: FALLBACK_WEDDING, location: "Đà Lạt, Lâm Đồng" },
     { _id: "demo-gal-2", title: "Sài Gòn Sunrise Stories", category: "PORTRAIT", coverImage: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=800&auto=format&fit=crop", location: "Quận 1, TP. HCM" },
-    { _id: "demo-gal-3", title: "Sweet Dreamer Studio", category: "WEDDING", coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop", location: "Cao Hien Studio" },
-    { _id: "demo-gal-4", title: "Luxury Fashion Editorial", category: "EVENT", coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800&auto=format&fit=crop", location: "TP. HCM" }
+    { _id: "demo-gal-3", title: "Sweet Dreamer Studio", category: "WEDDING", coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop", location: "Cao Hien Studio" }
   ];
 
   const displayServices = services.length > 0 ? services.slice(0, 3) : demoServices;
@@ -293,58 +292,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          3. STUDIO INTRODUCTION & STATS
-      ========================================== */}
-      <section style={{ padding: "100px 20px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <Row gutter={[60, 40]} align="middle">
-            <Col xs={24} md={12} className="scroll-reveal">
-              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
-                Về Cao Hiển Studio
-              </span>
-              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "40px", fontWeight: "300", lineHeight: "1.25", marginBottom: "30px", textTransform: "none" }}>
-                Tinh Tế Trong Từng <br/>
-                Thước Phim, Khung Hình
-              </h2>
-              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "20px", fontWeight: "300" }}>
-                Cao Hiển Studio được tạo dựng dựa trên tình yêu nghệ thuật nhiếp ảnh cưới và mong muốn lưu giữ trọn vẹn những ký ức hạnh phúc ngọt ngào của các đôi uyên ương.
-              </p>
-              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "40px", fontWeight: "300" }}>
-                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho ekip quay chụp và khách hàng có nhu cầu sáng tạo riêng.
-              </p>
-              <button className="btn-premium-outline" onClick={() => navigate("/about")}>
-                TÌM HIỂU THÊM
-              </button>
-            </Col>
-
-            <Col xs={24} md={12} className="scroll-reveal stagger-1">
-              <div className="glass-panel" style={{ padding: "40px", borderRadius: "0px" }}>
-                <Row gutter={[20, 30]}>
-                  <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.experience}+</div>
-                    <div className="stat-label">Năm Kinh Nghiệm</div>
-                  </Col>
-                  <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.services}</div>
-                    <div className="stat-label">Gói Dịch Vụ</div>
-                  </Col>
-                  <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.galleries}+</div>
-                    <div className="stat-label">Album Hoàn Thành</div>
-                  </Col>
-                  <Col span={12} className="stat-card-luxury">
-                    <div className="stat-number">{stats.satisfaction}%</div>
-                    <div className="stat-label">Khách Hàng Hài Lòng</div>
-                  </Col>
-                </Row>
-              </div>
-            </Col>
-          </Row>
-        </div>
-      </section>
-
-      {/* ==========================================
-          4. FEATURED SERVICES
+          3. FEATURED SERVICES
       ========================================== */}
       <section style={{ padding: "80px 20px", background: "#FAF7F2" }} className="full-bleed">
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -446,7 +394,7 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          5. FEATURED PORTFOLIO / GALLERY
+          4. FEATURED PORTFOLIO / GALLERY
       ========================================== */}
       <section style={{ padding: "100px 20px" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -510,6 +458,57 @@ const Home = () => {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ==========================================
+          5. STUDIO INTRODUCTION & STATS
+      ========================================== */}
+      <section style={{ padding: "100px 20px", background: "#FAF7F2" }} className="full-bleed">
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <Row gutter={[60, 40]} align="middle">
+            <Col xs={24} md={12} className="scroll-reveal">
+              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
+                Về Cao Hiển Studio
+              </span>
+              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "40px", fontWeight: "300", lineHeight: "1.25", marginBottom: "30px", textTransform: "none" }}>
+                Tinh Tế Trong Từng <br/>
+                Thước Phim, Khung Hình
+              </h2>
+              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "20px", fontWeight: "300" }}>
+                Cao Hiển Studio được tạo dựng dựa trên tình yêu nghệ thuật nhiếp ảnh cưới và mong muốn lưu giữ trọn vẹn những ký ức hạnh phúc ngọt ngào của các đôi uyên ương.
+              </p>
+              <p style={{ color: "#555555", fontSize: "15px", lineHeight: "2", marginBottom: "40px", fontWeight: "300" }}>
+                Bên cạnh việc thực hiện các dự án của studio, chúng tôi cũng cung cấp dịch vụ cho thuê thiết bị chất lượng cao dành cho ekip quay chụp và khách hàng có nhu cầu sáng tạo riêng.
+              </p>
+              <button className="btn-premium-outline" onClick={() => navigate("/about")}>
+                TÌM HIỂU THÊM
+              </button>
+            </Col>
+
+            <Col xs={24} md={12} className="scroll-reveal stagger-1">
+              <div className="glass-panel" style={{ padding: "40px", borderRadius: "0px" }}>
+                <Row gutter={[20, 30]}>
+                  <Col span={12} className="stat-card-luxury">
+                    <div className="stat-number">{stats.experience}+</div>
+                    <div className="stat-label">Năm Kinh Nghiệm</div>
+                  </Col>
+                  <Col span={12} className="stat-card-luxury">
+                    <div className="stat-number">{stats.services}</div>
+                    <div className="stat-label">Gói Dịch Vụ</div>
+                  </Col>
+                  <Col span={12} className="stat-card-luxury">
+                    <div className="stat-number">{stats.galleries}+</div>
+                    <div className="stat-label">Album Hoàn Thành</div>
+                  </Col>
+                  <Col span={12} className="stat-card-luxury">
+                    <div className="stat-number">{stats.satisfaction}%</div>
+                    <div className="stat-label">Khách Hàng Hài Lòng</div>
+                  </Col>
+                </Row>
+              </div>
+            </Col>
+          </Row>
         </div>
       </section>
 
@@ -673,7 +672,7 @@ const Home = () => {
                   <EnvironmentOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
                   <div>
                     <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Địa Chỉ</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>34B4 TL 887, phường An Hội, Vĩnh Long</p>
+                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam</p>
                   </div>
                 </div>
 

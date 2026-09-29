@@ -24,6 +24,7 @@ import {
   UserOutlined,
   SearchOutlined,
   UserAddOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -53,6 +54,18 @@ const roleLabels = {
 
 const AdminAccountsList = () => {
   const navigate = useNavigate();
+
+  // Kiểm tra có phải Super Admin không (dựa vào thông tin lưu khi đăng nhập)
+  const isSuperAdmin = (() => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return false;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload?.isSuperAdmin === true;
+    } catch {
+      return false;
+    }
+  })();
 
   const [accounts, setAccounts] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -142,6 +155,39 @@ const AdminAccountsList = () => {
     });
   };
 
+  const handleDeleteAccount = async (record) => {
+    if (!record?._id) return;
+    setActionLoadingId(`del_${record._id}`);
+    try {
+      await axios.delete(`${API_URL}/users/admin/accounts/${record._id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      message.success(`Đã xóa tài khoản "${record.full_name || record.email}"`);
+      fetchAccounts();
+    } catch (err) {
+      message.error(err.response?.data?.message || "Không thể xóa tài khoản");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const confirmDelete = (record) => {
+    if (!record) return;
+    Modal.confirm({
+      title: "Xóa tài khoản vĩnh viễn?",
+      content: (
+        <div>
+          <p>Bạn có chắc muốn xóa tài khoản <strong>{record.full_name || record.email}</strong>?</p>
+          <p style={{ color: "#ff4d4f", fontSize: 12 }}>Hành động này không thể hoàn tác.</p>
+        </div>
+      ),
+      okText: "Xóa vĩnh viễn",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: () => handleDeleteAccount(record),
+    });
+  };
+
   const columns = [
     {
       title: "HỌ TÊN",
@@ -215,16 +261,28 @@ const AdminAccountsList = () => {
       title: "THAO TÁC",
       key: "action",
       align: "right",
-      width: 140,
+      width: isSuperAdmin ? 220 : 140,
       render: (_, record) => (
-        <Button
-          icon={record?.is_active ? <LockOutlined /> : <UnlockOutlined />}
-          loading={actionLoadingId === record?._id}
-          danger={record?.is_active}
-          onClick={() => confirmToggle(record)}
-        >
-          {record?.is_active ? "Khóa" : "Kích hoạt"}
-        </Button>
+        <Space size={8}>
+          <Button
+            icon={record?.is_active ? <LockOutlined /> : <UnlockOutlined />}
+            loading={actionLoadingId === record?._id}
+            danger={record?.is_active}
+            onClick={() => confirmToggle(record)}
+          >
+            {record?.is_active ? "Khóa" : "Kích hoạt"}
+          </Button>
+          {isSuperAdmin && (
+            <Button
+              icon={<DeleteOutlined />}
+              loading={actionLoadingId === `del_${record?._id}`}
+              danger
+              type="primary"
+              onClick={() => confirmDelete(record)}
+              title="Xóa tài khoản vĩnh viễn"
+            />
+          )}
+        </Space>
       ),
     },
   ];

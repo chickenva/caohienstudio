@@ -1,33 +1,18 @@
 /**
  * uploadRoutes.js
- * Route upload file ảnh & file PDF từ máy tính lên server.
+ * Route upload file ảnh & file PDF từ máy tính lên Cloudinary.
+ * Sử dụng memoryStorage (buffer) thay vì diskStorage để tương thích với Cloudinary
+ * và tránh mất file khi Render.com restart (ephemeral filesystem).
  */
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const uploadController = require("../controllers/uploadController");
 const { verifyAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Tự động tạo thư mục public/uploads nếu chưa tồn tại
-const uploadsDir = path.join(__dirname, "../public/uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Cấu hình lưu file đĩa (Disk Storage) với multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, uniqueName);
-  },
-});
+// Cấu hình lưu file trong bộ nhớ (Memory Storage) — file sẽ được upload thẳng lên Cloudinary
+const storage = multer.memoryStorage();
 
 // Multer cho file ảnh
 const imageUpload = multer({
@@ -50,8 +35,8 @@ const pdfUpload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (file.mimetype !== "application/pdf" && ext !== ".pdf") {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    if (file.mimetype !== "application/pdf" && ext !== "pdf") {
       return cb(new Error("Chỉ cho phép tải lên file hợp đồng định dạng PDF (.pdf)!"));
     }
     cb(null, true);
@@ -70,10 +55,10 @@ const handleMulter = (multerSingle) => (req, res, next) => {
   });
 };
 
-// Route POST /api/upload/image (Upload ảnh thumbnail/album/QR)
+// Route POST /api/upload/image (Upload ảnh thumbnail/album/QR → Cloudinary)
 router.post("/image", verifyAdmin, handleMulter(imageUpload.single("image")), uploadController.uploadSingleImage);
 
-// Route POST /api/upload/pdf (Upload PDF hợp đồng)
+// Route POST /api/upload/pdf (Upload PDF hợp đồng → Cloudinary)
 router.post("/pdf", verifyAdmin, handleMulter(pdfUpload.single("pdf")), uploadController.uploadSinglePdf);
 
 // Route GET /api/upload/drive-proxy/:fileId (Proxy ảnh Google Drive công khai, không cần auth)

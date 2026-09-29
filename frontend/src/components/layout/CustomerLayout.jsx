@@ -672,7 +672,7 @@ const CustomerLayout = () => {
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <EnvironmentOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
-                  <span>34B4 TL 887, phường An Hội, Vĩnh Long</span>
+                  <span>02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <PhoneOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
@@ -693,7 +693,7 @@ const CustomerLayout = () => {
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <ClockCircleOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
-                  <span>Giờ mở cửa: 09:00 AM - 05:00 PM (Hàng ngày)</span>
+                  <span>Giờ mở cửa: 09:00 AM - 07:00 PM (Hàng ngày)</span>
                 </div>
               </div>
             </div>

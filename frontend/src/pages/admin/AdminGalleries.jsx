@@ -24,6 +24,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  CloudSyncOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
   SearchOutlined,
@@ -238,6 +239,31 @@ const AdminGalleries = () => {
     }
   };
 
+  const handleRefreshImages = async (record) => {
+    setActionLoadingId(record._id);
+
+    try {
+      const res = await axios.post(
+        `${API_URL}/galleries/admin/${record._id}/refresh-images`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        },
+      );
+
+      message.success(res.data?.message || "Đã làm mới ảnh từ Google Drive");
+      fetchGalleries();
+    } catch (err) {
+      message.error(
+        err.response?.data?.message || "Không thể làm mới ảnh từ Drive",
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleDelete = (record) => {
     Modal.confirm({
       title: "Xóa album khỏi hệ thống?",
@@ -425,6 +451,15 @@ const AdminGalleries = () => {
           >
             Sửa
           </Button>
+
+          <Tooltip title="Làm mới ảnh từ Google Drive">
+            <Button
+              icon={<CloudSyncOutlined />}
+              loading={actionLoadingId === record._id}
+              onClick={() => handleRefreshImages(record)}
+              style={{ color: "#1890ff", borderColor: "#1890ff" }}
+            />
+          </Tooltip>
 
           <Button
             danger={record.is_active}

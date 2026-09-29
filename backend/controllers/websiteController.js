@@ -31,6 +31,38 @@ const DEFAULT_IMAGES = {
       isActive: true,
     },
   ],
+  GALLERY: [
+    {
+      page: "GALLERY",
+      key: "gallery_hero_1",
+      title: "Ảnh nổi bật 1 (Trái)",
+      description: "Hình ảnh nổi bật 1 ở đầu trang Thư viện ảnh (để trống sẽ tự lấy ảnh bìa album 1)",
+      imageUrl: "",
+      altText: "Ảnh nổi bật 1",
+      order: 1,
+      isActive: true,
+    },
+    {
+      page: "GALLERY",
+      key: "gallery_hero_2",
+      title: "Ảnh nổi bật 2 (Phải)",
+      description: "Hình ảnh nổi bật 2 ở đầu trang Thư viện ảnh (để trống sẽ tự lấy ảnh bìa album 2)",
+      imageUrl: "",
+      altText: "Ảnh nổi bật 2",
+      order: 2,
+      isActive: true,
+    },
+    {
+      page: "GALLERY",
+      key: "gallery_hero_3",
+      title: "Ảnh nổi bật 3 (Giữa)",
+      description: "Hình ảnh nổi bật 3 ở đầu trang Thư viện ảnh (để trống sẽ tự lấy ảnh bìa album 3)",
+      imageUrl: "",
+      altText: "Ảnh nổi bật 3",
+      order: 3,
+      isActive: true,
+    },
+  ],
 };
 
 /**
@@ -38,10 +70,17 @@ const DEFAULT_IMAGES = {
  */
 const ensureDefaultImages = async (page) => {
   try {
-    // Chỉ giữ lại 1 hình ảnh duy nhất cho mỗi vị trí: hero_banner (HOME), artist_portrait (ABOUT) và payment_qr (SETTINGS)
-    await WebsiteImage.deleteMany({ key: { $nin: ["hero_banner", "artist_portrait", "payment_qr"] } });
+    const allowedKeys = [
+      "hero_banner",
+      "artist_portrait",
+      "payment_qr",
+      "gallery_hero_1",
+      "gallery_hero_2",
+      "gallery_hero_3",
+    ];
+    await WebsiteImage.deleteMany({ key: { $nin: allowedKeys } });
 
-    const pagesToCheck = page ? [page] : ["HOME", "ABOUT"];
+    const pagesToCheck = page ? [page] : ["HOME", "ABOUT", "GALLERY"];
     for (const p of pagesToCheck) {
       const count = await WebsiteImage.countDocuments({ page: p });
       if (count === 0 && DEFAULT_IMAGES[p]) {
@@ -111,20 +150,63 @@ exports.getAdminImages = async (req, res) => {
 
 /**
  * Tạo mới hoặc cập nhật hình ảnh
- * POST /api/website/admin/images (Tạo mới)
+ * POST /api/website/admin/images (Tạo mới hoặc lưu batch)
  * PUT /api/website/admin/images/:id (Cập nhật)
  */
 exports.saveImage = async (req, res) => {
   try {
+    // Hỗ trợ lưu danh sách nhiều ảnh cùng lúc (batch)
+    if (Array.isArray(req.body.images)) {
+      const results = [];
+      for (const item of req.body.images) {
+        if (!item.key) continue;
+        const page = (item.page || req.body.page || "GALLERY").toUpperCase();
+        const payload = {
+          page,
+          key: item.key,
+          title: item.title || "",
+          description: item.description || "",
+          imageUrl: item.imageUrl !== undefined ? item.imageUrl.trim() : "",
+          altText: item.altText || "",
+          order: item.order !== undefined ? Number(item.order) : 0,
+          isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+        };
+
+        const updated = await WebsiteImage.findOneAndUpdate(
+          { page, key: item.key },
+          payload,
+          { new: true, upsert: true, runValidators: true }
+        );
+        results.push(updated);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Lưu danh sách hình ảnh thành công",
+        images: results,
+      });
+    }
+
     const { id } = req.params;
     const { page, key, title, description, imageUrl, altText, order, isActive } = req.body;
 
+    const pageUpper = (page || "HOME").toUpperCase();
+    let defaultKey = "hero_banner";
+    let defaultTitle = "Hình ảnh Trang Chủ";
+    if (pageUpper === "ABOUT") {
+      defaultKey = "artist_portrait";
+      defaultTitle = "Hình ảnh Trang Giới Thiệu";
+    } else if (pageUpper === "GALLERY") {
+      defaultKey = "gallery_hero_1";
+      defaultTitle = "Ảnh nổi bật Thư viện ảnh";
+    }
+
     const payload = {
-      page: page.toUpperCase(),
-      key: key || (page.toUpperCase() === "HOME" ? "hero_banner" : "artist_portrait"),
-      title: title || (page.toUpperCase() === "HOME" ? "Hình ảnh Trang Chủ" : "Hình ảnh Trang Giới Thiệu"),
+      page: pageUpper,
+      key: key || defaultKey,
+      title: title || defaultTitle,
       description: description || "",
-      imageUrl: imageUrl || "",
+      imageUrl: imageUrl !== undefined ? imageUrl.trim() : "",
       altText: altText || "",
       order: order !== undefined ? Number(order) : 0,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
@@ -137,12 +219,15 @@ exports.saveImage = async (req, res) => {
         return res.status(404).json({ message: "Không tìm thấy hình ảnh cần cập nhật" });
       }
     } else {
-      image = new WebsiteImage(payload);
-      await image.save();
+      image = await WebsiteImage.findOneAndUpdate(
+        { page: payload.page, key: payload.key },
+        payload,
+        { new: true, upsert: true, runValidators: true }
+      );
     }
 
     return res.status(200).json({
-      message: id ? "Cập nhật hình ảnh thành công" : "Thêm hình ảnh thành công",
+      message: "Lưu thông tin hình ảnh thành công",
       image,
     });
   } catch (error) {

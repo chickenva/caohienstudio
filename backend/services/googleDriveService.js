@@ -8,7 +8,7 @@
 const { google } = require("googleapis");
 
 const SCOPES                    = ["https://www.googleapis.com/auth/drive.readonly"];
-const DRIVE_IMAGE_CACHE_TTL_MS  = 5 * 60 * 1000; // 5 phút
+const DRIVE_IMAGE_CACHE_TTL_MS  = 2 * 60 * 1000; // 2 phút
 const MAX_DRIVE_IMAGE_CACHE_ITEMS = 120;
 const driveImageCache           = new Map();
 

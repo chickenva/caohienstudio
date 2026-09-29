@@ -130,6 +130,7 @@ function App() {
 
           <Route path="website/home-images" element={<AdminWebsiteImages defaultPage="HOME" />} />
           <Route path="website/about-images" element={<AdminWebsiteImages defaultPage="ABOUT" />} />
+          <Route path="website/gallery-images" element={<AdminWebsiteImages defaultPage="GALLERY" />} />
           <Route path="banners" element={<AdminBanners />} />
           <Route path="camera-rentals" element={<AdminCameraRentals />} />
           <Route path="camera-rentals/create" element={<AdminCameraRentals defaultOpenAdd />} />

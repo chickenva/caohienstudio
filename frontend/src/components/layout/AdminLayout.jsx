@@ -203,6 +203,7 @@ const AdminLayout = () => {
       children: [
         { key: "/admin/website/home-images", label: "Trang chủ" },
         { key: "/admin/website/about-images", label: "Trang Giới thiệu" },
+        { key: "/admin/website/gallery-images", label: "Trang Thư viện ảnh" },
       ],
     },
   ];

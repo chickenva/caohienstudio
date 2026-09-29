@@ -1,13 +1,29 @@
 /**
  * uploadController.js
- * Xử lý tải ảnh & file PDF hợp đồng trực tiếp từ máy tính lên server.
- * File được lưu trong thư mục public/uploads/ và trả về URL để hiển thị.
+ * Xử lý tải ảnh & file PDF hợp đồng trực tiếp từ máy tính lên cloud.
+ * Ảnh được upload lên Cloudinary (vĩnh viễn) thay vì lưu trên disk Render (tạm thời).
+ * File PDF hợp đồng cũng được upload lên Cloudinary để không bị mất khi server restart.
  */
-const path = require("path");
-const fs = require("fs");
+const cloudinary = require("../config/cloudinary");
 
 /**
- * Upload 1 file ảnh từ máy
+ * Upload buffer lên Cloudinary, trả về URL vĩnh viễn.
+ * @param {Buffer} buffer - Dữ liệu file từ multer memoryStorage
+ * @param {Object} options - Cloudinary upload options
+ * @returns {Promise<Object>} Cloudinary upload result
+ */
+const uploadToCloudinary = (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
+    stream.end(buffer);
+  });
+};
+
+/**
+ * Upload 1 file ảnh từ máy → Cloudinary
  */
 exports.uploadSingleImage = async (req, res) => {
   try {
@@ -15,18 +31,20 @@ exports.uploadSingleImage = async (req, res) => {
       return res.status(400).json({ message: "Vui lòng chọn 1 file ảnh hợp lệ để tải lên!" });
     }
 
-    const host = req.get("host");
-    const protocol = req.protocol;
-    const rawBackendUrl = process.env.BACKEND_URL || `${protocol}://${host}`;
-    const backendUrl = rawBackendUrl.replace(/\/+$/, "");
-    
-    // URL truy cập ảnh tĩnh
-    const fileUrl = `${backendUrl}/public/uploads/${req.file.filename}`;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "caohienstudio/uploads",
+      resource_type: "image",
+      // Tự động tối ưu chất lượng và format
+      quality: "auto",
+      fetch_format: "auto",
+    });
+
+    const fileUrl = result.secure_url;
 
     return res.status(200).json({
       message: "Tải ảnh lên thành công!",
       url: fileUrl,
-      filename: req.file.filename,
+      filename: result.public_id,
     });
   } catch (error) {
     console.error("Upload image error:", error);
@@ -38,7 +56,7 @@ exports.uploadSingleImage = async (req, res) => {
 };
 
 /**
- * Upload 1 file PDF hợp đồng từ máy
+ * Upload 1 file PDF hợp đồng từ máy → Cloudinary
  */
 exports.uploadSinglePdf = async (req, res) => {
   try {
@@ -46,13 +64,12 @@ exports.uploadSinglePdf = async (req, res) => {
       return res.status(400).json({ message: "Vui lòng chọn 1 file PDF hợp đồng hợp lệ để tải lên!" });
     }
 
-    const host = req.get("host");
-    const protocol = req.protocol;
-    const rawBackendUrl = process.env.BACKEND_URL || `${protocol}://${host}`;
-    const backendUrl = rawBackendUrl.replace(/\/+$/, "");
-    
-    // URL truy cập file PDF
-    const fileUrl = `${backendUrl}/public/uploads/${req.file.filename}`;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "caohienstudio/contracts",
+      resource_type: "raw",
+    });
+
+    const fileUrl = result.secure_url;
 
     let originalName = req.file.originalname;
     try {
@@ -64,7 +81,7 @@ exports.uploadSinglePdf = async (req, res) => {
     return res.status(200).json({
       message: "Tải file PDF hợp đồng lên thành công!",
       url: fileUrl,
-      filename: req.file.filename,
+      filename: result.public_id,
       originalName: originalName,
     });
   } catch (error) {

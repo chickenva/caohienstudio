@@ -8,7 +8,6 @@ import { Row, Col, Spin, message, Empty, Tag } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   CameraOutlined,
-  PhoneOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
@@ -106,32 +105,6 @@ const CameraRental = () => {
             Cao Hiển Studio cung cấp dịch vụ cho thuê máy ảnh, ống kính và phụ kiện chuyên nghiệp.
             Liên hệ trực tiếp để thuê thiết bị phù hợp với nhu cầu của bạn.
           </p>
-        </div>
-
-        {/* Contact Info Banner */}
-        <div
-          className="scroll-reveal"
-          style={{
-            background: "linear-gradient(135deg, #2F2F2F 0%, #1a1a1a 100%)",
-            borderRadius: 12,
-            padding: "20px 28px",
-            marginBottom: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 24,
-            flexWrap: "wrap",
-          }}
-        >
-          <PhoneOutlined style={{ color: PRIMARY_COLOR, fontSize: 20 }} />
-          <div style={{ color: "#fff", textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
-              Liên hệ thuê thiết bị qua Hotline / Zalo
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: PRIMARY_COLOR, letterSpacing: 1 }}>
-              0123 456 789
-            </div>
-          </div>
         </div>
 
         {/* Category Tabs */}

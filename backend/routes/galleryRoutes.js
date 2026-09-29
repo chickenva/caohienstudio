@@ -23,6 +23,9 @@ router.patch(
 
 router.delete("/admin/:id", verifyAdmin, galleryController.deleteGallery);
 
+// Admin làm mới cache ảnh Drive
+router.post("/admin/:id/refresh-images", verifyAdmin, galleryController.refreshGalleryImages);
+
 // ==========================================
 // PUBLIC ROUTES
 // ==========================================

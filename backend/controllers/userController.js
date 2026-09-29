@@ -202,3 +202,36 @@ exports.toggleAccountActive = async (req, res) => {
     res.status(500).json({ message: "Lỗi cập nhật trạng thái tài khoản", error: error.message });
   }
 };
+
+/**
+ * [DELETE] /api/users/admin/accounts/:id
+ * Chỉ Super Admin mới có quyền xóa tài khoản ADMIN.
+ * Không thể xóa chính tài khoản Super Admin (hardcoded).
+ */
+exports.deleteAccount = async (req, res) => {
+  try {
+    // Chỉ Super Admin mới được xóa tài khoản
+    if (!req.user?.isSuperAdmin) {
+      return res.status(403).json({ message: "Chỉ Super Admin mới có quyền xóa tài khoản" });
+    }
+
+    const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL;
+
+    const account = await User.findOne({ _id: req.params.id, role: "ADMIN" });
+
+    if (!account) {
+      return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+    }
+
+    // Không cho xóa tài khoản Super Admin (nếu tồn tại trong DB)
+    if (SUPER_ADMIN_EMAIL && account.email === SUPER_ADMIN_EMAIL) {
+      return res.status(403).json({ message: "Không thể xóa tài khoản Super Admin" });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: "Đã xóa tài khoản thành công" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi xóa tài khoản", error: error.message });
+  }
+};

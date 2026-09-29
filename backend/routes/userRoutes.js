@@ -52,4 +52,10 @@ router.patch(
   userController.toggleAccountActive,
 );
 
+router.delete(
+  "/admin/accounts/:id",
+  verifyAdmin,
+  userController.deleteAccount,
+);
+
 module.exports = router;

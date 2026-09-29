@@ -8,8 +8,8 @@ const websiteImageSchema = new mongoose.Schema(
   {
     page: {
       type: String,
-      enum: ["HOME", "ABOUT", "SETTINGS"],
-      required: [true, "Trang hiển thị là bắt buộc (HOME, ABOUT hoặc SETTINGS)"],
+      enum: ["HOME", "ABOUT", "SETTINGS", "GALLERY"],
+      required: [true, "Trang hiển thị là bắt buộc (HOME, ABOUT, GALLERY hoặc SETTINGS)"],
       index: true,
     },
     key: {

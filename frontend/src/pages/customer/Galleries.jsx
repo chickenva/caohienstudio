@@ -39,6 +39,9 @@ const Galleries = () => {
 
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
+  const [heroImages, setHeroImages] = useState([]);
+  const [categoryMap, setCategoryMap] = useState({});
 
   const [categories, setCategories] = useState([
     { key: "ALL", index: "01", label: "TẤT CẢ" }
@@ -52,35 +55,55 @@ const Galleries = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [catsRes, galsRes] = await Promise.all([
+        const [catsRes, galsRes, webImagesRes] = await Promise.allSettled([
           axios.get(`${API_URL}/categories?type=GALLERY&is_active=true`),
-          axios.get(`${API_URL}/galleries?category=${currentCategory}`)
+          axios.get(`${API_URL}/galleries?category=${currentCategory}`),
+          axios.get(`${API_URL}/website/images?page=GALLERY`),
         ]);
 
-        const dynamicCategories = (catsRes.data.categories || []).map((c, i) => ({
-          key: c.slug,
-          index: String(i + 2).padStart(2, '0'),
-          label: c.name.toUpperCase()
-        }));
+        if (catsRes.status === "fulfilled") {
+          const catList = catsRes.value.data?.categories || [];
+          const map = {};
+          catList.forEach((c) => {
+            map[c.slug] = c.name;
+          });
+          setCategoryMap(map);
 
-        setCategories([
-          { key: "ALL", index: "01", label: "TẤT CẢ" },
-          ...dynamicCategories
-        ]);
+          const dynamicCategories = catList.map((c, i) => ({
+            key: c.slug,
+            index: String(i + 2).padStart(2, '0'),
+            label: c.name.toUpperCase()
+          }));
 
-        const fetchedGalleries = Array.isArray(galsRes.data) ? galsRes.data : [];
-        await preloadImages(
-          fetchedGalleries.slice(0, 8).map((item, index) =>
-            getGalleryImageUrl(
-              item,
-              index === 0 ? "cover" : "grid",
-              FALLBACK_GALLERY_IMAGE,
+          setCategories([
+            { key: "ALL", index: "01", label: "TẤT CẢ" },
+            ...dynamicCategories
+          ]);
+        }
+
+        let fetchedGalleries = [];
+        if (galsRes.status === "fulfilled") {
+          fetchedGalleries = Array.isArray(galsRes.value.data) ? galsRes.value.data : [];
+          await preloadImages(
+            fetchedGalleries.slice(0, 8).map((item, index) =>
+              getGalleryImageUrl(
+                item,
+                index === 0 ? "cover" : "grid",
+                FALLBACK_GALLERY_IMAGE,
+              ),
             ),
-          ),
-          { limit: 8, timeoutMs: 3200 },
-        );
-        setGalleries(fetchedGalleries);
+            { limit: 8, timeoutMs: 3200 },
+          );
+          setGalleries(fetchedGalleries);
+        }
+
+        if (webImagesRes.status === "fulfilled" && webImagesRes.value.data?.images) {
+          setHeroImages(webImagesRes.value.data.images);
+        }
+
+        setHasFetched(true);
       } catch (err) {
+        console.error("Lỗi khi tải thư viện ảnh:", err);
         message.error("Không thể tải thư viện ảnh");
       } finally {
         setLoading(false);
@@ -126,7 +149,7 @@ const Galleries = () => {
   };
 
 
-  // Pre-curated high-end demo fallbacks to keep the page visually stunning if API is empty
+  // Demo fallback thuần túy khi chưa tải được API
   const demoGalleries = [
     {
       _id: "demo-gal-1",
@@ -151,30 +174,51 @@ const Galleries = () => {
       coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200",
       location: "Cao Hiển Studio",
       description: "Bộ ảnh concept cưới tối giản trong studio tập trung trọn vẹn vào nụ cười ngọt ngào và ánh mắt hạnh phúc."
-    },
-    {
-      _id: "demo-gal-4",
-      title: "Luxury Fashion Editorial",
-      category: "EVENT",
-      coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200",
-      location: "TP. HCM",
-      description: "Phóng sự sự kiện thời trang xa xỉ với góc máy điện ảnh, bắt trọn từng bộ sưu tập sắc nét và dàn khách mời đẳng cấp."
-    },
-    {
-      _id: "demo-gal-5",
-      title: "Youthful Days in HCMC",
-      category: "GRADUATION",
-      coverImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200",
-      location: "TP. HCM",
-      description: "Kỷ yếu thanh xuân trong veo của nhóm bạn thân dưới mái trường cổ kính, mang màu sắc hoài niệm đầy cảm xúc."
     }
   ];
 
-  const displayGalleries = galleries.length > 0
+  // Khi đã tải từ server, sử dụng chính xác dữ liệu từ server (nếu rỗng thì hiện Empty)
+  const displayGalleries = hasFetched
     ? galleries
-    : (currentCategory === "ALL"
-      ? demoGalleries
-      : demoGalleries.filter(item => item.category === currentCategory));
+    : (galleries.length > 0
+      ? galleries
+      : (currentCategory === "ALL"
+        ? demoGalleries
+        : demoGalleries.filter(item => item.category === currentCategory)));
+
+  // Lấy 3 hình cho hero collage:
+  // Ưu tiên ảnh do admin tải lên qua trang quản lý website (gallery_hero_1, 2, 3),
+  // Nếu chưa cấu hình thì mặc định lấy ảnh bìa của 3 album đầu tiên trong danh sách.
+  const getHeroImageItem = (index) => {
+    const slotKey = `gallery_hero_${index + 1}`;
+    const customImg = heroImages.find((img) => img.key === slotKey && img.isActive && img.imageUrl?.trim());
+    if (customImg && customImg.imageUrl?.trim()) {
+      return {
+        imageUrl: customImg.imageUrl.trim(),
+        title: customImg.title || `Ảnh nổi bật ${index + 1}`,
+        albumId: null,
+      };
+    }
+
+    const album = displayGalleries[index] || galleries[index];
+    if (album) {
+      return {
+        imageUrl: getGalleryImageUrl(album, "cover", FALLBACK_GALLERY_IMAGE),
+        title: album.title || `Album ${index + 1}`,
+        albumId: album._id,
+      };
+    }
+
+    return {
+      imageUrl: demoGalleries[index]?.coverImage || FALLBACK_GALLERY_IMAGE,
+      title: demoGalleries[index]?.title || `Cao Hiển Studio ${index + 1}`,
+      albumId: null,
+    };
+  };
+
+  const heroItem1 = getHeroImageItem(0);
+  const heroItem2 = getHeroImageItem(1);
+  const heroItem3 = getHeroImageItem(2);
 
   return (
     <div className="home-page-container" style={{ width: "100%", background: "#FAF7F2", minHeight: "100vh" }}>
@@ -221,15 +265,25 @@ const Galleries = () => {
             {/* Right Column: Layered 3D Floating Collage Exhibit */}
             <Col xs={24} lg={13} className="scroll-reveal stagger-1">
               <div className="museum-collage-container">
-                <div className="museum-collage-item collage-1">
-                  <img src="https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop" alt="stacked-1" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <div className="museum-collage-item collage-2">
-                  <img src="https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop" alt="stacked-2" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <div className="museum-collage-item collage-3">
-                  <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop" alt="stacked-3" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
+                {[
+                  { item: heroItem1, className: "collage-1" },
+                  { item: heroItem2, className: "collage-2" },
+                  { item: heroItem3, className: "collage-3" },
+                ].map(({ item, className }, idx) => (
+                  <div
+                    key={idx}
+                    className={`museum-collage-item ${className}`}
+                    style={{ cursor: item.albumId ? "pointer" : "default" }}
+                    onClick={() => item.albumId && navigate(`/galleries/${item.albumId}`)}
+                    title={item.albumId ? `Xem album: ${item.title}` : item.title}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                ))}
               </div>
             </Col>
           </Row>
@@ -295,7 +349,7 @@ const Galleries = () => {
 
                     <div className="museum-card-info">
                       <span className="museum-card-category">
-                        {categoryLabels[item.category] || item.category}
+                        {categoryMap[item.category] || categoryLabels[item.category] || item.category}
                       </span>
 
                       <h3 className="museum-card-title">{item.title}</h3>

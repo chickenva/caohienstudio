@@ -202,20 +202,6 @@ const GalleryDetail = () => {
           coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200",
           location: "Cao Hiển Studio",
           description: "Bộ ảnh concept cưới tối giản trong studio tập trung trọn vẹn vào nụ cười ngọt ngào và ánh mắt hạnh phúc."
-        },
-        "demo-gal-4": {
-          title: "Luxury Fashion Editorial",
-          category: "EVENT",
-          coverImage: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200",
-          location: "TP. HCM",
-          description: "Phóng sự sự kiện thời trang xa xỉ với góc máy điện ảnh, bắt trọn từng bộ sưu tập sắc nét và dàn khách mời đẳng cấp."
-        },
-        "demo-gal-5": {
-          title: "Youthful Days in HCMC",
-          category: "GRADUATION",
-          coverImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200",
-          location: "TP. HCM",
-          description: "Kỷ yếu thanh xuân trong veo của nhóm bạn thân dưới mái trường cổ kính, mang màu sắc hoài niệm đầy cảm xúc."
         }
       };
 
