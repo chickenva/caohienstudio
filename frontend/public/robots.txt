@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /customer/my-bookings/
+Disallow: /contract-review/
+
+# Sitemap
+Sitemap: https://caohienstudio.vn/sitemap.xml
