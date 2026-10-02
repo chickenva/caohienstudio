@@ -13,7 +13,7 @@ import {
   MailOutlined,
   ClockCircleOutlined,
   SendOutlined,
-  MessageOutlined,
+  FacebookOutlined,
   SafetyOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
@@ -371,7 +371,7 @@ const Contact = () => {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "30px", color: "#555555", fontSize: "14.5px", fontWeight: "300" }}>
               {[
-                { icon: <EnvironmentOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Địa Chỉ", value: "02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam" },
+                { icon: <EnvironmentOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, label: "Địa Chỉ", value: "34B4 DT 887 , phường An Hội , tỉnh Vĩnh Long" },
                 { 
                   icon: <PhoneOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, 
                   label: "Hotline / Zalo", 
@@ -392,6 +392,29 @@ const Contact = () => {
                       >
                         Chat Zalo ngay
                       </a>
+                    </div>
+                  )
+                },
+                { 
+                  icon: <FacebookOutlined style={{ fontSize: 20, color: PRIMARY_COLOR, marginTop: 4 }} />, 
+                  label: "Facebook Fanpage", 
+                  value: (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
+                      <span style={{ color: "#2F2F2F" }}>Cao Hiển Studio</span>
+                      <a
+                        href="https://www.facebook.com/caohienstudio"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#1877F2",
+                          fontWeight: 600,
+                          fontSize: "12.5px",
+                          textDecoration: "underline",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Ghé thăm Fanpage
+                      </a>
                       <a
                         href="https://m.me/100063489731732"
                         target="_blank"
@@ -404,7 +427,7 @@ const Contact = () => {
                           letterSpacing: "0.5px",
                         }}
                       >
-                        Messenger
+                        Nhắn tin Messenger
                       </a>
                     </div>
                   )
@@ -663,7 +686,7 @@ const Contact = () => {
                         popupClassName="booking-select-dropdown"
                         disabled={isStudio}
                       >
-                        <Input size="large" prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />} placeholder="VD: Studio Cao Hiển, 02 Hai Bà Trưng..." style={{ borderRadius: 0 }} disabled={isStudio} />
+                        <Input size="large" prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />} placeholder="VD: Studio Cao Hiển, 34B4 DT 887..." style={{ borderRadius: 0 }} disabled={isStudio} />
                       </AutoComplete>
                     </Form.Item>
                   </Col>

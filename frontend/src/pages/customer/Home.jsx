@@ -17,7 +17,8 @@ import {
   SendOutlined,
   FormOutlined,
   CreditCardOutlined,
-  FileImageOutlined
+  FileImageOutlined,
+  FacebookOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -34,7 +35,7 @@ import {
 
 
 // Fallback images
-const FALLBACK_HERO = "https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=2070&auto=format&fit=crop";
+const FALLBACK_HERO = "/images/home-hero.jpg";
 const FALLBACK_WEDDING = "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop";
 const FALLBACK_PORTRAIT = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop";
 const FALLBACK_EVENT = "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop";
@@ -662,15 +663,32 @@ const Home = () => {
                   <EnvironmentOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
                   <div>
                     <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Địa Chỉ</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam</p>
+                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>34B4 DT 887 , phường An Hội , tỉnh Vĩnh Long</p>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
                   <PhoneOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
                   <div>
-                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Hotline</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>(+84) 979 7676 02</p>
+                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Hotline / Zalo</h5>
+                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>
+                      <a href={import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602"} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                        (+84) 979 7676 02
+                      </a>
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                  <FacebookOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
+                  <div>
+                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Fanpage Facebook</h5>
+                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>
+                      <a href="https://www.facebook.com/caohienstudio" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        <span>Cao Hiển Studio</span>
+                        <ArrowRightOutlined style={{ fontSize: "11px" }} />
+                      </a>
+                    </p>
                   </div>
                 </div>
 

@@ -17,8 +17,7 @@ const API_URL =
     ? "http://localhost:5000/api"
     : "https://caohienstudio-api.onrender.com/api");
 
-const FALLBACK_PORTRAIT =
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1000&auto=format&fit=crop";
+const FALLBACK_PORTRAIT = "/images/about-portrait.jpg";
 
 // Trang giới thiệu studio, phong cách chụp và thông tin thương hiệu.
 const About = () => {

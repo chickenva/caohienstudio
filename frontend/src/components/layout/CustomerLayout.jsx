@@ -672,7 +672,7 @@ const CustomerLayout = () => {
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <EnvironmentOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
-                  <span>02 Hai Bà Trưng, An Hội, Vĩnh Long 02753, Việt Nam</span>
+                  <span>34B4 DT 887 , phường An Hội , tỉnh Vĩnh Long</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <PhoneOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
@@ -680,11 +680,26 @@ const CustomerLayout = () => {
                     href={import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "#aaa", textDecoration: "none" }}
+                    style={{ color: "#aaa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
                     className="footer-link"
                     title="Nhấn để Chat Zalo / Gọi Hotline"
                   >
-                    Hotline / Zalo: (+84) 979 7676 02
+                    <span>Hotline / Zalo: (+84) 979 7676 02</span>
+                    <ArrowRightOutlined style={{ fontSize: "11px" }} />
+                  </a>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <FacebookOutlined style={{ color: PRIMARY_COLOR, fontSize: "15px", marginTop: "4px", width: "20px", display: "inline-flex", justifyContent: "center", flexShrink: 0 }} />
+                  <a
+                    href="https://www.facebook.com/caohienstudio"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#aaa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    className="footer-link"
+                    title="Truy cập Fanpage Facebook Cao Hiển Studio"
+                  >
+                    <span>Fanpage: Cao Hiển Studio</span>
+                    <ArrowRightOutlined style={{ fontSize: "11px" }} />
                   </a>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
