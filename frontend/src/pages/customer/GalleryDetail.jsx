@@ -60,15 +60,15 @@ const GalleryDetail = () => {
     };
   }, [id]);
 
-  // Scroll reveals trigger
+  // Scroll reveals trigger cho các section dưới
   useEffect(() => {
     if (loading) return;
 
     const revealElements = document.querySelectorAll(".scroll-reveal");
     const observerOptions = {
       root: null,
-      threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px"
+      threshold: 0.02,
+      rootMargin: "0px 0px 80px 0px"
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -322,7 +322,7 @@ const GalleryDetail = () => {
           textAlign: "center",
           borderBottom: "1px solid #E8DED2",
         }}
-        className="scroll-reveal"
+        className="gallery-header-banner"
       >
         {/* Top Back Navigation Bar */}
         <div style={{ maxWidth: "1200px", margin: "0 auto 40px auto", width: "100%", textAlign: "left", padding: "0 10px" }}>
@@ -421,7 +421,7 @@ const GalleryDetail = () => {
       {/* THÔNG TIN CHI TIẾT ALBUM METADATA */}
       <div
         style={{ maxWidth: "1200px", margin: "-35px auto 0 auto", padding: "0 20px", position: "relative", zIndex: 10 }}
-        className="scroll-reveal stagger-1"
+        className="gallery-metadata-container"
       >
         <Row gutter={[16, 16]}>
           {/* Photos count */}
@@ -539,7 +539,7 @@ const GalleryDetail = () => {
           margin: "0 auto",
           padding: "70px 20px 90px 20px",
         }}
-        className="scroll-reveal stagger-2"
+        className="gallery-masonry-container"
       >
         <div style={{ marginBottom: "35px" }}>
           <div
@@ -597,6 +597,8 @@ const GalleryDetail = () => {
                           loading={idx < 8 ? "eager" : "lazy"}
                           fetchPriority={idx < 4 ? "high" : "auto"}
                           decoding="async"
+                          referrerPolicy="no-referrer"
+                          fallback={FALLBACK_IMAGE}
                           preview={{
                             src: previewUrl,
                           }}

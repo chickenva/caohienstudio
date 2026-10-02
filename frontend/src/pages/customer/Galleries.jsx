@@ -280,7 +280,9 @@ const Galleries = () => {
                     <img
                       src={item.imageUrl}
                       alt={item.title}
+                      referrerPolicy="no-referrer"
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={getImageErrorHandler(FALLBACK_GALLERY_IMAGE)}
                     />
                   </div>
                 ))}
@@ -340,6 +342,7 @@ const Galleries = () => {
                         srcSet={imageSrcSet}
                         sizes="(max-width: 767px) 100vw, (max-width: 991px) 50vw, 380px"
                         alt={item.title}
+                        referrerPolicy="no-referrer"
                         loading={index <= 5 ? "eager" : "lazy"}
                         fetchPriority={index <= 2 ? "high" : "auto"}
                         decoding="async"

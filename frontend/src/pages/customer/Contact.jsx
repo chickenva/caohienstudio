@@ -392,6 +392,20 @@ const Contact = () => {
                       >
                         Chat Zalo ngay
                       </a>
+                      <a
+                        href="https://m.me/100063489731732"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#0084FF",
+                          fontWeight: 600,
+                          fontSize: "12.5px",
+                          textDecoration: "underline",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Messenger
+                      </a>
                     </div>
                   )
                 },
@@ -459,6 +473,47 @@ const Contact = () => {
                 }}
               >
                 Nhắn Zalo
+              </a>
+            </div>
+
+            {/* THẺ TƯ VẤN MESSENGER */}
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "16px 20px",
+                background: "#FAF7F2",
+                border: "1px solid #E8DED2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "13.5px", color: "#2F2F2F", letterSpacing: "0.5px" }}>
+                  NHẮN TIN QUA MESSENGER
+                </div>
+                <div style={{ fontSize: "12.5px", color: "#666", marginTop: "4px" }}>
+                  Liên hệ nhanh qua Facebook Messenger
+                </div>
+              </div>
+              <a
+                href="https://m.me/100063489731732"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: "#0084FF",
+                  color: "#fff",
+                  padding: "8px 18px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Nhắn Messenger
               </a>
             </div>
           </Col>

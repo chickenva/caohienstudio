@@ -326,19 +326,8 @@ const Home = () => {
                               : upgradeGoogleImageUrl(item.thumbnail, "s800") || FALLBACK_WEDDING
                           } 
                           alt={item.name} 
-                          onError={(e) => {
-                            if (!e.currentTarget.dataset.fallbackApplied) {
-                              e.currentTarget.dataset.fallbackApplied = "true";
-                              const driveUrl = upgradeGoogleImageUrl(item.thumbnail, "s800");
-                              if (driveUrl && driveUrl !== e.currentTarget.src) {
-                                e.currentTarget.src = driveUrl;
-                              } else {
-                                e.currentTarget.src = FALLBACK_WEDDING;
-                              }
-                            } else {
-                              e.currentTarget.src = FALLBACK_WEDDING;
-                            }
-                          }}
+                          referrerPolicy="no-referrer"
+                          onError={getImageErrorHandler(FALLBACK_WEDDING)}
                         />
                         <div className="service-image-overlay" />
                       </div>
@@ -442,6 +431,7 @@ const Home = () => {
                       srcSet={imageSrcSet}
                       sizes={index === 0 ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 42vw"}
                       alt={item.title}
+                      referrerPolicy="no-referrer"
                       loading={index < 2 ? "eager" : "lazy"}
                       fetchPriority={index < 2 ? "high" : "auto"}
                       decoding="async"

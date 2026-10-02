@@ -98,34 +98,44 @@ exports.uploadSinglePdf = async (req, res) => {
  */
 exports.proxyDriveImage = async (req, res) => {
   try {
-    const axios = require("axios");
     const { fileId } = req.params;
     const { sz = "w2560" } = req.query;
     if (!fileId) {
       return res.status(400).send("File ID required");
     }
 
-    const driveUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=${sz}`;
+    // Ưu tiên CDN lh3 Google trực tiếp, fallback về Drive thumbnail
+    const targetUrl = `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=s${sz.replace(/^w/i, "")}`;
+    const fallbackUrl = `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${sz}`;
 
-    const response = await axios({
-      method: "get",
-      url: driveUrl,
-      responseType: "stream",
-      timeout: 10000,
+    let response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
     });
 
+    if (!response.ok) {
+      response = await fetch(fallbackUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
+    }
+
+    if (!response.ok) {
+      return res.status(404).send("Image not found");
+    }
+
     res.set({
-      "Content-Type": response.headers["content-type"] || "image/jpeg",
+      "Content-Type": response.headers.get("content-type") || "image/jpeg",
       "Cache-Control": "public, max-age=86400, immutable",
       "Access-Control-Allow-Origin": "*",
     });
 
-    response.data.pipe(res);
+    const arrayBuffer = await response.arrayBuffer();
+    return res.send(Buffer.from(arrayBuffer));
   } catch (error) {
     console.error("Proxy drive image error:", error.message);
-    return res.status(404).send("Image not found or blocked");
+    return res.status(500).send("Proxy error");
   }
 };

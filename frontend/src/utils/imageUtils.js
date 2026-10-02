@@ -3,8 +3,22 @@
  * Tiện ích xử lý và chuẩn hóa URL ảnh Google Drive/CDN cho frontend.
  * Hỗ trợ nâng chất lượng ảnh (upgrade size), tải lười (lazy load),
  * phát hiện màu chủ đạo và sinh palette cho thumbnail gallery.
+ *
+ * Mobile: drive.google.com/thumbnail bị chặn trên trình duyệt in-app
+ * (Facebook WebView, Zalo, v.v.). Trên mobile sẽ dùng backend proxy thay thế.
  */
 import { API_URL } from "../config/api";
+
+/**
+ * Phát hiện thiết bị di động để chuyển sang dùng proxy backend
+ * (drive.google.com/thumbnail thường bị chặn trên mobile / in-app browser).
+ */
+const isMobile = () => {
+  if (typeof navigator === "undefined") return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(
+    navigator.userAgent,
+  );
+};
 
 export const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600&auto=format&fit=crop";
@@ -81,31 +95,43 @@ export const extractGoogleDriveFileId = (input = "") => {
   return null;
 };
 
+/**
+ * Tạo URL proxy backend cho ảnh Google Drive.
+ * Dùng khi trình duyệt di động bị chặn bởi drive.google.com.
+ * @param {string} fileId - Google Drive file ID
+ * @param {string} size   - Kích thước (ví dụ: "w1200")
+ * @returns {string}
+ */
+export const buildProxyUrl = (fileId, size = "w1200") => {
+  if (!fileId) return "";
+  return `${API_URL}/upload/drive-proxy/${encodeURIComponent(fileId)}?sz=${size}`;
+};
+
 // Đổi size dạng s1800 sang w1800 theo format thumbnail Drive.
 const getDriveThumbnailSize = (size = "s1800") =>
   size.startsWith("s") ? `w${size.slice(1)}` : size;
 
-// Nâng kích thước ảnh và chuyển đổi mọi định dạng link Google Drive về URL thumbnail có thể hiển thị được.
+// Nâng kích thước ảnh và chuyển đổi mọi định dạng link Google Drive về URL CDN trực tiếp tốc độ cao.
 export const upgradeGoogleImageUrl = (url, size = "s1800") => {
   if (!url) return "";
 
   const trimmedUrl = String(url).trim();
 
-  // 1. Nếu là bất kỳ định dạng link Google Drive nào
-  if (isGoogleDriveUrl(trimmedUrl)) {
-    const fileId = extractGoogleDriveFileId(trimmedUrl);
-    if (fileId) {
-      const thumbnailSize = getDriveThumbnailSize(size);
-      return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=${thumbnailSize}`;
-    }
-  }
-
-  // 2. Nếu là link CDN googleusercontent (lh3.googleusercontent.com/...)
+  // 1. Nếu là link CDN googleusercontent (lh3.googleusercontent.com/...)
   if (isGoogleUserContentUrl(trimmedUrl)) {
     if (/=([swh]\d+[^/?#]*)$/i.test(trimmedUrl)) {
       return trimmedUrl.replace(/=([swh]\d+[^/?#]*)$/i, `=${size}`);
     }
     return trimmedUrl;
+  }
+
+  // 2. Nếu là bất kỳ định dạng link Google Drive nào
+  if (isGoogleDriveUrl(trimmedUrl)) {
+    const fileId = extractGoogleDriveFileId(trimmedUrl);
+    if (fileId) {
+      // Sử dụng Google CDN Edge trực tiếp: tải cực nhanh, không phụ thuộc session, hỗ trợ hoàn hảo trên mobile
+      return `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=${size}`;
+    }
   }
 
   return trimmedUrl;
@@ -207,16 +233,21 @@ export const formatImageUrl = (url, size = "s2560") => {
 };
 
 // Fallback ảnh nếu ảnh chính lỗi, sử dụng smart proxy & fallback an toàn.
+// Khi ảnh Drive lỗi (403/CORS trên mobile), thử qua proxy backend trước khi dùng ảnh fallback.
 export const getImageErrorHandler = (fallback = FALLBACK_GALLERY_IMAGE) => (event) => {
   const image = event.currentTarget;
   const currentSrc = image.src || "";
+
+  image.referrerPolicy = "no-referrer";
 
   if (image.dataset.fallbackApplied === "true") return;
 
   const fileId = extractGoogleDriveFileId(currentSrc) || extractGoogleDriveFileId(image.dataset.originalUrl);
   if (fileId && !image.dataset.proxyAttempted) {
     image.dataset.proxyAttempted = "true";
-    image.src = `${API_URL}/upload/drive-proxy/${fileId}`;
+    // Xóa srcset để proxy không bị ghi đè bởi srcset vẫn trỏ link Drive cũ
+    image.removeAttribute("srcset");
+    image.src = buildProxyUrl(fileId, "w1800");
     return;
   }
 
@@ -231,6 +262,7 @@ const preloadSingleImage = (url, timeoutMs) => {
 
   return new Promise((resolve) => {
     const image = new window.Image();
+    image.referrerPolicy = "no-referrer";
     let settled = false;
 
     const finish = () => {
