@@ -25,6 +25,7 @@ import {
   LockOutlined,
   UnlockOutlined,
   FileImageOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
@@ -185,6 +186,11 @@ const AdminLayout = () => {
       key: "/admin/banners",
       icon: <FileImageOutlined />,
       label: "Banner quảng cáo",
+    },
+    {
+      key: "/admin/holidays",
+      icon: <CalendarOutlined />,
+      label: "Lịch lễ & Ngày nghỉ",
     },
     {
       key: "/admin/accounts",

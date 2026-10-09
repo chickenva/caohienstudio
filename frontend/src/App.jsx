@@ -51,6 +51,7 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import AdminWebsiteImages from "./pages/admin/AdminWebsiteImages";
 import AdminBanners from "./pages/admin/AdminBanners";
 import AdminCameraRentals from "./pages/admin/AdminCameraRentals";
+import AdminHolidays from "./pages/admin/AdminHolidays";
 
 // Customer: Camera Rental
 import CameraRental from "./pages/customer/CameraRental";
@@ -134,6 +135,7 @@ function App() {
           <Route path="banners" element={<AdminBanners />} />
           <Route path="camera-rentals" element={<AdminCameraRentals />} />
           <Route path="camera-rentals/create" element={<AdminCameraRentals defaultOpenAdd />} />
+          <Route path="holidays" element={<AdminHolidays />} />
         </Route>
         {/* TRANG BẢO TRÌ (truy cập trực tiếp qua URL) */}
         <Route path="/maintenance" element={<MaintenancePage />} />

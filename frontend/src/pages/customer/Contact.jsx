@@ -31,18 +31,7 @@ const CATEGORY_LABELS = {
   PRINT: "Ảnh / Photobook",
 };
 
-const FORECAST_LOCATIONS = [
-  "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh",
-  "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ",
-  "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp",
-  "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng",
-  "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu",
-  "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình",
-  "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi",
-  "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên",
-  "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang",
-  "Vĩnh Long", "Vĩnh Phúc", "Yên Bái",
-];
+import { SHOOTING_LOCATION_TIERS, FORECAST_LOCATIONS } from "../../utils/shootingLocations";
 
 // Trang liên hệ/tư vấn cho lịch nhiều ngày hoặc nhu cầu chưa chốt đơn.
 const Contact = () => {
@@ -643,8 +632,17 @@ const Contact = () => {
                           (option?.children ?? "").toLowerCase().includes(input.toLowerCase())
                         }
                       >
-                        {FORECAST_LOCATIONS.map(city => (
-                          <Select.Option key={city} value={city}>{city}</Select.Option>
+                        {SHOOTING_LOCATION_TIERS.map((tierGroup) => (
+                          <Select.OptGroup
+                            key={tierGroup.tier}
+                            label={`${tierGroup.tierName} (${tierGroup.surchargeText})`}
+                          >
+                            {tierGroup.locations.map((city) => (
+                              <Select.Option key={city.name} value={city.name}>
+                                {city.name} {city.tag ? `[${city.tag}]` : city.note ? `(${city.note})` : ""}
+                              </Select.Option>
+                            ))}
+                          </Select.OptGroup>
                         ))}
                       </Select>
                     </Form.Item>

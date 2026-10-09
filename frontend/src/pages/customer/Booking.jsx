@@ -15,7 +15,9 @@ import {
   AutoComplete,
   Checkbox,
   Card,
-  Switch
+  Switch,
+  Tag,
+  Tooltip,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -24,12 +26,21 @@ import {
   RightOutlined,
   CalendarOutlined,
   CloudOutlined,
-  PlusOutlined
+  PlusOutlined,
+  LockOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
+import {
+  SHOOTING_LOCATION_TIERS,
+  FORECAST_LOCATIONS,
+  DEFAULT_STUDIO_LOCATION,
+  getLocationTierInfo,
+} from "../../utils/shootingLocations";
+import { getLunarInfo } from "../../utils/lunarSolar";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#BFA16A";
@@ -139,74 +150,64 @@ const Booking = () => {
     setSearchTimeout(timeout);
   };
 
-  const FORECAST_LOCATIONS = [
-    { name: "An Giang", lat: 10.5149, lon: 105.1132 },
-    { name: "Bà Rịa - Vũng Tàu", lat: 10.3460, lon: 107.0843 },
-    { name: "Bắc Giang", lat: 21.3093, lon: 106.6165 },
-    { name: "Bắc Kạn", lat: 22.2572, lon: 105.8589 },
-    { name: "Bạc Liêu", lat: 9.3477, lon: 105.5097 },
-    { name: "Bắc Ninh", lat: 21.1212, lon: 106.0880 },
-    { name: "Bến Tre", lat: 10.1094, lon: 106.5526 },
-    { name: "Bình Định", lat: 14.1667, lon: 109.0000 },
-    { name: "Bình Dương", lat: 11.1667, lon: 106.6667 },
-    { name: "Bình Phước", lat: 11.7500, lon: 106.9167 },
-    { name: "Bình Thuận", lat: 10.9333, lon: 108.1000 },
-    { name: "Cà Mau", lat: 9.0833, lon: 105.0833 },
-    { name: "Cần Thơ", lat: 10.1547, lon: 105.5005 },
-    { name: "Cao Bằng", lat: 22.6667, lon: 106.0000 },
-    { name: "Đà Nẵng", lat: 16.0544, lon: 108.2022 },
-    { name: "Đắk Lắk", lat: 12.6667, lon: 108.0500 },
-    { name: "Đắk Nông", lat: 11.9833, lon: 107.7000 },
-    { name: "Điện Biên", lat: 21.3833, lon: 103.0167 },
-    { name: "Đồng Nai", lat: 11.1167, lon: 107.1833 },
-    { name: "Đồng Tháp", lat: 10.6667, lon: 105.6667 },
-    { name: "Gia Lai", lat: 13.7500, lon: 108.2500 },
-    { name: "Hà Giang", lat: 22.7500, lon: 105.0000 },
-    { name: "Hà Nam", lat: 20.5833, lon: 106.0000 },
-    { name: "Hà Nội", lat: 21.0285, lon: 105.8048 },
-    { name: "Hà Tĩnh", lat: 18.3333, lon: 105.9000 },
-    { name: "Hải Dương", lat: 20.9167, lon: 106.3333 },
-    { name: "Hải Phòng", lat: 20.8651, lon: 106.6838 },
-    { name: "Hậu Giang", lat: 9.7833, lon: 105.4667 },
-    { name: "Hòa Bình", lat: 20.3333, lon: 105.2500 },
-    { name: "Hưng Yên", lat: 20.8333, lon: 106.0833 },
-    { name: "Khánh Hòa", lat: 12.2388, lon: 109.1967 },
-    { name: "Kiên Giang", lat: 10.2191, lon: 103.9610 },
-    { name: "Kon Tum", lat: 14.7500, lon: 107.9167 },
-    { name: "Lai Châu", lat: 22.0000, lon: 103.0000 },
-    { name: "Lâm Đồng", lat: 11.9404, lon: 108.4373 },
-    { name: "Lạng Sơn", lat: 21.7500, lon: 106.5000 },
-    { name: "Lào Cai", lat: 22.3364, lon: 103.8438 },
-    { name: "Long An", lat: 10.9050, lon: 106.6994 },
-    { name: "Nam Định", lat: 20.2500, lon: 106.2500 },
-    { name: "Nghệ An", lat: 19.3333, lon: 104.8333 },
-    { name: "Ninh Bình", lat: 20.2500, lon: 105.8333 },
-    { name: "Ninh Thuận", lat: 11.7500, lon: 108.8333 },
-    { name: "Phú Thọ", lat: 21.3333, lon: 105.1667 },
-    { name: "Phú Yên", lat: 13.1667, lon: 109.1667 },
-    { name: "Quảng Bình", lat: 17.5000, lon: 106.3333 },
-    { name: "Quảng Nam", lat: 15.5833, lon: 107.9167 },
-    { name: "Quảng Ngãi", lat: 15.0000, lon: 108.6667 },
-    { name: "Quảng Ninh", lat: 21.2500, lon: 107.3333 },
-    { name: "Quảng Trị", lat: 16.7500, lon: 107.0000 },
-    { name: "Sóc Trăng", lat: 9.6000, lon: 105.9667 },
-    { name: "Sơn La", lat: 21.1667, lon: 104.0000 },
-    { name: "Tây Ninh", lat: 11.3333, lon: 106.1667 },
-    { name: "TP. Hồ Chí Minh", lat: 10.7626, lon: 106.6602 },
-    { name: "Thái Bình", lat: 20.5000, lon: 106.3333 },
-    { name: "Thái Nguyên", lat: 21.6667, lon: 105.8333 },
-    { name: "Thanh Hóa", lat: 20.0000, lon: 105.5000 },
-    { name: "Thừa Thiên - Huế", lat: 16.3333, lon: 107.5833 },
-    { name: "Tiền Giang", lat: 10.3500, lon: 106.3500 },
-    { name: "Trà Vinh", lat: 9.6667, lon: 106.3333 },
-    { name: "Tuyên Quang", lat: 21.6667, lon: 105.8333 },
-    { name: "Vĩnh Long", lat: 10.2500, lon: 105.9667 },
-    { name: "Vĩnh Phúc", lat: 21.3000, lon: 105.6000 },
-    { name: "Yên Bái", lat: 21.5000, lon: 104.6667 }
-  ];
-
-  const defaultCity = FORECAST_LOCATIONS.find(c => c.name === "TP. Hồ Chí Minh") || FORECAST_LOCATIONS[0];
+  const defaultCity = DEFAULT_STUDIO_LOCATION;
   const [selectedWeatherCity, setSelectedWeatherCity] = useState(defaultCity);
+
+  // States lưu danh sách ngày lễ và ngày nghỉ studio từ backend
+  const [holidays, setHolidays] = useState([]);
+
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/holidays`, {
+          params: { is_active: "true" },
+        });
+        setHolidays(res.data?.holidays || []);
+      } catch (err) {
+        console.error("Lỗi lấy danh sách ngày lễ:", err);
+      }
+    };
+    fetchHolidays();
+  }, []);
+
+  /**
+   * Helper tra cứu ngày đặc biệt: Ngày lễ quốc gia, Ngày nghỉ/sự kiện studio, và Âm lịch
+   */
+  const getSpecialDayInfo = (cellDate) => {
+    if (!cellDate) return null;
+    const dateStr = cellDate.format("YYYY-MM-DD");
+    const monthDayStr = cellDate.format("MM-DD");
+
+    // 1. So khớp ngày lễ cấu hình từ DB
+    const holiday = holidays.find((h) => {
+      if (h.is_recurring_yearly) {
+        const hStart = (h.start_date || "").slice(5);
+        const hEnd = (h.end_date || "").slice(5);
+        return monthDayStr >= hStart && monthDayStr <= hEnd;
+      }
+      return dateStr >= h.start_date && dateStr <= h.end_date;
+    });
+
+    // 2. Tra cứu ngày Âm lịch
+    const lunar = getLunarInfo(cellDate);
+
+    const isNational = holiday?.type === "NATIONAL";
+    const isStudio = holiday?.type === "STUDIO";
+    const isClosed = holiday?.is_closed === true;
+
+    return {
+      holiday,
+      lunar,
+      isNational,
+      isStudio,
+      isClosed,
+      name: holiday?.name || lunar?.holidayName,
+      color:
+        holiday?.color ||
+        (isNational ? "#cf1322" : isStudio ? "#722ed1" : null),
+      surchargeNote: holiday?.surcharge_note,
+    };
+  };
 
   const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   const MONTH_NAMES = [
@@ -768,7 +769,7 @@ const Booking = () => {
                     >
                       <Select
                         showSearch
-                        value={selectedWeatherCity.name}
+                        value={selectedWeatherCity?.name}
                         onChange={(val) => {
                           const city = FORECAST_LOCATIONS.find((c) => c.name === val);
                           if (city) setSelectedWeatherCity(city);
@@ -780,13 +781,40 @@ const Booking = () => {
                         popupClassName="booking-select-dropdown"
                         disabled={shootingType === "STUDIO"}
                       >
-                        {FORECAST_LOCATIONS.map((city) => (
-                          <Select.Option key={city.name} value={city.name}>
-                            {city.name}
-                          </Select.Option>
+                        {SHOOTING_LOCATION_TIERS.map((tierGroup) => (
+                          <Select.OptGroup
+                            key={tierGroup.tier}
+                            label={`${tierGroup.tierName} (${tierGroup.surchargeText})`}
+                          >
+                            {tierGroup.locations.map((city) => (
+                              <Select.Option key={city.name} value={city.name}>
+                                {city.name} {city.tag ? `[${city.tag}]` : city.note ? `(${city.note})` : ""}
+                              </Select.Option>
+                            ))}
+                          </Select.OptGroup>
                         ))}
                       </Select>
                     </Form.Item>
+                    {shootingType === "OUTDOOR" && selectedWeatherCity && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 12,
+                          lineHeight: 1.4,
+                          padding: "4px 8px",
+                          borderRadius: 4,
+                          background: selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.08)" : "rgba(250, 140, 22, 0.08)",
+                          border: `1px solid ${selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.2)" : "rgba(250, 140, 22, 0.2)"}`,
+                        }}
+                      >
+                        <span style={{ color: selectedWeatherCity.tier === 1 ? "#389e0d" : "#d46b08", fontWeight: 600 }}>
+                          {selectedWeatherCity.tier === 1 ? "✅ " : "🚗 "}{selectedWeatherCity.tierName}: {selectedWeatherCity.surchargeText}
+                        </span>
+                        <span style={{ color: "#777", display: "block", fontSize: 11 }}>
+                          {selectedWeatherCity.distance}
+                        </span>
+                      </div>
+                    )}
                   </Col>
 
                   {shootingType === "OUTDOOR" && (
@@ -905,47 +933,117 @@ const Booking = () => {
 
                             const weather = weatherForecast[dateStr];
                             const details = weather ? getWeatherDetails(weather.code) : null;
+                            const special = getSpecialDayInfo(cell.date);
+                            const isSpecialClosed = special?.isClosed;
+
+                            const specialClass = isSpecialClosed
+                              ? " cal-cell-closed"
+                              : special?.isNational
+                              ? " cal-cell-national"
+                              : special?.isStudio
+                              ? " cal-cell-studio"
+                              : "";
 
                             return (
                               <div
                                 key={idx}
-                                className={`cal-cell${isPast ? " cal-cell-disabled" : ""}${isSelected ? " cal-cell-active" : ""}${isInRange ? " cal-cell-range" : ""}`}
+                                className={`cal-cell${isPast ? " cal-cell-disabled" : ""}${isSelected ? " cal-cell-active" : ""}${isInRange ? " cal-cell-range" : ""}${specialClass}`}
                                 onClick={() => {
-                                  if (!isPast) {
-                                    if (isRangeMode) {
-                                      if (!rangeStartDate || (rangeStartDate && rangeEndDate)) {
+                                  if (isPast) return;
+
+                                  if (isSpecialClosed) {
+                                    message.warning(
+                                      `Studio tạm đóng cửa nghỉ nhận lịch vào ngày ${cell.date.format("DD/MM/YYYY")} (${special.name || "Kỳ nghỉ studio"}). Vui lòng chọn ngày khác!`
+                                    );
+                                    return;
+                                  }
+
+                                  if (isRangeMode) {
+                                    if (!rangeStartDate || (rangeStartDate && rangeEndDate)) {
+                                      setRangeStartDate(cell.date);
+                                      setRangeEndDate(null);
+                                      setShootingSession(null);
+                                      form.setFieldsValue({ appointmentDate: null });
+                                    } else {
+                                      if (cell.date.isBefore(rangeStartDate, 'day')) {
                                         setRangeStartDate(cell.date);
                                         setRangeEndDate(null);
                                         setShootingSession(null);
                                         form.setFieldsValue({ appointmentDate: null });
+                                      } else if (cell.date.isSame(rangeStartDate, 'day')) {
+                                        setRangeStartDate(null);
+                                        setRangeEndDate(null);
+                                        setShootingSession(null);
+                                        form.setFieldsValue({ appointmentDate: null });
                                       } else {
-                                        if (cell.date.isBefore(rangeStartDate, 'day')) {
-                                          setRangeStartDate(cell.date);
-                                          setRangeEndDate(null);
-                                          setShootingSession(null);
-                                          form.setFieldsValue({ appointmentDate: null });
-                                        } else if (cell.date.isSame(rangeStartDate, 'day')) {
-                                          setRangeStartDate(null);
-                                          setRangeEndDate(null);
-                                          setShootingSession(null);
-                                          form.setFieldsValue({ appointmentDate: null });
-                                        } else {
-                                          setRangeEndDate(cell.date);
-                                          form.setFieldsValue({ appointmentDate: rangeStartDate });
-                                        }
+                                        setRangeEndDate(cell.date);
+                                        form.setFieldsValue({ appointmentDate: rangeStartDate });
                                       }
-                                    } else {
-                                      setSelectedDate(cell.date);
-                                      setShootingSession(null);
-                                      form.setFieldsValue({ appointmentDate: cell.date });
                                     }
+                                  } else {
+                                    setSelectedDate(cell.date);
+                                    setShootingSession(null);
+                                    form.setFieldsValue({ appointmentDate: cell.date });
                                   }
                                 }}
                                 style={{ opacity: cell.isCurrentMonth ? 1 : 0.3 }}
                               >
-                                <span className="cal-cell-day" style={{ color: isPast ? "#ccc" : (cell.date.day() === 0 ? "#cf1322" : "#2F2F2F") }}>
-                                  {cell.date.date()}
-                                </span>
+                                <div className="cal-cell-header">
+                                  <div style={{ display: "flex", alignItems: "baseline", gap: 3, justifyContent: "center" }}>
+                                    <span
+                                      className="cal-cell-day"
+                                      style={{
+                                        color: isPast
+                                          ? "#ccc"
+                                          : isSpecialClosed
+                                          ? "#cf1322"
+                                          : special?.isNational
+                                          ? "#cf1322"
+                                          : special?.isStudio
+                                          ? "#722ed1"
+                                          : cell.date.day() === 0
+                                          ? "#cf1322"
+                                          : "#2F2F2F",
+                                        fontWeight: special?.isNational || special?.isStudio ? 700 : 500,
+                                      }}
+                                    >
+                                      {cell.date.date()}
+                                    </span>
+
+                                    {special?.lunar && cell.isCurrentMonth && (
+                                      <span
+                                        className={`cal-cell-lunar${
+                                          special.lunar.isFirstDayOfMonth || special.lunar.isFullMoon
+                                            ? " cal-cell-lunar-highlight"
+                                            : ""
+                                        }`}
+                                        title={
+                                          special.lunar.holidayName
+                                            ? `${special.lunar.holidayName} (${special.lunar.fullLabel})`
+                                            : special.lunar.fullLabel
+                                        }
+                                      >
+                                        {special.lunar.shortLabel}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {special?.holiday && (
+                                    <div
+                                      className="cal-cell-badge"
+                                      style={{
+                                        backgroundColor:
+                                          special.color || (special.isNational ? "#cf1322" : "#722ed1"),
+                                      }}
+                                      title={`${special.name}${special.isClosed ? " (Studio tạm nghỉ)" : ""}${
+                                        special.surchargeNote ? ` - ${special.surchargeNote}` : ""
+                                      }`}
+                                    >
+                                      {special.isClosed ? "🔒 Nghỉ" : special.isNational ? "🇻🇳 Lễ" : "📸 Studio"}
+                                    </div>
+                                  )}
+                                </div>
+
                                 {weather && details && (
                                   <div className="cal-cell-weather">
                                     <span className="cal-cell-icon" title={details.label}>{details.icon}</span>
@@ -966,7 +1064,20 @@ const Booking = () => {
                         </div>
                       )}
 
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 16, paddingTop: 12, borderTop: "1px solid #f0ebe3", fontSize: 11, color: "#888" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 16, paddingTop: 12, borderTop: "1px solid #f0ebe3", fontSize: 11, color: "#888", alignItems: "center" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#cf1322", display: "inline-block" }}></span>
+                          <strong style={{ color: "#cf1322" }}>Lễ Quốc Gia</strong>
+                        </span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#722ed1", display: "inline-block" }}></span>
+                          <strong style={{ color: "#722ed1" }}>Lịch Studio / Nghỉ</strong>
+                        </span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <strong style={{ color: "#bfa16a" }}>15/8</strong>
+                          <span>Mùng 1 / Rằm ÂL</span>
+                        </span>
+                        <span style={{ borderLeft: "1px solid #ddd", height: 12, margin: "0 2px" }}></span>
                         <span>☀️ Nắng</span>
                         <span>🌤️ Ít mây</span>
                         <span>☁️ Nhiều mây</span>
@@ -1008,6 +1119,100 @@ const Booking = () => {
                                 </span>
                               )}
                             </h4>
+
+                            {(() => {
+                              const activeSpecial = getSpecialDayInfo(activeDate);
+                              return (
+                                <>
+                                  {activeSpecial?.holiday && (
+                                    <div
+                                      style={{
+                                        marginBottom: 16,
+                                        padding: "10px 14px",
+                                        borderRadius: 6,
+                                        background: activeSpecial.isNational
+                                          ? "rgba(207, 19, 34, 0.06)"
+                                          : "rgba(114, 46, 209, 0.06)",
+                                        border: `1px solid ${
+                                          activeSpecial.isNational ? "#ffa39e" : "#d3adf7"
+                                        }`,
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <span style={{ fontSize: 20 }}>
+                                        {activeSpecial.isNational ? "🇻🇳" : "📸"}
+                                      </span>
+                                      <div style={{ flex: 1 }}>
+                                        <div
+                                          style={{
+                                            fontWeight: 600,
+                                            color: activeSpecial.isNational ? "#cf1322" : "#722ed1",
+                                            fontSize: 13.5,
+                                          }}
+                                        >
+                                          {activeSpecial.name}
+                                        </div>
+                                        {activeSpecial.holiday.description && (
+                                          <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
+                                            {activeSpecial.holiday.description}
+                                          </div>
+                                        )}
+                                        {activeSpecial.surchargeNote && (
+                                          <div
+                                            style={{
+                                              fontSize: 12,
+                                              color: "#fa8c16",
+                                              fontWeight: 500,
+                                              marginTop: 4,
+                                            }}
+                                          >
+                                            ⚡ {activeSpecial.surchargeNote}
+                                          </div>
+                                        )}
+                                        {activeSpecial.isClosed && (
+                                          <div
+                                            style={{
+                                              fontSize: 12,
+                                              color: "#cf1322",
+                                              fontWeight: 600,
+                                              marginTop: 4,
+                                            }}
+                                          >
+                                            🔒 Studio tạm nghỉ nhận lịch vào ngày này.
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {activeSpecial?.lunar && (
+                                    <div
+                                      style={{
+                                        fontSize: 12.5,
+                                        color: "#666",
+                                        marginBottom: 14,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <span>🌙 Âm lịch:</span>
+                                      <strong style={{ color: "#BFA16A" }}>
+                                        {activeSpecial.lunar.fullLabel}
+                                      </strong>
+                                      {activeSpecial.lunar.holidayName && (
+                                        <Tag color="gold" style={{ margin: 0, fontSize: 11 }}>
+                                          {activeSpecial.lunar.holidayName}
+                                        </Tag>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
 
                             {selectedWeather && selectedWeatherDetails ? (
                               <div>
@@ -1485,6 +1690,61 @@ const Booking = () => {
               border-radius: 50%;
               background: #1890ff;
               box-shadow: 0 0 4px rgba(24,144,255,0.4);
+            }
+            .cal-cell-header {
+              width: 100%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 1px;
+            }
+            .cal-cell-lunar {
+              font-size: 9.5px;
+              color: #8c8c8c;
+              line-height: 1;
+              font-weight: 400;
+              margin-left: 2px;
+            }
+            .cal-cell-lunar-highlight {
+              color: #bfa16a !important;
+              font-weight: 700 !important;
+            }
+            .cal-cell-national {
+              background: #fff8f8 !important;
+              border-color: #ffa39e !important;
+            }
+            .cal-cell-national:hover {
+              border-color: #cf1322 !important;
+              box-shadow: 0 4px 12px rgba(207, 19, 34, 0.12) !important;
+            }
+            .cal-cell-studio {
+              background: #faf5ff !important;
+              border-color: #d3adf7 !important;
+            }
+            .cal-cell-studio:hover {
+              border-color: #722ed1 !important;
+              box-shadow: 0 4px 12px rgba(114, 46, 209, 0.12) !important;
+            }
+            .cal-cell-closed {
+              background: #fff1f0 !important;
+              border-color: #ffccc7 !important;
+              cursor: not-allowed !important;
+              opacity: 0.85;
+            }
+            .cal-cell-badge {
+              font-size: 8.5px;
+              padding: 1px 4px;
+              border-radius: 3px;
+              color: #fff;
+              font-weight: 600;
+              line-height: 1.2;
+              margin-top: 2px;
+              text-align: center;
+              max-width: 95%;
+              overflow: hidden;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
 
             /* Time Slot Buttons */

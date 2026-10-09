@@ -25,6 +25,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const websiteRoutes = require("./routes/websiteRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
 const cameraRentalRoutes = require("./routes/cameraRentalRoutes");
+const holidayRoutes = require("./routes/holidayRoutes");
 
 // Cron jobs
 const setupCronJobs = require("./jobs/cronJobs");
@@ -62,6 +63,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/website", websiteRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/camera-rentals", cameraRentalRoutes);
+app.use("/api/holidays", holidayRoutes);
 
 const PORT = process.env.PORT || 5000;
 
