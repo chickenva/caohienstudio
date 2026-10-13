@@ -23,23 +23,35 @@ const transporter = nodemailer.createTransport({
 exports.sendContactOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (!normalizedEmail) {
       return res.status(400).json({ message: "Vui lòng nhập email!" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ message: "Email không hợp lệ." });
+    }
+
+    const senderEmail = String(process.env.EMAIL_USER || "").trim();
+    const senderPassword = String(process.env.EMAIL_PASS || "").trim();
+    if (!senderEmail || !senderPassword) {
+      console.error("Không thể gửi OTP: thiếu cấu hình EMAIL_USER hoặc EMAIL_PASS.");
+      return res.status(503).json({ message: "Dịch vụ gửi email hiện chưa sẵn sàng. Vui lòng thử lại sau." });
     }
 
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-    await OTP.deleteMany({ email });
-    await new OTP({ email, otp: otpCode }).save();
+    const otpRecord = await new OTP({ email: normalizedEmail, otp: otpCode }).save();
 
-    await transporter.sendMail({
-      from:    `"Cao Hien Studio" <no-reply@caohien.com>`,
-      to:      email,
-      subject: "Mã xác thực gửi liên hệ - Cao Hiển Studio",
-      html: `
+    try {
+      await transporter.sendMail({
+        // Gmail requires the From address to match the authenticated mailbox.
+        from:    `"Cao Hien Studio" <${senderEmail}>`,
+        to:      normalizedEmail,
+        subject: "Mã xác thực email - Cao Hiển Studio",
+        html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
           <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
           <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
-          <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để hoàn tất yêu cầu liên hệ của bạn.</p>
+          <p style="font-size: 16px; margin-bottom: 30px; color: #333;">Sử dụng mã xác thực dưới đây để xác minh email và hoàn tất yêu cầu của bạn.</p>
           <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
             <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
           </div>
@@ -47,7 +59,18 @@ exports.sendContactOtp = async (req, res) => {
           <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
         </div>
       `,
-    });
+      });
+    } catch (mailError) {
+      // Keep any previously issued code usable if the replacement email fails.
+      await OTP.deleteOne({ _id: otpRecord._id });
+      throw mailError;
+    }
+
+    try {
+      await OTP.deleteMany({ email: normalizedEmail, _id: { $ne: otpRecord._id } });
+    } catch (cleanupError) {
+      console.error("Không thể dọn OTP cũ:", cleanupError.message);
+    }
 
     res.status(200).json({ message: "Mã OTP đã được gửi đến email của bạn!" });
   } catch (error) {
@@ -63,7 +86,8 @@ exports.sendContactOtp = async (req, res) => {
 exports.verifyContactOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const record = await OTP.findOne({ email, otp });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const record = await OTP.findOne({ email: normalizedEmail, otp: String(otp || "").trim() });
     if (!record) {
       return res.status(400).json({
         message: "Mã OTP không chính xác hoặc đã hết hạn!",

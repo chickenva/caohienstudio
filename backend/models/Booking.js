@@ -8,12 +8,17 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    // Khách hàng đặt lịch
+    // Tài khoản khách hàng (có thể trống với đơn đặt lịch không cần đăng nhập).
     customer_id: {
       type:     mongoose.Schema.Types.ObjectId,
       ref:      "User",
-      required: true,
+      default:  null,
     },
+
+    // Lưu thông tin liên hệ tại thời điểm đặt để hỗ trợ khách chưa có tài khoản.
+    customer_full_name: { type: String, default: "", trim: true },
+    customer_email:     { type: String, default: "", trim: true, lowercase: true },
+    customer_phone:     { type: String, default: "", trim: true },
 
     // Gói dịch vụ chính (sau khi admin chỉnh lại hoặc gộp)
     service_id: {
@@ -63,7 +68,7 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Buổi chụp: sáng (08–12h), chiều (13–17h), hoặc cả ngày (08–17h)
+    // Buổi chụp có thể để trống cho đến khi studio tư vấn và chốt với khách.
     shooting_session: {
       type:    String,
       enum:    ["MORNING", "AFTERNOON", "FULL_DAY"],
@@ -79,7 +84,7 @@ const bookingSchema = new mongoose.Schema(
 
     location: {
       type:     String,
-      required: true,
+      default:  "",
       trim:     true,
     },
 

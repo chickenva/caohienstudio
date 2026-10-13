@@ -17,6 +17,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
+const OTP = require("../models/OTP");
 
 const crypto = require("crypto");
 const moment = require("moment");
@@ -67,6 +68,16 @@ const generateGuestEmailFromPhone = (phone) => {
     .replace(/[^\d]/g, "");
 
   return `guest_${cleanPhone || Date.now()}@caohienstudio.local`;
+};
+
+// Chuẩn hóa thông tin khách cho cả tài khoản đã liên kết và khách đặt không cần tài khoản.
+const getBookingCustomer = (booking) => {
+  const account = booking?.customer_id;
+  return {
+    full_name: account?.full_name || booking?.customer_full_name || "Khách hàng",
+    email: account?.email || booking?.customer_email || "",
+    phone: account?.phone || booking?.customer_phone || "",
+  };
 };
 
 // Lấy tổng giá trị đơn, ưu tiên total_amount của booking, fallback sang giá service.
@@ -319,9 +330,13 @@ exports.createBookingRequest = async (req, res) => {
       extra_service_ids,
       shoot_date,       // YYYY-MM-DD (VN time)
       shooting_type,    // "STUDIO" | "OUTDOOR"
-      shooting_session, // "MORNING" | "AFTERNOON" | "FULL_DAY"
+      shooting_session, // Tùy chọn; studio sẽ chốt sau khi liên hệ khách.
       location,
       note,
+      customer_name,
+      customer_phone,
+      customer_email,
+      guest_otp,
     } = req.body;
 
     // Validate bắt buộc
@@ -334,18 +349,48 @@ exports.createBookingRequest = async (req, res) => {
     if (!shooting_type || !["STUDIO", "OUTDOOR"].includes(shooting_type)) {
       return res.status(400).json({ message: "Hình thức chụp không hợp lệ. Chọn STUDIO hoặc OUTDOOR." });
     }
-    if (!shooting_session || !["MORNING", "AFTERNOON", "FULL_DAY"].includes(shooting_session)) {
-      return res.status(400).json({ message: "Buổi chụp không hợp lệ. Chọn MORNING, AFTERNOON hoặc FULL_DAY." });
+    if (shooting_session && !["MORNING", "AFTERNOON", "FULL_DAY"].includes(shooting_session)) {
+      return res.status(400).json({ message: "Buổi chụp không hợp lệ." });
     }
-    if (shooting_type === "OUTDOOR" && !location) {
-      return res.status(400).json({ message: "Vui lòng nhập địa điểm chụp ngoại cảnh." });
-    }
-
     const customerId = getCurrentUserId(req);
 
+    let accountCustomer = null;
+    let guestCustomer = null;
+    if (customerId) {
+      accountCustomer = await User.findById(customerId).select("full_name email phone role is_active");
+      if (!accountCustomer || accountCustomer.role !== "CUSTOMER" || !accountCustomer.is_active) {
+        return res.status(401).json({ message: "Tài khoản không hợp lệ hoặc đã bị khóa." });
+      }
+    } else {
+      const normalizedEmail = String(customer_email || "").trim().toLowerCase();
+      const normalizedName = String(customer_name || "").trim();
+      const normalizedPhone = String(customer_phone || "").trim();
+      if (!normalizedName || !normalizedPhone || !normalizedEmail || !guest_otp) {
+        return res.status(400).json({ message: "Vui lòng nhập họ tên, số điện thoại, email và xác minh email bằng OTP." });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return res.status(400).json({ message: "Email không hợp lệ." });
+      }
+      if (!/^0[0-9]{9,10}$/.test(normalizedPhone)) {
+        return res.status(400).json({ message: "Số điện thoại cần bắt đầu bằng 0 và có 10–11 chữ số." });
+      }
+      const otpRecord = await OTP.findOne({ email: normalizedEmail, otp: String(guest_otp).trim() });
+      if (!otpRecord) {
+        return res.status(400).json({ message: "Mã OTP không chính xác hoặc đã hết hạn. Vui lòng xác minh lại email." });
+      }
+      guestCustomer = {
+        full_name: normalizedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+      };
+    }
+
     // Kiểm tra đơn đang xử lý
+    const customerBookingFilter = customerId
+      ? { $or: [{ customer_id: customerId }, { customer_email: accountCustomer.email.toLowerCase() }] }
+      : { customer_email: guestCustomer.email };
     const activeBooking = await Booking.findOne({
-      customer_id: customerId,
+      ...customerBookingFilter,
       status: { $in: ["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED", "IN_PROGRESS", "PENDING", "DEPOSITED"] },
     });
 
@@ -357,7 +402,7 @@ exports.createBookingRequest = async (req, res) => {
       });
     }
 
-    const service = await Service.findById(service_id); ``
+    const service = await Service.findById(service_id);
     if (!service || !service.is_active) {
       return res.status(404).json({ message: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng cung cấp" });
     }
@@ -380,29 +425,43 @@ exports.createBookingRequest = async (req, res) => {
       addonTotalPrice = addonServices.reduce((sum, s) => sum + Number(s.base_price || 0), 0);
     }
 
-    // Tính start_time/end_time từ ngày + buổi chụp
+    // Nếu khách chưa chốt buổi, lưu ngày đề xuất theo trọn ngày; ngày/giờ cụ thể
+    // sẽ được studio cập nhật sau khi trao đổi với khách.
     let startDate, endDate;
     try {
-      const times = getSessionTimes(shoot_date, shooting_session);
-      startDate = times.startDate;
-      endDate = times.endDate;
+      const parsedShootDate = moment.utc(shoot_date, "YYYY-MM-DD", true);
+      if (!parsedShootDate.isValid()) {
+        return res.status(400).json({ message: "Ngày chụp không hợp lệ." });
+      }
+      const requestedDay = moment.utc(shoot_date, "YYYY-MM-DD").utcOffset(7, true);
+      if (requestedDay.isBefore(moment().utcOffset(7).startOf("day"))) {
+        return res.status(400).json({ message: "Không thể đặt lịch trong quá khứ" });
+      }
+      if (shooting_session) {
+        const times = getSessionTimes(shoot_date, shooting_session);
+        startDate = times.startDate;
+        endDate = times.endDate;
+      } else {
+        startDate = requestedDay.clone().hour(12).minute(0).second(0).millisecond(0).utc().toDate();
+        endDate = startDate;
+      }
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
     // Kiểm tra ngày không trong quá khứ
-    if (startDate < new Date()) {
+    if (shooting_session && startDate < new Date()) {
       return res.status(400).json({ message: "Không thể đặt lịch trong quá khứ" });
     }
 
-    // Kiểm tra trùng lịch theo type
-    if (shooting_type === "STUDIO") {
+    // Chỉ giữ kiểm tra xung đột cho các request legacy có buổi chụp.
+    if (shooting_session && shooting_type === "STUDIO") {
       const conflict = await findStudioSessionConflict({ shootDateStr: shoot_date, session: shooting_session });
       if (conflict) {
         return sendConflictResponse(res, conflict,
           `Studio đã có lịch buổi ${shooting_session === "MORNING" ? "sáng" : shooting_session === "AFTERNOON" ? "chiều" : "cả ngày"} trong ngày này.`);
       }
-    } else if (shooting_type === "OUTDOOR") {
+    } else if (shooting_session && shooting_type === "OUTDOOR") {
       const conflict = await findOutdoorSessionConflict({ shootDateStr: shoot_date, session: shooting_session });
       if (conflict) {
         return sendConflictResponse(res, conflict,
@@ -413,10 +472,13 @@ exports.createBookingRequest = async (req, res) => {
     const totalAmount = Number(service.base_price || 0) + addonTotalPrice;
     const depositPercent = 30;
     const depositAmount = Math.round((totalAmount * depositPercent) / 100);
-    const finalLocation = shooting_type === "STUDIO" ? STUDIO_LOCATION : location;
+    const finalLocation = shooting_type === "STUDIO" ? STUDIO_LOCATION : (location || "");
 
     const newBooking = new Booking({
-      customer_id: customerId,
+      customer_id: customerId || null,
+      customer_full_name: accountCustomer?.full_name || guestCustomer?.full_name,
+      customer_email: accountCustomer?.email || guestCustomer?.email,
+      customer_phone: accountCustomer?.phone || guestCustomer?.phone,
       service_id: service._id,
       original_service_ids: original_service_ids || [service._id],
       extra_service_ids: validatedAddonIds,
@@ -433,6 +495,9 @@ exports.createBookingRequest = async (req, res) => {
     });
 
     const booking = await newBooking.save();
+    if (guestCustomer?.email) {
+      await OTP.deleteMany({ email: guestCustomer.email });
+    }
 
     // 1. Khi khách gửi yêu cầu -> Gửi mail thông báo về cho admin
     try {
@@ -441,7 +506,7 @@ exports.createBookingRequest = async (req, res) => {
         .populate("service_id", "name base_price")
         .populate("extra_service_ids", "name base_price");
       if (populatedBooking) {
-        mailService.sendBookingSuccessToAdminEmail(populatedBooking, populatedBooking.customer_id)
+        mailService.sendBookingSuccessToAdminEmail(populatedBooking, getBookingCustomer(populatedBooking))
           .catch(err => console.error("Lỗi gửi mail thông báo cho admin khi khách gửi yêu cầu:", err));
       }
     } catch (mailErr) {
@@ -449,7 +514,7 @@ exports.createBookingRequest = async (req, res) => {
     }
 
     return res.status(201).json({
-      message: "Yêu cầu đặt lịch đã được gửi thành công. Studio sẽ kiểm tra và gửi hợp đồng xác nhận.",
+      message: "Yêu cầu đặt lịch đã được gửi thành công. Studio sẽ liên hệ để tư vấn và chốt buổi, giờ chụp.",
       booking_id: booking._id,
       status: booking.status,
     });
@@ -740,6 +805,7 @@ exports.getContractByToken = async (req, res) => {
     }
 
     const bookingObj = booking.toObject();
+    bookingObj.customer_id = getBookingCustomer(booking);
     delete bookingObj.contract_token;
 
     // Lấy QR thanh toán mặc định của Studio từ DB (do Admin upload trong Cài đặt)
@@ -1378,14 +1444,14 @@ exports.updateBookingStatus = async (req, res) => {
           ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
           : null;
         const pdfUrl = booking.contract_file_url || null;
-        await mailService.sendDepositConfirmedEmail(booking, booking.customer_id, {
+        await mailService.sendDepositConfirmedEmail(booking, getBookingCustomer(booking), {
           contractLink,
           pdfUrl,
           payment_method: "MANUAL",
           confirmedAmount: booking.deposit_amount || 0,
         });
       } else {
-        await mailService.sendStatusChangeEmail(booking, booking.customer_id);
+        await mailService.sendStatusChangeEmail(booking, getBookingCustomer(booking));
       }
     }
 
@@ -1616,7 +1682,7 @@ exports.adminConfirmDeposit = async (req, res) => {
       : null;
     const pdfUrl = `${backendUrl}/public/contracts/contract_${booking._id}.pdf`;
 
-    await mailService.sendDepositConfirmedEmail(booking, booking.customer_id, {
+    await mailService.sendDepositConfirmedEmail(booking, getBookingCustomer(booking), {
       contractLink,
       pdfUrl,
       payment_method,
@@ -1775,7 +1841,9 @@ exports.rescheduleBooking = async (req, res) => {
     // Sinh lại PDF hợp đồng (ghi đè file cũ)
     let pdfUrl = null;
     try {
-      const { fileName } = await generateContractPdf(booking, contractLink);
+      const contractData = booking.toObject();
+      contractData.customer_id = getBookingCustomer(booking);
+      const { fileName } = await generateContractPdf(contractData, contractLink);
       pdfUrl = `${backendUrl}/public/contracts/${fileName}`;
     } catch (pdfErr) {
       console.error("[rescheduleBooking] Lỗi sinh PDF:", pdfErr.message);
@@ -1785,7 +1853,7 @@ exports.rescheduleBooking = async (req, res) => {
       .populate("assigned_staff_ids", "full_name email");
 
     // Gửi email thông báo dời lịch cho khách (fire-and-forget, không block response)
-    mailService.sendRescheduleEmail(populatedBooking, populatedBooking.customer_id, {
+    mailService.sendRescheduleEmail(populatedBooking, getBookingCustomer(populatedBooking), {
       oldStartTime,
       oldEndTime,
       oldLocation,
@@ -1826,6 +1894,12 @@ exports.sendContract = async (req, res) => {
     const booking = await Booking.findById(id).populate("customer_id");
     if (!booking) {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
+
+    if (!booking.shooting_type || !booking.shooting_session) {
+      return res.status(400).json({
+        message: "Vui lòng cập nhật hình thức, buổi và giờ chụp sau khi tư vấn với khách trước khi tạo hợp đồng.",
+      });
     }
 
     if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
@@ -1904,7 +1978,7 @@ exports.getContractInfo = async (req, res) => {
 
     return res.status(200).json({
       booking_id: booking._id,
-      customer_name: booking.customer_id?.full_name,
+      customer_name: booking.customer_id?.full_name || booking.customer_full_name,
       service_name: booking.service_id?.name,
       status: booking.status,
       contract_link: contractLink,

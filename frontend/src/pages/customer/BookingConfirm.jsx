@@ -1,23 +1,44 @@
 /**
  * BookingConfirm.jsx
- * Trang xác nhận hợp đồng — khách đọc hợp đồng và xác nhận trước khi thanh toán.
+ * Trang khách xem lại thông tin và gửi yêu cầu đặt lịch.
  */
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Result, Button, message, Row, Col, Spin, Divider, Input } from "antd";
-import { SendOutlined, LeftOutlined, CheckCircleFilled } from "@ant-design/icons";
+import { Form, Radio, Button, message, Row, Col, Spin, Divider, Input, Modal } from "antd";
+import { LeftOutlined, CheckCircleFilled } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
 import "../../Home.css";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 const PRIMARY_COLOR = "#BFA16A";
+const readSessionJson = (key) => {
+  try {
+    return JSON.parse(sessionStorage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
+};
+const readStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    return null;
+  }
+};
 
 // Trang xác nhận lại thông tin trước khi khách gửi yêu cầu đặt lịch.
 const BookingConfirm = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const bookingData = location.state?.bookingData;
+  const [bookingData, setBookingData] = useState(
+    () => location.state?.bookingData || readSessionJson("pendingBookingData"),
+  );
+  const [contactForm] = Form.useForm();
+  const [otpForm] = Form.useForm();
+  const [contactMode, setContactMode] = useState(() =>
+    localStorage.getItem("token") ? "account" : "guest",
+  );
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -25,11 +46,40 @@ const BookingConfirm = () => {
   const [servicesInfo, setServicesInfo] = useState([]);
   const [addonsInfo, setAddonsInfo] = useState([]);
   const [note, setNote] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [submittedAsAccount, setSubmittedAsAccount] = useState(false);
+  const [currentUser] = useState(readStoredUser);
+  const [isAuthenticated] = useState(() => Boolean(localStorage.getItem("token") && currentUser));
+
+  useEffect(() => {
+    if (location.state?.bookingData) {
+      setBookingData(location.state.bookingData);
+      sessionStorage.setItem("pendingBookingData", JSON.stringify(location.state.bookingData));
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (!bookingData) {
       navigate("/booking");
       return;
+    }
+
+    setNote(bookingData.note || "");
+    const savedContact = readSessionJson("pendingBookingContact");
+    if (savedContact) {
+      contactForm.setFieldsValue(savedContact);
+    } else if (isAuthenticated && currentUser) {
+      contactForm.setFieldsValue({
+        full_name: currentUser.full_name || currentUser.name || "",
+        phone: currentUser.phone || "",
+        email: currentUser.email || "",
+      });
+    }
+    if (isAuthenticated) {
+      setContactMode("account");
     }
 
     // Tải chi tiết các gói dịch vụ để hiển thị bảng xác nhận.
@@ -62,22 +112,20 @@ const BookingConfirm = () => {
     };
 
     fetchDetails();
-  }, [bookingData, navigate]);
+  }, [bookingData, contactForm, currentUser, isAuthenticated, navigate]);
 
   if (!bookingData) {
     return null;
   }
 
-  // Gửi yêu cầu đặt lịch — không thanh toán ngay
-  const handleSubmitRequest = async () => {
+  const submitBookingRequest = async (guestOtp = "") => {
     try {
       setSubmitting(true);
       const token = localStorage.getItem("token");
 
-      if (!token) {
-        message.warning("Vui lòng đăng nhập lại");
-        navigate("/login");
-        return;
+      if (contactMode === "account" && !token) {
+        navigate("/login", { state: { returnTo: "/booking/confirm" } });
+        return false;
       }
 
       const submitPayload = {
@@ -85,22 +133,86 @@ const BookingConfirm = () => {
         note: note || bookingData.note || "",
       };
 
-      await axios.post(
-        `${API_URL}/bookings/request`,
-        submitPayload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      if (contactMode === "guest") {
+        const guest = await contactForm.validateFields(["full_name", "phone", "email"]);
+        const normalizedEmail = guest.email.trim().toLowerCase();
+        submitPayload.customer_name = guest.full_name.trim();
+        submitPayload.customer_phone = guest.phone.trim();
+        submitPayload.customer_email = normalizedEmail;
+        submitPayload.guest_otp = guestOtp.trim();
+      }
+
+      const requestConfig = contactMode === "account" && token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+      await axios.post(`${API_URL}/bookings/request`, submitPayload, requestConfig);
+      setSubmittedAsAccount(contactMode === "account" && Boolean(token));
+      sessionStorage.removeItem("pendingBookingData");
+      sessionStorage.removeItem("pendingBookingDraft");
+      sessionStorage.removeItem("pendingBookingContact");
 
       setSubmitted(true);
+      return true;
     } catch (err) {
+      if (err?.errorFields) return;
       console.error("Booking request error:", err);
       if (err.response?.status === 409) {
-        message.error(err.response.data.message || "Studio đã có lịch trong khung giờ này. Vui lòng chọn thời gian khác.");
+        message.error(err.response.data.message || "Lịch ngày này vừa thay đổi. Vui lòng chọn ngày khác hoặc liên hệ studio.");
       } else {
         message.error(err.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu");
       }
+      return false;
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Khách chưa đăng nhập: gửi OTP ngay khi bấm gửi yêu cầu, sau đó xác thực trong hộp thoại.
+  const handleSubmitRequest = async () => {
+    if (contactMode === "account") {
+      await submitBookingRequest();
+      return;
+    }
+
+    try {
+      const guest = await contactForm.validateFields(["full_name", "phone", "email"]);
+      const normalizedEmail = guest.email.trim().toLowerCase();
+      sessionStorage.setItem("pendingBookingContact", JSON.stringify({
+        full_name: guest.full_name,
+        phone: guest.phone,
+        email: normalizedEmail,
+      }));
+      setOtpEmail(normalizedEmail);
+      setOtpSent(false);
+      setOtpModalVisible(true);
+      setOtpLoading(true);
+      await axios.post(`${API_URL}/contacts/send-otp`, { email: normalizedEmail });
+      setOtpSent(true);
+      message.success("Mã OTP đã được gửi đến email của bạn.");
+    } catch (err) {
+      if (err?.errorFields) return;
+      setOtpModalVisible(false);
+      message.error(err.response?.data?.message || "Không thể gửi mã OTP. Vui lòng thử lại.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleOtpConfirm = async ({ otp }) => {
+    setOtpLoading(true);
+    try {
+      await axios.post(`${API_URL}/contacts/verify-otp`, {
+        email: otpEmail,
+        otp: otp.trim(),
+      });
+      const wasSubmitted = await submitBookingRequest(otp);
+      if (wasSubmitted) setOtpModalVisible(false);
+    } catch (err) {
+      if (!err?.errorFields) {
+        message.error(err.response?.data?.message || "Mã OTP không chính xác hoặc đã hết hạn.");
+      }
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -114,11 +226,6 @@ const BookingConfirm = () => {
 
   // Màn hình thành công sau khi gửi yêu cầu (Đã nâng cấp sang trọng, chuyên nghiệp & đồng bộ)
   if (submitted) {
-    const mainPrice = servicesInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
-    const addonsPrice = addonsInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
-    const totalPrice = mainPrice + addonsPrice;
-    const depositPrice = Math.round(totalPrice * 0.3);
-
     return (
       <div className="home-page-container" style={{ minHeight: "100vh", padding: "80px 20px 80px", background: "#FAF7F2" }}>
         <div className="glow-spotlight-light" style={{ top: "10%", left: "10%" }}></div>
@@ -170,25 +277,27 @@ const BookingConfirm = () => {
               >
                 VỀ TRANG CHỦ
               </Button>
-              <Button
-                type="primary"
-                size="large"
-                onClick={() => navigate("/customer/my-bookings")}
-                style={{
-                  background: "linear-gradient(135deg, #D4B26F 0%, #BFA16A 100%)",
-                  borderColor: PRIMARY_COLOR,
-                  color: "#FFFFFF",
-                  height: 50,
-                  padding: "0 32px",
-                  borderRadius: 8,
-                  letterSpacing: 1,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  boxShadow: "0 4px 14px rgba(191, 161, 106, 0.35)",
-                }}
-              >
-                XEM ĐƠN CỦA TÔI
-              </Button>
+              {submittedAsAccount && (
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={() => navigate("/customer/my-bookings")}
+                  style={{
+                    background: "linear-gradient(135deg, #D4B26F 0%, #BFA16A 100%)",
+                    borderColor: PRIMARY_COLOR,
+                    color: "#FFFFFF",
+                    height: 50,
+                    padding: "0 32px",
+                    borderRadius: 8,
+                    letterSpacing: 1,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    boxShadow: "0 4px 14px rgba(191, 161, 106, 0.35)",
+                  }}
+                >
+                  XEM ĐƠN CỦA TÔI
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -239,7 +348,9 @@ const BookingConfirm = () => {
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Địa điểm</div>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>{bookingData.location}</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>
+                    {bookingData.location || "Chưa chọn — bạn có thể trao đổi với studio sau"}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Ngày chụp</div>
@@ -248,13 +359,9 @@ const BookingConfirm = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Buổi chụp</div>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: "#2F2F2F" }}>
-                    {
-                      bookingData.shooting_session === "MORNING" ? "Buổi sáng (08:00–12:00)" :
-                        bookingData.shooting_session === "AFTERNOON" ? "Buổi chiều (13:00–17:00)" :
-                          "Cả ngày (08:00–17:00)"
-                    }
+                  <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Buổi và giờ chụp</div>
+                  <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7 }}>
+                    Studio sẽ liên hệ để tư vấn và chốt buổi, giờ chụp sau khi nhận yêu cầu.
                   </div>
                 </div>
                 {bookingData.note && (
@@ -317,6 +424,89 @@ const BookingConfirm = () => {
             </Col>
           </Row>
 
+          <Divider style={{ margin: "28px 0 22px" }} />
+          <div>
+            <h3 style={{ fontSize: 14, color: PRIMARY_COLOR, textTransform: "uppercase", letterSpacing: 2, margin: "0 0 8px" }}>
+              Thông tin khách hàng
+            </h3>
+            <Radio.Group
+              value={contactMode}
+              onChange={(event) => setContactMode(event.target.value)}
+              style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}
+            >
+              <Radio value="guest">Tiếp tục không cần tài khoản</Radio>
+              <Radio value="account">Đăng nhập / đăng ký</Radio>
+            </Radio.Group>
+
+            {contactMode === "guest" ? (
+              <Form
+                form={contactForm}
+                layout="vertical"
+                requiredMark={false}
+                initialValues={readSessionJson("pendingBookingContact") || {
+                  full_name: currentUser?.full_name || currentUser?.name || "",
+                  phone: currentUser?.phone || "",
+                  email: currentUser?.email || "",
+                }}
+                onValuesChange={(_, values) => {
+                  sessionStorage.setItem("pendingBookingContact", JSON.stringify(values));
+                }}
+              >
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      label="Họ và tên"
+                      name="full_name"
+                      rules={[{ required: true, whitespace: true, message: "Vui lòng nhập họ và tên." }]}
+                    >
+                      <Input size="large" placeholder="Nguyễn Văn A" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      label="Số điện thoại"
+                      name="phone"
+                      rules={[
+                        { required: true, message: "Vui lòng nhập số điện thoại." },
+                        { pattern: /^0[0-9]{9,10}$/, message: "Số điện thoại cần bắt đầu bằng 0 và có 10–11 chữ số." },
+                      ]}
+                    >
+                      <Input size="large" placeholder="0912345678" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      label="Email"
+                      name="email"
+                      rules={[{ required: true, type: "email", message: "Vui lòng nhập email hợp lệ." }]}
+                    >
+                      <Input size="large" placeholder="email@example.com" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
+            ) : isAuthenticated ? (
+              <div style={{ background: "#fff", border: "1px solid #E8DED2", padding: "16px 18px", color: "#555", lineHeight: 1.8 }}>
+                <strong>{currentUser?.full_name || currentUser?.name || "Tài khoản của bạn"}</strong>
+                <div>{currentUser?.phone || "Chưa có số điện thoại"}</div>
+                <div>{currentUser?.email || ""}</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Button
+                  type="primary"
+                  onClick={() => navigate("/login", { state: { returnTo: "/booking/confirm" } })}
+                  style={{ background: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
+                >
+                  ĐĂNG NHẬP
+                </Button>
+                <Button onClick={() => navigate("/register", { state: { returnTo: "/booking/confirm" } })}>
+                  ĐĂNG KÝ
+                </Button>
+              </div>
+            )}
+          </div>
+
           <div style={{ marginTop: 40, textAlign: "center" }}>
             <Button
               type="primary"
@@ -342,6 +532,64 @@ const BookingConfirm = () => {
           </div>
         </div>
       </div>
+      <Modal
+        title="Xác thực email để gửi yêu cầu đặt lịch"
+        open={otpModalVisible}
+        footer={null}
+        centered
+        maskClosable={false}
+        destroyOnClose
+        onCancel={() => {
+          if (otpLoading || submitting) return;
+          setOtpModalVisible(false);
+          setOtpSent(false);
+          otpForm.resetFields();
+        }}
+      >
+        <div style={{ textAlign: "center", padding: "10px 0" }}>
+          {otpSent ? (
+            <>
+              <p style={{ color: "#555", marginBottom: 20 }}>
+                Nhập mã <strong>4 chữ số</strong> đã gửi đến <strong style={{ color: PRIMARY_COLOR }}>{otpEmail}</strong>
+                <br />
+                <span style={{ fontSize: 12, color: "#888", fontStyle: "italic" }}>
+                  Vui lòng kiểm tra hộp thư Rác (Spam) nếu chưa nhận được email.
+                </span>
+              </p>
+              <Form form={otpForm} onFinish={handleOtpConfirm}>
+                <Form.Item
+                  name="otp"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập mã OTP." },
+                    { pattern: /^\d{4}$/, message: "Mã OTP gồm 4 chữ số." },
+                  ]}
+                >
+                  <Input
+                    autoFocus
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="----"
+                    style={{ textAlign: "center", fontSize: 28, letterSpacing: 12, height: 56 }}
+                  />
+                </Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={otpLoading || submitting}
+                  block
+                  style={{ background: PRIMARY_COLOR, borderColor: PRIMARY_COLOR, height: 46, letterSpacing: 1 }}
+                >
+                  XÁC NHẬN & GỬI YÊU CẦU ĐẶT LỊCH
+                </Button>
+              </Form>
+            </>
+          ) : (
+            <div style={{ padding: "20px 0", color: "#555" }}>
+              {otpLoading ? "Đang gửi mã OTP đến email của bạn..." : "Đang chuẩn bị gửi OTP..."}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

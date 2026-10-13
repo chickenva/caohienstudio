@@ -139,6 +139,12 @@ exports.sendBookingSuccessToAdminEmail = async (booking, customer) => {
     const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
     if (!adminEmail) return;
 
+    const customerInfo = customer || {
+      full_name: booking.customer_full_name || "Khách hàng",
+      email: booking.customer_email || "",
+      phone: booking.customer_phone || "",
+    };
+
     const formatList = (strList) => strList.map(item => `- ${item}`).join("<br/>");
     const mainServiceName = booking.service_id?.name ? `- ${booking.service_id.name}` : "- Gói dịch vụ";
     const addonNames = booking.extra_service_ids && booking.extra_service_ids.length > 0
@@ -146,16 +152,16 @@ exports.sendBookingSuccessToAdminEmail = async (booking, customer) => {
       : "Không có";
 
     const content = `
-      <p style="font-size: 15px; color: #555; margin-top: 0; margin-bottom: 25px;">Hệ thống vừa ghi nhận một đơn đặt lịch chụp ảnh mới từ khách hàng <strong>${customer.full_name}</strong>.</p>
+      <p style="font-size: 15px; color: #555; margin-top: 0; margin-bottom: 25px;">Hệ thống vừa ghi nhận một đơn đặt lịch chụp ảnh mới từ khách hàng <strong>${customerInfo.full_name || "Khách hàng"}</strong>.</p>
 
       <h3 style="font-size: 16px; color: #BFA16A; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 0; margin-bottom: 10px;">Thông Tin Đơn Đặt Lịch</h3>
       ${renderTable([
         { label: "Mã đơn", value: `#${booking._id.toString().slice(-8).toUpperCase()}` },
-        { label: "Khách hàng", value: `${customer.full_name} <br/> <a href="tel:${customer.phone}" style="color: #222; text-decoration: none;">${customer.phone || ""}</a> | <a href="mailto:${customer.email}" style="color: #BFA16A; text-decoration: none;">${customer.email || ""}</a>` },
+        { label: "Khách hàng", value: `${customerInfo.full_name || "Khách hàng"} <br/> <a href="tel:${customerInfo.phone}" style="color: #222; text-decoration: none;">${customerInfo.phone || ""}</a> | <a href="mailto:${customerInfo.email}" style="color: #BFA16A; text-decoration: none;">${customerInfo.email || ""}</a>` },
         { label: "Gói dịch vụ chính", value: mainServiceName },
         { label: "Gói đi kèm", value: addonNames },
         { label: "Ngày chụp", value: moment(booking.start_time).format("DD/MM/YYYY") },
-        { label: "Thời gian chụp", value: `${moment(booking.start_time).format("HH:mm")} - ${moment(booking.end_time).format("HH:mm")}` },
+        { label: "Thời gian chụp", value: booking.shooting_session ? `${moment(booking.start_time).format("HH:mm")} - ${moment(booking.end_time).format("HH:mm")}` : "Studio sẽ liên hệ để tư vấn và chốt buổi/giờ" },
         { label: "Địa điểm", value: booking.location },
         { label: "Tổng tiền", value: formatCurrency(booking.total_amount) },
         { label: "Trạng thái", value: `<span style="color: #BFA16A; font-weight: bold;">${getStatusText(booking.status)}</span>` }

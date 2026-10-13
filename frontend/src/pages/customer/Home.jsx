@@ -3,22 +3,18 @@
  * Trang chủ website: hero, dịch vụ, album nổi bật và CTA liên hệ.
  */
 import React, { useState, useEffect } from "react";
-import { Row, Col, Button, Form, Input, message, Spin } from "antd";
+import { Row, Col, Button, Spin } from "antd";
 import {
   ArrowRightOutlined,
   CheckOutlined,
   ClockCircleOutlined,
   CameraOutlined,
   EnvironmentOutlined,
-  PhoneOutlined,
-  MailOutlined,
   CalendarOutlined,
   StarFilled,
-  SendOutlined,
   FormOutlined,
   CreditCardOutlined,
-  FileImageOutlined,
-  FacebookOutlined
+  FileImageOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -54,8 +50,7 @@ const categoryLabels = {
 // Trang chủ khách hàng hiển thị hero, dịch vụ nổi bật và album tiêu biểu.
 const Home = () => {
   const navigate = useNavigate();
-  const [contactForm] = Form.useForm();
-  
+
   // States for API Data
   const [services, setServices] = useState([]);
   const [galleries, setGalleries] = useState([]);
@@ -63,7 +58,6 @@ const Home = () => {
   
   // Loading & Action states
   const [loading, setLoading] = useState(true);
-  const [contactLoading, setContactLoading] = useState(false);
 
   // Marquee string
   const marqueeText = "CAO HIỂN STUDIO ✦ TIMELESS ROMANCE ✦ ELEGANT PORTRAIT ✦ FINE ART WEDDING ✦ CINEMATIC WEDDING DOCUMENTARY ✦ CREATIVE SPACE ✦ ".repeat(8);
@@ -155,21 +149,6 @@ const Home = () => {
       revealElements.forEach((el) => observer.unobserve(el));
     };
   }, [loading, services, galleries]);
-
-  // 3. Handle Contact Submission
-  const handleContactSubmit = async (values) => {
-    setContactLoading(true);
-    try {
-      await axios.post(`${API_URL}/contacts`, values);
-      message.success("Cảm ơn bạn! Cao Hiển Studio đã nhận được yêu cầu tư vấn. Nhân viên sẽ liên hệ với bạn trong vòng 24h.");
-      contactForm.resetFields();
-    } catch (err) {
-      console.error("Submit contact error:", err);
-      message.error("Gửi lời nhắn thất bại. Vui lòng thử lại sau hoặc gọi hotline trực tiếp.");
-    } finally {
-      setContactLoading(false);
-    }
-  };
 
   // Helper for pricing
   const formatPrice = (price) => {
@@ -293,7 +272,76 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          3. FEATURED SERVICES
+          3. FEATURED PORTFOLIO / GALLERY
+      ========================================== */}
+      <section style={{ padding: "100px 20px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "60px", flexWrap: "wrap", gap: "20px" }} className="scroll-reveal">
+            <div>
+              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" }}>
+                Selected Work
+              </span>
+              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "42px", fontWeight: "300", marginTop: "10px", textTransform: "none", margin: 0 }}>
+                Thư Viện Ảnh Của Chúng Tôi
+              </h2>
+            </div>
+            <button className="btn-premium-outline" onClick={() => navigate("/galleries")}>
+              XEM TOÀN BỘ ALBUM <ArrowRightOutlined />
+            </button>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "60px 0" }}><Spin size="large" /></div>
+          ) : (
+            <div className="portfolio-masonry">
+              {displayGalleries.map((item, index) => {
+                const layoutClass =
+                  index === 0
+                    ? "portfolio-item-featured"
+                    : index <= 2
+                      ? "portfolio-item-side"
+                      : "portfolio-item-wide";
+                const imageUrl = getGalleryImageUrl(
+                  item,
+                  index === 0 ? "cover" : "grid",
+                  FALLBACK_PORTRAIT,
+                );
+                const imageSrcSet = getGalleryImageSrcSet(imageUrl);
+
+                return (
+                  <div 
+                    key={item._id} 
+                    className={`portfolio-item-luxury ${layoutClass} scroll-reveal stagger-${index + 1}`}
+                    onClick={() => navigate(`/galleries/${item._id}`)}
+                  >
+                    <img 
+                      className="portfolio-item-image" 
+                      src={imageUrl}
+                      srcSet={imageSrcSet}
+                      sizes={index === 0 ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 42vw"}
+                      alt={item.title}
+                      referrerPolicy="no-referrer"
+                      loading={index < 2 ? "eager" : "lazy"}
+                      fetchPriority={index < 2 ? "high" : "auto"}
+                      decoding="async"
+                      onError={getImageErrorHandler(FALLBACK_PORTRAIT)}
+                    />
+                    <div className="portfolio-item-overlay" />
+                    <div className="portfolio-item-info">
+                      <span className="portfolio-item-category">{categoryLabels[item.category] || item.category}</span>
+                      <h3 className="portfolio-item-title">{item.title}</h3>
+                      {item.location && <p className="portfolio-item-desc"><EnvironmentOutlined style={{ marginRight: "4px" }} /> {item.location}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ==========================================
+          4. FEATURED SERVICES
       ========================================== */}
       <section style={{ padding: "80px 20px", background: "#FAF7F2" }} className="full-bleed">
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -379,75 +427,6 @@ const Home = () => {
                 </button>
               </div>
             </>
-          )}
-        </div>
-      </section>
-
-      {/* ==========================================
-          4. FEATURED PORTFOLIO / GALLERY
-      ========================================== */}
-      <section style={{ padding: "100px 20px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "60px", flexWrap: "wrap", gap: "20px" }} className="scroll-reveal">
-            <div>
-              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" }}>
-                Selected Work
-              </span>
-              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "42px", fontWeight: "300", marginTop: "10px", textTransform: "none", margin: 0 }}>
-                Thư Viện Ảnh Của Chúng Tôi
-              </h2>
-            </div>
-            <button className="btn-premium-outline" onClick={() => navigate("/galleries")}>
-              XEM TOÀN BỘ ALBUM <ArrowRightOutlined />
-            </button>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: "center", padding: "60px 0" }}><Spin size="large" /></div>
-          ) : (
-            <div className="portfolio-masonry">
-              {displayGalleries.map((item, index) => {
-                const layoutClass =
-                  index === 0
-                    ? "portfolio-item-featured"
-                    : index <= 2
-                      ? "portfolio-item-side"
-                      : "portfolio-item-wide";
-                const imageUrl = getGalleryImageUrl(
-                  item,
-                  index === 0 ? "cover" : "grid",
-                  FALLBACK_PORTRAIT,
-                );
-                const imageSrcSet = getGalleryImageSrcSet(imageUrl);
-
-                return (
-                  <div 
-                    key={item._id} 
-                    className={`portfolio-item-luxury ${layoutClass} scroll-reveal stagger-${index + 1}`}
-                    onClick={() => navigate(`/galleries/${item._id}`)}
-                  >
-                    <img 
-                      className="portfolio-item-image" 
-                      src={imageUrl}
-                      srcSet={imageSrcSet}
-                      sizes={index === 0 ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 42vw"}
-                      alt={item.title}
-                      referrerPolicy="no-referrer"
-                      loading={index < 2 ? "eager" : "lazy"}
-                      fetchPriority={index < 2 ? "high" : "auto"}
-                      decoding="async"
-                      onError={getImageErrorHandler(FALLBACK_PORTRAIT)}
-                    />
-                    <div className="portfolio-item-overlay" />
-                    <div className="portfolio-item-info">
-                      <span className="portfolio-item-category">{categoryLabels[item.category] || item.category}</span>
-                      <h3 className="portfolio-item-title">{item.title}</h3>
-                      {item.location && <p className="portfolio-item-desc"><EnvironmentOutlined style={{ marginRight: "4px" }} /> {item.location}</p>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           )}
         </div>
       </section>
@@ -643,136 +622,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ==========================================
-          9. CONTACT SECTION (Form & Info)
-      ========================================== */}
-      <section style={{ padding: "100px 20px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <Row gutter={[60, 40]}>
-            {/* Info Column */}
-            <Col xs={24} md={10} className="scroll-reveal">
-              <span style={{ color: "#BFA16A", letterSpacing: "3px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase", display: "block", marginBottom: "15px" }}>
-                Keep in Touch
-              </span>
-              <h2 className="font-serif-luxury" style={{ color: "#1F1F1F", fontSize: "40px", fontWeight: "300", marginBottom: "40px", textTransform: "none" }}>
-                Thông Tin Liên Hệ
-              </h2>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <EnvironmentOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
-                  <div>
-                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Địa Chỉ</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>34B4 DT 887 , phường An Hội , tỉnh Vĩnh Long</p>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <PhoneOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
-                  <div>
-                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Hotline / Zalo</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>
-                      <a href={import.meta.env.VITE_ZALO_URL || "https://zalo.me/0979767602"} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
-                        (+84) 979 7676 02
-                      </a>
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <FacebookOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
-                  <div>
-                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Fanpage Facebook</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>
-                      <a href="https://www.facebook.com/caohienstudio" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <span>Cao Hiển Studio</span>
-                        <ArrowRightOutlined style={{ fontSize: "11px" }} />
-                      </a>
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <MailOutlined style={{ fontSize: "20px", color: "#BFA16A", marginTop: "4px" }} />
-                  <div>
-                    <h5 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", color: "#2F2F2F", margin: "0 0 6px 0", fontWeight: "600" }}>Email</h5>
-                    <p style={{ color: "#555555", fontSize: "14px", lineHeight: "1.6" }}>caohienstudio@gmail.com</p>
-                  </div>
-                </div>
-              </div>
-            </Col>
-
-            {/* Form Column */}
-            <Col xs={24} md={14} className="scroll-reveal stagger-1">
-              <div className="glass-panel" style={{ padding: "40px", borderRadius: "0px" }}>
-                <h3 className="font-serif-luxury" style={{ color: "#2F2F2F", fontSize: "28px", fontWeight: "300", marginBottom: "30px" }}>
-                  Gửi Yêu Cầu Tư Vấn Nhanh
-                </h3>
-
-                <Form form={contactForm} layout="vertical" onFinish={handleContactSubmit}>
-                  <Form.Item
-                    label="Họ và Tên"
-                    name="name"
-                    rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
-                  >
-                    <Input size="large" placeholder="Nguyễn Văn A" />
-                  </Form.Item>
-
-                  <Row gutter={20}>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        label="Số Điện Thoại"
-                        name="phone"
-                        rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
-                      >
-                        <Input size="large" placeholder="0912345678" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        label="Email (Tùy chọn)"
-                        name="email"
-                        rules={[{ type: "email", message: "Email không hợp lệ!" }]}
-                      >
-                        <Input size="large" placeholder="email@gmail.com" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Form.Item
-                    label="Lời Nhắn / Dịch Vụ Cần Tư Vấn"
-                    name="message"
-                    rules={[{ required: true, message: "Vui lòng để lại lời nhắn!" }]}
-                  >
-                    <Input.TextArea rows={4} placeholder="Tôi muốn tư vấn về gói chụp cưới phóng sự..." />
-                  </Form.Item>
-
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={contactLoading}
-                    icon={<SendOutlined />}
-                    style={{
-                      background: "#BFA16A",
-                      borderColor: "#BFA16A",
-                      color: "#FFFFFF",
-                      height: "50px",
-                      width: "100%",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      letterSpacing: "1px",
-                      borderRadius: 0,
-                      marginTop: "10px"
-                    }}
-                  >
-                    GỬI LỜI NHẮN
-                  </Button>
-                </Form>
-              </div>
-            </Col>
-          </Row>
-        </div>
-      </section>
     </div>
   );
 };

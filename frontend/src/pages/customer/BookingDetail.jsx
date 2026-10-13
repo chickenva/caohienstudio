@@ -372,7 +372,8 @@ const BookingDetail = () => {
           <Descriptions.Item label="Buổi chụp">
             {booking.shooting_session === "MORNING" ? "Buổi sáng (08:00–12:00)" :
               booking.shooting_session === "AFTERNOON" ? "Buổi chiều (13:00–17:00)" :
-                "Cả ngày (08:00–17:00)"}
+                booking.shooting_session === "FULL_DAY" ? "Cả ngày (08:00–17:00)" :
+                  "Studio sẽ liên hệ để tư vấn và chốt buổi/giờ"}
           </Descriptions.Item>
 
           <Descriptions.Item label="Dịch vụ chính">

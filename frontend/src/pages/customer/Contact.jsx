@@ -702,7 +702,7 @@ const Contact = () => {
                             checked={isRangeMode}
                             onChange={(checked) => {
                               setIsRangeMode(checked);
-                              form.setFieldsValue({ shoot_date: null });
+                              form.setFieldsValue({ shoot_date: null, ...(checked ? { shoot_time: null } : {}) });
                             }}
                             style={{ background: isRangeMode ? "#BFA16A" : "#ccc", transform: "scale(0.85)", transformOrigin: "right center" }}
                           />
@@ -730,15 +730,21 @@ const Contact = () => {
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="Giờ chụp dự kiến" name="shoot_time">
-                      <TimePicker
-                        size="large"
-                        format="HH:mm"
-                        placeholder="Chọn giờ..."
-                        minuteStep={15}
-                        style={{ width: "100%", borderRadius: 0 }}
-                      />
-                    </Form.Item>
+                    {isRangeMode ? (
+                      <div style={{ marginTop: 30, padding: "12px 14px", background: "rgba(191,161,106,0.06)", border: "1px solid rgba(191,161,106,0.2)", color: "#666", fontSize: 13, lineHeight: 1.7 }}>
+                        Studio sẽ liên hệ để tư vấn và chốt buổi, giờ chụp.
+                      </div>
+                    ) : (
+                      <Form.Item label="Giờ chụp dự kiến" name="shoot_time">
+                        <TimePicker
+                          size="large"
+                          format="HH:mm"
+                          placeholder="Chọn giờ..."
+                          minuteStep={15}
+                          style={{ width: "100%", borderRadius: 0 }}
+                        />
+                      </Form.Item>
+                    )}
                   </Col>
                 </Row>
 

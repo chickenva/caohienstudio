@@ -41,6 +41,22 @@ exports.verifyToken = (req, res, next) => {
   }
 };
 
+// Xác thực tùy chọn: cho phép khách gửi yêu cầu công khai, đồng thời gắn user
+// vào request nếu có token đăng nhập hợp lệ.
+exports.optionalAuth = (req, res, next) => {
+  const token = getTokenFromHeader(req);
+  if (!token) return next();
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    return next();
+  } catch {
+    return res.status(401).json({
+      message: "Token không hợp lệ hoặc đã hết hạn",
+    });
+  }
+};
+
 /**
  * Middleware xác thực quyền ADMIN.
  * Lấy user thực từ DB (thay vì chỉ dùng payload token) để đảm bảo

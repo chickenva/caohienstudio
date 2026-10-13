@@ -113,7 +113,7 @@ const MyBookings = () => {
 
   const columns = [
     {
-      title: "NGÀY/GIỜ CHỤP",
+      title: "NGÀY/BUỔI CHỤP",
       key: "shoot_time",
       render: (_, record) => (
         <div>
@@ -121,8 +121,9 @@ const MyBookings = () => {
             {dayjs(record.start_time).format("DD/MM/YYYY")}
           </div>
           <div style={{ fontSize: "12px", color: "#888" }}>
-            {dayjs(record.start_time).format("HH:mm")} -{" "}
-            {dayjs(record.end_time).format("HH:mm")}
+            {record.shooting_session
+              ? `${dayjs(record.start_time).format("HH:mm")} - ${dayjs(record.end_time).format("HH:mm")}`
+              : "Studio sẽ liên hệ để chốt buổi/giờ"}
           </div>
         </div>
       ),

@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const bookingController = require("../controllers/bookingController");
-const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
+const { verifyToken, verifyAdmin, optionalAuth } = require("../middleware/authMiddleware");
 
 // ==========================================
 // PUBLIC ROUTES
@@ -23,7 +23,7 @@ router.get("/contract/:bookingId", bookingController.getContractByToken);
 // Khách gửi yêu cầu đặt lịch (không thanh toán ngay)
 router.post(
   "/request",
-  verifyToken,
+  optionalAuth,
   bookingController.createBookingRequest,
 );
 

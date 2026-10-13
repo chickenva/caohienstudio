@@ -60,6 +60,12 @@ const { Title, Text, Paragraph } = Typography;
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
+const getBookingCustomerInfo = (booking) => ({
+  full_name: booking?.customer_id?.full_name || booking?.customer_full_name || "Khách hàng",
+  email: booking?.customer_id?.email || booking?.customer_email || "",
+  phone: booking?.customer_id?.phone || booking?.customer_phone || "",
+});
+
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
   { value: "REQUESTED", label: "Yêu cầu mới" },
@@ -700,10 +706,10 @@ export default function AdminOrders() {
       title: "KHÁCH HÀNG",
       dataIndex: "customer_id",
       key: "customer_id",
-      render: (customer) => (
+      render: (customer, record) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{customer?.full_name || "Khách hàng"}</div>
-          <div style={{ fontSize: 12, color: "#888" }}>{customer?.phone || customer?.email}</div>
+          <div style={{ fontWeight: 600 }}>{getBookingCustomerInfo(record).full_name}</div>
+          <div style={{ fontSize: 12, color: "#888" }}>{getBookingCustomerInfo(record).phone || getBookingCustomerInfo(record).email}</div>
         </div>
       ),
     },
@@ -728,7 +734,9 @@ export default function AdminOrders() {
         <div>
           <div style={{ fontWeight: 600 }}>{dayjs(record.start_time).format("DD/MM/YYYY")}</div>
           <div style={{ fontSize: 12, color: "#888" }}>
-            {dayjs(record.start_time).format("HH:mm")} - {dayjs(record.end_time).format("HH:mm")}
+            {record.shooting_session
+              ? `${dayjs(record.start_time).format("HH:mm")} - ${dayjs(record.end_time).format("HH:mm")}`
+              : "Studio liên hệ để chốt buổi/giờ"}
           </div>
         </div>
       ),
@@ -790,7 +798,7 @@ export default function AdminOrders() {
     const matchId =
       !searchId ||
       b._id.slice(-6).toUpperCase().includes(searchId.toUpperCase().trim()) ||
-      b.customer_id?.full_name?.toLowerCase().includes(searchId.toLowerCase().trim());
+      (b.customer_id?.full_name || b.customer_full_name || "").toLowerCase().includes(searchId.toLowerCase().trim());
     const matchDate =
       !dateRange || !dateRange[0] || !dateRange[1] ||
       (dayjs(b.start_time).isSameOrAfter(dateRange[0].startOf("day")) &&
@@ -987,9 +995,9 @@ export default function AdminOrders() {
             <Descriptions.Item label="Mã đơn">#{selectedBooking._id.slice(-6).toUpperCase()}</Descriptions.Item>
             <Descriptions.Item label="Khách hàng">
               <div>
-                <strong>{selectedBooking.customer_id?.full_name}</strong>
-                <div style={{ fontSize: 12, color: "#666" }}>{selectedBooking.customer_id?.phone}</div>
-                <div style={{ fontSize: 12, color: "#666" }}>{selectedBooking.customer_id?.email}</div>
+                <strong>{getBookingCustomerInfo(selectedBooking).full_name}</strong>
+                <div style={{ fontSize: 12, color: "#666" }}>{getBookingCustomerInfo(selectedBooking).phone}</div>
+                <div style={{ fontSize: 12, color: "#666" }}>{getBookingCustomerInfo(selectedBooking).email}</div>
               </div>
             </Descriptions.Item>
             <Descriptions.Item label="Gói chính">
@@ -1002,8 +1010,11 @@ export default function AdminOrders() {
                 ? selectedBooking.extra_service_ids.map(s => s.name).join(", ")
                 : "Không có"}
             </Descriptions.Item>
-            <Descriptions.Item label="Thời gian">
-              {dayjs(selectedBooking.start_time).format("HH:mm DD/MM/YYYY")} – {dayjs(selectedBooking.end_time).format("HH:mm DD/MM/YYYY")}
+            <Descriptions.Item label="Ngày / buổi chụp">
+              {dayjs(selectedBooking.start_time).format("DD/MM/YYYY")}
+              {selectedBooking.shooting_session
+                ? ` · ${dayjs(selectedBooking.start_time).format("HH:mm")}–${dayjs(selectedBooking.end_time).format("HH:mm")}`
+                : " · Studio sẽ liên hệ để chốt buổi/giờ"}
             </Descriptions.Item>
             <Descriptions.Item label="Địa điểm">{selectedBooking.location}</Descriptions.Item>
             <Descriptions.Item label="Ghi chú">{selectedBooking.note || "Không có"}</Descriptions.Item>
@@ -1075,7 +1086,7 @@ export default function AdminOrders() {
               </Paragraph>
 
               <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 16, textAlign: "left" }}>
-                <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{sendContractTarget?.customer_id?.full_name}</Text></div>
+                <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(sendContractTarget).full_name}</Text></div>
                 <div style={{ marginBottom: 4 }}><Text type="secondary">Dịch vụ: </Text><Text strong>{sendContractTarget?.service_id?.name}</Text></div>
                 <div style={{ marginBottom: 4 }}>
                   <Text type="secondary">Tiền cọc quy định: </Text>
@@ -1387,7 +1398,7 @@ export default function AdminOrders() {
           <ExclamationCircleFilled style={{ fontSize: 56, color: "#ff4d4f", marginBottom: 16 }} />
           <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", marginBottom: 10 }}>Xác nhận hủy đơn?</div>
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{cancelTarget?.customer_id?.full_name}</Text></div>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(cancelTarget).full_name}</Text></div>
             <div style={{ marginBottom: 4 }}><Text type="secondary">Dịch vụ: </Text><Text strong>{cancelTarget?.service_id?.name}</Text></div>
             <div><Text type="secondary">Mã đơn: </Text><Text code>#{cancelTarget?._id?.slice(-8).toUpperCase()}</Text></div>
           </div>
@@ -1405,12 +1416,12 @@ export default function AdminOrders() {
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Bắt đầu buổi chụp?</div>
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{progressTarget?.customer_id?.full_name}</Text></div>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(progressTarget).full_name}</Text></div>
             <div style={{ marginBottom: 4 }}>
               <Text type="secondary">Lịch chụp: </Text>
               <Text strong style={{ color: "#BFA16A" }}>
                 {progressTarget?.start_time
-                  ? `${dayjs(progressTarget.start_time).format("DD/MM/YYYY")} (${dayjs(progressTarget.start_time).format("HH:mm")} - ${dayjs(progressTarget.end_time).format("HH:mm")})`
+                  ? `${dayjs(progressTarget.start_time).format("DD/MM/YYYY")}${progressTarget.shooting_session ? ` (${dayjs(progressTarget.start_time).format("HH:mm")} - ${dayjs(progressTarget.end_time).format("HH:mm")})` : " (Chưa chốt buổi/giờ)"}`
                   : "Chưa chọn lịch"}
               </Text>
             </div>
@@ -1435,12 +1446,12 @@ export default function AdminOrders() {
         <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Xác nhận hoàn thành?</div>
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{completeTarget?.customer_id?.full_name}</Text></div>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(completeTarget).full_name}</Text></div>
             <div style={{ marginBottom: 4 }}>
               <Text type="secondary">Lịch chụp: </Text>
               <Text strong style={{ color: "#BFA16A" }}>
                 {completeTarget?.start_time
-                  ? `${dayjs(completeTarget.start_time).format("DD/MM/YYYY")} (${dayjs(completeTarget.start_time).format("HH:mm")} - ${dayjs(completeTarget.end_time).format("HH:mm")})`
+                  ? `${dayjs(completeTarget.start_time).format("DD/MM/YYYY")}${completeTarget.shooting_session ? ` (${dayjs(completeTarget.start_time).format("HH:mm")} - ${dayjs(completeTarget.end_time).format("HH:mm")})` : " (Chưa chốt buổi/giờ)"}`
                   : "Chưa chọn lịch"}
               </Text>
             </div>
@@ -1488,13 +1499,13 @@ export default function AdminOrders() {
 
         {rescheduleTarget && (
           <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13 }}>
-            <div><Text type="secondary">Khách hàng: </Text><Text strong>{rescheduleTarget.customer_id?.full_name}</Text></div>
+            <div><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(rescheduleTarget).full_name}</Text></div>
             <div><Text type="secondary">Dịch vụ: </Text><Text strong>{rescheduleTarget.service_id?.name}</Text></div>
             <div><Text type="secondary">Hình thức: </Text><Text strong>{rescheduleTarget.shooting_type === "STUDIO" ? "Tại Studio" : "Ngoại cảnh"}</Text></div>
             <div><Text type="secondary">Lịch cũ: </Text>
               <Text strong style={{ color: "#cf1322" }}>
-                {rescheduleTarget.start_time ? dayjs(rescheduleTarget.start_time).format("HH:mm DD/MM/YYYY") : "—"}
-                {rescheduleTarget.shooting_session === "MORNING" ? " (Sáng)" : rescheduleTarget.shooting_session === "AFTERNOON" ? " (Chiều)" : " (Cả ngày)"}
+                {rescheduleTarget.start_time ? dayjs(rescheduleTarget.start_time).format("DD/MM/YYYY") : "—"}
+                {rescheduleTarget.shooting_session === "MORNING" ? " (Sáng)" : rescheduleTarget.shooting_session === "AFTERNOON" ? " (Chiều)" : rescheduleTarget.shooting_session === "FULL_DAY" ? " (Cả ngày)" : " (Chưa chốt buổi/giờ)"}
               </Text>
             </div>
           </div>
@@ -1634,8 +1645,8 @@ export default function AdminOrders() {
           <Form form={depositForm} layout="vertical">
 
             <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
-              <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{depositTarget.customer_id?.full_name}</Text></div>
-              <div style={{ marginBottom: 4 }}><Text type="secondary">SĐT/Email: </Text><Text strong>{depositTarget.customer_id?.phone || depositTarget.customer_id?.email}</Text></div>
+              <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(depositTarget).full_name}</Text></div>
+              <div style={{ marginBottom: 4 }}><Text type="secondary">SĐT/Email: </Text><Text strong>{getBookingCustomerInfo(depositTarget).phone || getBookingCustomerInfo(depositTarget).email}</Text></div>
               <div style={{ marginBottom: 4 }}>
                 <Text type="secondary">Tiền cọc quy định ({depositTarget.deposit_percent || 30}%): </Text>
                 <Text strong style={{ color: "#BFA16A" }}>{(depositTarget.deposit_amount || 0).toLocaleString("vi-VN")}đ</Text>

@@ -29,7 +29,12 @@ const setupCronJobs = () => {
       }).populate("customer_id");
 
       for (const booking of tomorrowBookings) {
-        await mailService.sendReminderToCustomerEmail(booking, booking.customer_id);
+        const customer = booking.customer_id || {
+          full_name: booking.customer_full_name || "Khách hàng",
+          email: booking.customer_email || "",
+          phone: booking.customer_phone || "",
+        };
+        await mailService.sendReminderToCustomerEmail(booking, customer);
       }
       console.log(`[CRON] Đã gửi nhắc nhở cho ${tomorrowBookings.length} khách hàng có lịch chụp ngày mai.`);
 

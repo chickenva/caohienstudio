@@ -4,7 +4,7 @@
  */
 import React, { useState } from "react";
 import { Form, Input, Button, Modal, message } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { API_URL } from "../../config/api";
@@ -15,6 +15,7 @@ const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 // Trang đăng ký tài khoản customer với xác thực OTP email.
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,7 +65,7 @@ const Register = () => {
         title: "Đăng ký thành công!",
         content:
           "Chào mừng bạn đến với Cao Hiển Studio. Vui lòng đăng nhập để tiếp tục.",
-        onOk: () => navigate("/login"),
+        onOk: () => navigate("/login", { state: { returnTo: location.state?.returnTo } }),
         centered: true,
       });
     } catch (error) {

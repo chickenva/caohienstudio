@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Checkbox, message } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../../config/api";
 
@@ -14,6 +14,7 @@ const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 // Trang đăng nhập, lưu token và điều hướng theo role user.
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -58,6 +59,12 @@ const Login = () => {
 
       if (user.role === "ADMIN") {
         navigate("/admin/dashboard");
+      } else if (
+        typeof location.state?.returnTo === "string" &&
+        location.state.returnTo.startsWith("/") &&
+        !location.state.returnTo.startsWith("//")
+      ) {
+        navigate(location.state.returnTo, { replace: true });
       } else {
         navigate("/");
       }
