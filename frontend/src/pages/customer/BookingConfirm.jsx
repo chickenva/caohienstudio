@@ -157,7 +157,14 @@ const BookingConfirm = () => {
       if (err?.errorFields) return;
       console.error("Booking request error:", err);
       if (err.response?.status === 409) {
-        message.error(err.response.data.message || "Lịch ngày này vừa thay đổi. Vui lòng chọn ngày khác hoặc liên hệ studio.");
+        if (err.response.data?.code === "TRAVEL_ESTIMATE_CHANGED" && err.response.data.travel_estimate) {
+          const refreshedBookingData = { ...bookingData, travel_estimate: err.response.data.travel_estimate };
+          setBookingData(refreshedBookingData);
+          sessionStorage.setItem("pendingBookingData", JSON.stringify(refreshedBookingData));
+          message.info(err.response.data.message || "Phụ thu đã được cập nhật. Vui lòng kiểm tra lại trước khi gửi.");
+        } else {
+          message.error(err.response.data.message || "Lịch ngày này vừa thay đổi. Vui lòng chọn ngày khác hoặc liên hệ studio.");
+        }
       } else {
         message.error(err.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu");
       }
@@ -305,10 +312,15 @@ const BookingConfirm = () => {
     );
   }
 
-  // Tính tổng tiền để hiển thị (chỉ để tham khảo, admin sẽ xác định chính thức)
+  // Hiển thị giá dịch vụ và phụ thu theo báo giá của trang đặt lịch.
   const mainPrice = servicesInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
   const addonsPrice = addonsInfo.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
-  const totalPrice = mainPrice + addonsPrice;
+  const serviceTotal = mainPrice + addonsPrice;
+  const travelEstimate = bookingData.travel_estimate || null;
+  const travelSurcharge = bookingData.shooting_type === "OUTDOOR" && !travelEstimate?.requiresQuote
+    ? Number(travelEstimate?.surchargeAmount || 0)
+    : 0;
+  const totalPrice = serviceTotal + travelSurcharge;
 
   return (
     <div className="home-page-container" style={{ minHeight: "100vh", padding: "100px 0 60px", background: "#FAF7F2" }}>
@@ -392,10 +404,21 @@ const BookingConfirm = () => {
                 </div>
               ))}
 
+              {bookingData.shooting_type === "OUTDOOR" && (
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, color: "#555", fontSize: 14 }}>
+                  <span>
+                    Phụ thu di chuyển{travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined ? ` (${travelEstimate.distanceKm} km một chiều)` : ""}
+                  </span>
+                  <strong>{travelEstimate?.requiresQuote ? "Studio xác nhận" : `${travelSurcharge.toLocaleString("vi-VN")}đ`}</strong>
+                </div>
+              )}
+
               <Divider style={{ margin: "16px 0" }} />
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: "#2F2F2F" }}>Tổng tham khảo:</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "#2F2F2F" }}>
+                  {travelEstimate?.requiresQuote && bookingData.shooting_type === "OUTDOOR" ? "Tạm tính (chưa gồm phụ thu):" : "Tổng tham khảo:"}
+                </span>
                 <span style={{ fontSize: 18, fontWeight: 700, color: PRIMARY_COLOR }}>
                   {totalPrice.toLocaleString("vi-VN")}đ
                 </span>
@@ -406,6 +429,11 @@ const BookingConfirm = () => {
                   {Math.round(totalPrice * 0.3).toLocaleString("vi-VN")}đ
                 </span>
               </div>
+              {travelEstimate?.requiresQuote && bookingData.shooting_type === "OUTDOOR" && (
+                <div style={{ marginTop: 8, color: "#9a6b22", fontSize: 12, lineHeight: 1.6 }}>
+                  {travelEstimate.reason || "Địa điểm cần xác minh tuyến hoặc vượt 250 km. Studio sẽ báo phụ thu thực tế trước khi chốt."}
+                </div>
+              )}
             </Col>
 
             {/* Ô Ghi chú thêm kéo dài toàn bộ chiều rộng */}

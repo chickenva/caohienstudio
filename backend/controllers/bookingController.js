@@ -24,6 +24,7 @@ const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const mailService = require("../services/mailService");
 const { generateContractPdf, generateQrDataUrl } = require("../utils/contractPdf");
+const { calculateTravelEstimate, STUDIO_ORIGIN } = require("../utils/travelPricing");
 
 // Trạng thái hợp lệ trong luồng mới
 const BOOKING_STATUSES = [
@@ -332,6 +333,9 @@ exports.createBookingRequest = async (req, res) => {
       shooting_type,    // "STUDIO" | "OUTDOOR"
       shooting_session, // Tùy chọn; studio sẽ chốt sau khi liên hệ khách.
       location,
+      destination_id,
+      destination_coordinates,
+      travel_estimate,
       note,
       customer_name,
       customer_phone,
@@ -374,7 +378,11 @@ exports.createBookingRequest = async (req, res) => {
       if (!/^0[0-9]{9,10}$/.test(normalizedPhone)) {
         return res.status(400).json({ message: "Số điện thoại cần bắt đầu bằng 0 và có 10–11 chữ số." });
       }
-      const otpRecord = await OTP.findOne({ email: normalizedEmail, otp: String(guest_otp).trim() });
+      const otpRecord = await OTP.findOne({
+        email: normalizedEmail,
+        otp: String(guest_otp).trim(),
+        createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+      });
       if (!otpRecord) {
         return res.status(400).json({ message: "Mã OTP không chính xác hoặc đã hết hạn. Vui lòng xác minh lại email." });
       }
@@ -469,7 +477,44 @@ exports.createBookingRequest = async (req, res) => {
       }
     }
 
-    const totalAmount = Number(service.base_price || 0) + addonTotalPrice;
+    let travelEstimate = {
+      destinationId: "",
+      distanceKm: null,
+      surchargeAmount: 0,
+      surchargeText: "Không áp dụng",
+      requiresQuote: false,
+      status: "NOT_APPLICABLE",
+      source: "",
+    };
+    if (shooting_type === "OUTDOOR") {
+      try {
+        travelEstimate = await calculateTravelEstimate({
+          destinationId: destination_id || "ben-tre",
+          destinationCoordinates,
+          hasCustomLocation: Boolean(String(location || "").trim()),
+        });
+      } catch (estimateError) {
+        return res.status(400).json({ message: estimateError.message || "Khu vực chụp không hợp lệ." });
+      }
+
+      if (travel_estimate) {
+        const quoteStateChanged = Boolean(travel_estimate.requiresQuote) !== Boolean(travelEstimate.requiresQuote);
+        const surchargeChanged = !travelEstimate.requiresQuote &&
+          Number(travel_estimate.surchargeAmount || 0) !== Number(travelEstimate.surchargeAmount || 0);
+        const distanceChanged = travel_estimate.distanceKm != null && travelEstimate.distanceKm != null &&
+          Number(travel_estimate.distanceKm) !== Number(travelEstimate.distanceKm);
+        if (quoteStateChanged || surchargeChanged || distanceChanged) {
+          return res.status(409).json({
+            code: "TRAVEL_ESTIMATE_CHANGED",
+            message: "Tuyến đường hoặc phụ thu vừa thay đổi. Vui lòng kiểm tra lại mức mới trước khi gửi yêu cầu.",
+            travel_estimate: travelEstimate,
+          });
+        }
+      }
+    }
+
+    const travelSurchargeAmount = travelEstimate.requiresQuote ? 0 : Number(travelEstimate.surchargeAmount || 0);
+    const totalAmount = Number(service.base_price || 0) + addonTotalPrice + travelSurchargeAmount;
     const depositPercent = 30;
     const depositAmount = Math.round((totalAmount * depositPercent) / 100);
     const finalLocation = shooting_type === "STUDIO" ? STUDIO_LOCATION : (location || "");
@@ -487,6 +532,18 @@ exports.createBookingRequest = async (req, res) => {
       start_time: startDate,
       end_time: endDate,
       location: finalLocation,
+      travel_destination_id: shooting_type === "OUTDOOR" ? (destination_id || "ben-tre") : "",
+      travel_distance_km: travelEstimate.distanceKm,
+      travel_surcharge_amount: travelSurchargeAmount,
+      travel_surcharge_status: shooting_type === "OUTDOOR"
+        ? (travelEstimate.requiresQuote ? "QUOTE_REQUIRED" : "ESTIMATED")
+        : "NOT_APPLICABLE",
+      travel_pricing_source: travelEstimate.source || "",
+      travel_origin_label: shooting_type === "OUTDOOR" ? STUDIO_ORIGIN.label : "",
+      travel_origin_coordinates: shooting_type === "OUTDOOR"
+        ? { lat: STUDIO_ORIGIN.lat, lon: STUDIO_ORIGIN.lon }
+        : { lat: null, lon: null },
+      travel_destination_coordinates: destination_coordinates || { lat: null, lon: null },
       note,
       total_amount: totalAmount,
       deposit_percent: depositPercent,
@@ -517,6 +574,7 @@ exports.createBookingRequest = async (req, res) => {
       message: "Yêu cầu đặt lịch đã được gửi thành công. Studio sẽ liên hệ để tư vấn và chốt buổi, giờ chụp.",
       booking_id: booking._id,
       status: booking.status,
+      travel_estimate: travelEstimate,
     });
   } catch (error) {
     console.error("Create booking request error:", error);
@@ -524,6 +582,21 @@ exports.createBookingRequest = async (req, res) => {
       message: "Lỗi khởi tạo yêu cầu đặt lịch",
       error: error.message,
     });
+  }
+};
+
+// Báo giá phụ thu để khách xem ngay trong trang đặt lịch.
+exports.getTravelEstimate = async (req, res) => {
+  try {
+    const { destination_id, destination_coordinates, has_custom_location } = req.body || {};
+    const estimate = await calculateTravelEstimate({
+      destinationId: destination_id,
+      destinationCoordinates: destination_coordinates,
+      hasCustomLocation: Boolean(has_custom_location),
+    });
+    return res.json(estimate);
+  } catch (error) {
+    return res.status(400).json({ message: error.message || "Không thể tính phụ thu di chuyển." });
   }
 };
 
@@ -1185,6 +1258,8 @@ exports.updateBookingInfo = async (req, res) => {
       note,
       total_amount,
       deposit_amount,
+      travel_surcharge_amount,
+      travel_surcharge_status,
       contract_note,
       contract_file_url,
       contract_original_name,
@@ -1272,6 +1347,25 @@ exports.updateBookingInfo = async (req, res) => {
     if (assigned_staff_ids !== undefined) booking.assigned_staff_ids = assigned_staff_ids;
     if (external_staff !== undefined) booking.external_staff = external_staff;
 
+    if (travel_surcharge_amount !== undefined && travel_surcharge_amount !== null) {
+      const amount = Number(travel_surcharge_amount);
+      if (!Number.isFinite(amount) || amount < 0) {
+        return res.status(400).json({ message: "Phụ thu di chuyển không hợp lệ." });
+      }
+      booking.travel_surcharge_amount = amount;
+    }
+    if (travel_surcharge_status !== undefined) {
+      if (!["NOT_APPLICABLE", "ESTIMATED", "QUOTE_REQUIRED"].includes(travel_surcharge_status)) {
+        return res.status(400).json({ message: "Trạng thái phụ thu di chuyển không hợp lệ." });
+      }
+      booking.travel_surcharge_status = travel_surcharge_status;
+      if (travel_surcharge_status === "QUOTE_REQUIRED" || travel_surcharge_status === "NOT_APPLICABLE") {
+        booking.travel_surcharge_amount = 0;
+      }
+    } else if (Number(booking.travel_surcharge_amount || 0) > 0 && booking.travel_surcharge_status === "QUOTE_REQUIRED") {
+      booking.travel_surcharge_status = "ESTIMATED";
+    }
+
     // Cập nhật tài chính
     let newTotalAmount = booking.total_amount;
 
@@ -1290,7 +1384,7 @@ exports.updateBookingInfo = async (req, res) => {
         const addons = await Service.find({ _id: { $in: booking.extra_service_ids } });
         addonPrice = addons.reduce((sum, s) => sum + Number(s.base_price || 0), 0);
       }
-      newTotalAmount = mainPrice + addonPrice;
+      newTotalAmount = mainPrice + addonPrice + Number(booking.travel_surcharge_amount || 0);
       booking.total_amount = newTotalAmount;
     }
 

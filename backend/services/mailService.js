@@ -103,6 +103,10 @@ exports.sendBookingSuccessEmail = async (booking, customer) => {
         { label: "Ngày chụp", value: moment(booking.start_time).format("DD/MM/YYYY") },
         { label: "Thời gian chụp", value: `${moment(booking.start_time).format("HH:mm")} - ${moment(booking.end_time).format("HH:mm")}` },
         { label: "Địa điểm", value: booking.location },
+        ...(booking.shooting_type === "OUTDOOR" ? [
+          { label: "Khoảng cách một chiều", value: booking.travel_distance_km != null ? `${booking.travel_distance_km} km` : "Studio xác nhận" },
+          { label: "Phụ thu di chuyển", value: booking.travel_surcharge_status === "QUOTE_REQUIRED" ? "Studio xác nhận" : formatCurrency(booking.travel_surcharge_amount || 0) },
+        ] : []),
         { label: "Tổng tiền", value: formatCurrency(booking.total_amount) },
         { label: "Trạng thái", value: `<span style="color: #BFA16A; font-weight: bold;">${getStatusText(booking.status)}</span>` }
       ])}
@@ -163,6 +167,10 @@ exports.sendBookingSuccessToAdminEmail = async (booking, customer) => {
         { label: "Ngày chụp", value: moment(booking.start_time).format("DD/MM/YYYY") },
         { label: "Thời gian chụp", value: booking.shooting_session ? `${moment(booking.start_time).format("HH:mm")} - ${moment(booking.end_time).format("HH:mm")}` : "Studio sẽ liên hệ để tư vấn và chốt buổi/giờ" },
         { label: "Địa điểm", value: booking.location },
+        ...(booking.shooting_type === "OUTDOOR" ? [
+          { label: "Khoảng cách một chiều", value: booking.travel_distance_km != null ? `${booking.travel_distance_km} km` : "Studio xác nhận" },
+          { label: "Phụ thu di chuyển", value: booking.travel_surcharge_status === "QUOTE_REQUIRED" ? "Studio xác nhận" : formatCurrency(booking.travel_surcharge_amount || 0) },
+        ] : []),
         { label: "Tổng tiền", value: formatCurrency(booking.total_amount) },
         { label: "Trạng thái", value: `<span style="color: #BFA16A; font-weight: bold;">${getStatusText(booking.status)}</span>` }
       ])}

@@ -16,6 +16,72 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
+const buildEmailError = (message, statusCode = 503, publicMessage = message) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.publicMessage = publicMessage;
+  return error;
+};
+
+// Render Free blocks outbound SMTP, so deployed Render services use an HTTPS mail API.
+const sendOtpEmail = async ({ to, subject, html }) => {
+  const provider = String(
+    process.env.EMAIL_PROVIDER || (process.env.RENDER === "true" ? "resend" : "smtp"),
+  ).trim().toLowerCase();
+
+  if (provider === "resend") {
+    const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+    const from = String(process.env.EMAIL_FROM || "").trim();
+    if (!apiKey || !from) {
+      throw buildEmailError(
+        "Resend requires RESEND_API_KEY and EMAIL_FROM.",
+        503,
+        "Email OTP chưa được cấu hình trên môi trường deploy. Cần khai báo RESEND_API_KEY và EMAIL_FROM đã xác minh.",
+      );
+    }
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [to], subject, html }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error("Resend từ chối gửi OTP:", response.status, result.message || result.name || "Không có chi tiết");
+      throw buildEmailError(
+        `Resend API returned ${response.status}.`,
+        502,
+        "Nhà cung cấp email từ chối gửi OTP. Kiểm tra API key và địa chỉ EMAIL_FROM đã xác minh.",
+      );
+    }
+    return result;
+  }
+
+  if (provider !== "smtp") {
+    throw buildEmailError(`EMAIL_PROVIDER không hợp lệ: ${provider}`, 503, "Cấu hình dịch vụ gửi email không hợp lệ.");
+  }
+
+  const senderEmail = String(process.env.EMAIL_USER || "").trim();
+  const senderPassword = String(process.env.EMAIL_PASS || "").trim();
+  if (!senderEmail || !senderPassword) {
+    throw buildEmailError(
+      "SMTP requires EMAIL_USER and EMAIL_PASS.",
+      503,
+      "Dịch vụ gửi email local chưa được cấu hình EMAIL_USER và EMAIL_PASS.",
+    );
+  }
+
+  return transporter.sendMail({
+    from: `"Cao Hien Studio" <${senderEmail}>`,
+    to,
+    subject,
+    html,
+  });
+};
+
 /**
  * [POST] /api/contacts/send-otp
  * Gửi OTP xác thực email cho khách chưa đăng nhập trước khi gửi form liên hệ.
@@ -31,21 +97,12 @@ exports.sendContactOtp = async (req, res) => {
       return res.status(400).json({ message: "Email không hợp lệ." });
     }
 
-    const senderEmail = String(process.env.EMAIL_USER || "").trim();
-    const senderPassword = String(process.env.EMAIL_PASS || "").trim();
-    if (!senderEmail || !senderPassword) {
-      console.error("Không thể gửi OTP: thiếu cấu hình EMAIL_USER hoặc EMAIL_PASS.");
-      return res.status(503).json({ message: "Dịch vụ gửi email hiện chưa sẵn sàng. Vui lòng thử lại sau." });
-    }
-
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
     const otpRecord = await new OTP({ email: normalizedEmail, otp: otpCode }).save();
 
     try {
-      await transporter.sendMail({
-        // Gmail requires the From address to match the authenticated mailbox.
-        from:    `"Cao Hien Studio" <${senderEmail}>`,
-        to:      normalizedEmail,
+      await sendOtpEmail({
+        to: normalizedEmail,
         subject: "Mã xác thực email - Cao Hiển Studio",
         html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
@@ -62,7 +119,11 @@ exports.sendContactOtp = async (req, res) => {
       });
     } catch (mailError) {
       // Keep any previously issued code usable if the replacement email fails.
-      await OTP.deleteOne({ _id: otpRecord._id });
+      try {
+        await OTP.deleteOne({ _id: otpRecord._id });
+      } catch (cleanupError) {
+        console.error("Không thể xóa OTP chưa gửi được:", cleanupError.message);
+      }
       throw mailError;
     }
 
@@ -75,7 +136,11 @@ exports.sendContactOtp = async (req, res) => {
     res.status(200).json({ message: "Mã OTP đã được gửi đến email của bạn!" });
   } catch (error) {
     console.error("Lỗi gửi OTP liên hệ:", error);
-    res.status(500).json({ message: "Lỗi gửi OTP", error: error.message });
+    const response = {
+      message: error.publicMessage || "Không thể gửi mã OTP. Vui lòng thử lại sau.",
+    };
+    if (process.env.NODE_ENV !== "production") response.error = error.message;
+    res.status(error.statusCode || 502).json(response);
   }
 };
 
@@ -87,7 +152,11 @@ exports.verifyContactOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const record = await OTP.findOne({ email: normalizedEmail, otp: String(otp || "").trim() });
+    const record = await OTP.findOne({
+      email: normalizedEmail,
+      otp: String(otp || "").trim(),
+      createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+    });
     if (!record) {
       return res.status(400).json({
         message: "Mã OTP không chính xác hoặc đã hết hạn!",

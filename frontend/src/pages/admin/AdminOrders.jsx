@@ -441,6 +441,8 @@ export default function AdminOrders() {
       note: record.note || "",
       contract_note: record.contract_note || "",
       total_amount: total,
+      travel_surcharge_amount: record.travel_surcharge_amount || 0,
+      travel_surcharge_status: record.travel_surcharge_status || "NOT_APPLICABLE",
       deposit_percent: record.deposit_percent || 30,
       deposit_amount: depositAmt,
     });
@@ -449,7 +451,7 @@ export default function AdminOrders() {
 
   // Tự tính tổng tiền từ giá dịch vụ đã chọn
   // Tự tính tổng tiền từ gói chính và gói đi kèm đang chọn.
-  const recalcTotalFromServices = useCallback((mainSvcIds, addonIds) => {
+  const calculateServiceSubtotal = useCallback((mainSvcIds, addonIds) => {
     const mainPrice = servicesList
       .filter(s => (mainSvcIds || []).map(String).includes(String(s._id)))
       .reduce((sum, s) => sum + Number(s.base_price || 0), 0);
@@ -458,6 +460,10 @@ export default function AdminOrders() {
       .reduce((sum, s) => sum + Number(s.base_price || 0), 0);
     return mainPrice + addonPrice;
   }, [servicesList]);
+
+  const recalcTotalFromServices = useCallback((mainSvcIds, addonIds) => (
+    calculateServiceSubtotal(mainSvcIds, addonIds) + Number(editForm.getFieldValue("travel_surcharge_amount") || 0)
+  ), [calculateServiceSubtotal, editForm]);
 
   // Khi đổi gói chính, cập nhật lại tổng tiền và tiền cọc.
   const handleMainServiceChange = (svcIds) => {
@@ -488,6 +494,32 @@ export default function AdminOrders() {
     setEditTotalAmount(val || 0);
     const pct = editForm.getFieldValue("deposit_percent") || 30;
     editForm.setFieldsValue({ deposit_amount: Math.round(((val || 0) * pct) / 100) });
+  };
+
+  const handleTravelSurchargeChange = (val) => {
+    const amount = Math.max(0, Number(val || 0));
+    const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
+    const pct = editForm.getFieldValue("deposit_percent") || 30;
+    if (amount > 0) editForm.setFieldsValue({ travel_surcharge_status: "ESTIMATED" });
+    setEditTotalAmount(total);
+    editForm.setFieldsValue({
+      total_amount: total,
+      deposit_amount: Math.round((total * pct) / 100),
+    });
+  };
+
+  const handleTravelSurchargeStatusChange = (status) => {
+    const amount = status === "QUOTE_REQUIRED" || status === "NOT_APPLICABLE"
+      ? 0
+      : Number(editForm.getFieldValue("travel_surcharge_amount") || 0);
+    const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
+    const pct = editForm.getFieldValue("deposit_percent") || 30;
+    setEditTotalAmount(total);
+    editForm.setFieldsValue({
+      travel_surcharge_amount: amount,
+      total_amount: total,
+      deposit_amount: Math.round((total * pct) / 100),
+    });
   };
 
   // Giữ logic tính cọc theo phần trăm nếu sau này mở chỉnh phần trăm.
@@ -1017,6 +1049,18 @@ export default function AdminOrders() {
                 : " · Studio sẽ liên hệ để chốt buổi/giờ"}
             </Descriptions.Item>
             <Descriptions.Item label="Địa điểm">{selectedBooking.location}</Descriptions.Item>
+            {selectedBooking.shooting_type === "OUTDOOR" && (
+              <>
+                <Descriptions.Item label="Khoảng cách một chiều">
+                  {selectedBooking.travel_distance_km != null ? `${selectedBooking.travel_distance_km} km` : "Studio xác nhận"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Phụ thu di chuyển">
+                  {selectedBooking.travel_surcharge_status === "QUOTE_REQUIRED"
+                    ? "Studio xác nhận riêng (chưa gồm trong tổng)"
+                    : `${(selectedBooking.travel_surcharge_amount || 0).toLocaleString("vi-VN")}đ`}
+                </Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label="Ghi chú">{selectedBooking.note || "Không có"}</Descriptions.Item>
             <Descriptions.Item label="Tổng tiền">
               <strong style={{ fontSize: 15 }}>{selectedBooking.total_amount?.toLocaleString("vi-VN")}đ</strong>
@@ -1289,6 +1333,34 @@ export default function AdminOrders() {
 
             {/* TÀI CHÍNH */}
             <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Tài chính</Divider>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Phụ thu di chuyển (đ)" name="travel_surcharge_amount">
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    min={0}
+                    step={100000}
+                    size="large"
+                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    parser={(v) => v.replace(/,/g, "")}
+                    onChange={handleTravelSurchargeChange}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Trạng thái phụ thu" name="travel_surcharge_status">
+                  <Select
+                    size="large"
+                    onChange={handleTravelSurchargeStatusChange}
+                    options={[
+                      { value: "NOT_APPLICABLE", label: "Không áp dụng" },
+                      { value: "ESTIMATED", label: "Đã xác định" },
+                      { value: "QUOTE_REQUIRED", label: "Studio cần báo giá" },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="Tổng tiền (đ)" name="total_amount" rules={[{ required: true }]}>

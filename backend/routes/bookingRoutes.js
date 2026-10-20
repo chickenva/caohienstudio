@@ -12,6 +12,9 @@ const { verifyToken, verifyAdmin, optionalAuth } = require("../middleware/authMi
 // Lấy danh sách khung giờ bận của studio (dùng cho booking mới)
 router.get("/studio-busy-slots", bookingController.getStudioBusySlots);
 
+// Tính phụ thu di chuyển một chiều theo khu vực/địa chỉ khách chọn.
+router.post("/travel-estimate", bookingController.getTravelEstimate);
+
 // Public: Khách xem hợp đồng bằng token (không cần đăng nhập)
 // GET /api/bookings/contract/:bookingId?token=...
 router.get("/contract/:bookingId", bookingController.getContractByToken);

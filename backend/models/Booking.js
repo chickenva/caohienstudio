@@ -88,6 +88,26 @@ const bookingSchema = new mongoose.Schema(
       trim:     true,
     },
 
+    // Điểm đến và báo giá phụ thu di chuyển đã tính tại thời điểm khách gửi yêu cầu.
+    travel_destination_id: { type: String, default: "" },
+    travel_distance_km: { type: Number, default: null, min: 0 },
+    travel_surcharge_amount: { type: Number, default: 0, min: 0 },
+    travel_surcharge_status: {
+      type: String,
+      enum: ["NOT_APPLICABLE", "ESTIMATED", "QUOTE_REQUIRED"],
+      default: "NOT_APPLICABLE",
+    },
+    travel_pricing_source: { type: String, default: "" },
+    travel_origin_label: { type: String, default: "" },
+    travel_origin_coordinates: {
+      lat: { type: Number, default: null },
+      lon: { type: Number, default: null },
+    },
+    travel_destination_coordinates: {
+      lat: { type: Number, default: null },
+      lon: { type: Number, default: null },
+    },
+
     // Tổng giá trị đơn
     total_amount: {
       type:     Number,

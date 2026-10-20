@@ -21,6 +21,7 @@ backend/uploads/
 backend/public/contracts/
 backend/public/qrcodes/
 backend/google-service-account.json
+doc/
 
 # Logs
 logs/

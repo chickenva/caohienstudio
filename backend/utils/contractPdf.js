@@ -346,6 +346,34 @@ const generateContractPdf = async (booking, contractLink) => {
       y += 15;
     }
 
+    if (booking.shooting_type === "OUTDOOR") {
+      doc
+        .font(FONT_REGULAR)
+        .fontSize(9)
+        .fillColor(GRAY)
+        .text(
+          booking.travel_surcharge_status === "QUOTE_REQUIRED"
+            ? "Phụ thu di chuyển: Studio xác nhận riêng"
+            : `Phụ thu di chuyển${booking.travel_distance_km != null ? ` (${booking.travel_distance_km} km một chiều)` : ""}:`,
+          55,
+          y,
+          { width: contentW * 0.6 }
+        );
+      doc
+        .font(FONT_REGULAR)
+        .fontSize(9)
+        .fillColor(GRAY)
+        .text(
+          booking.travel_surcharge_status === "QUOTE_REQUIRED"
+            ? "Chưa bao gồm"
+            : formatVND(booking.travel_surcharge_amount || 0),
+          55 + contentW * 0.6,
+          y,
+          { width: contentW * 0.4 - 5, align: "right" }
+        );
+      y += 15;
+    }
+
     // Tổng tiền + cọc
     y += 4;
     drawLine(doc, y);
