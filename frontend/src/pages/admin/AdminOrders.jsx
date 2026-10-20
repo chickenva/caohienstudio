@@ -2,7 +2,7 @@
  * AdminOrders.jsx
  * Quản lý đơn đặt lịch: xem, cập nhật trạng thái, gửi hợp đồng, phân công thợ.
  */
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Table,
   Tag,
@@ -24,6 +24,7 @@ import {
   InputNumber,
   Tooltip,
   Spin,
+  AutoComplete,
 } from "antd";
 import {
   EyeOutlined,
@@ -46,12 +47,17 @@ import {
   BankOutlined,
   DollarOutlined,
   UploadOutlined,
+  EnvironmentOutlined,
+  CarOutlined,
+  LoadingOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import { getBandForDistance } from "../../utils/shootingLocations";
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -135,6 +141,15 @@ export default function AdminOrders() {
   // Giá gói chính và addon đã chọn để auto-tính tổng
   const [selectedMainService, setSelectedMainService] = useState(null);
   const [selectedAddonIds, setSelectedAddonIds] = useState([]);
+
+  // States cho AutoComplete địa điểm và tính km phụ thu trong Modal sửa đơn
+  const editShootingType = Form.useWatch("shooting_type", editForm);
+  const [editLocationOptions, setEditLocationOptions] = useState([]);
+  const [editLocationSearching, setEditLocationSearching] = useState(false);
+  const [editLocationCalculating, setEditLocationCalculating] = useState(false);
+  const [editTravelDistanceKm, setEditTravelDistanceKm] = useState(null);
+  const [editTravelPricingSource, setEditTravelPricingSource] = useState("");
+  const editSearchTimeout = useRef(null);
 
   // Modal dời lịch (đơn CONFIRMED)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
@@ -430,6 +445,9 @@ export default function AdminOrders() {
     setSelectedMainService(mainSvcIds);
     setSelectedAddonIds(addonIds);
     setEditTotalAmount(total);
+    setEditTravelDistanceKm(record.travel_distance_km ?? null);
+    setEditTravelPricingSource(record.travel_pricing_source || "");
+    setEditLocationOptions([]);
 
     editForm.setFieldsValue({
       service_ids: mainSvcIds,
@@ -526,6 +544,138 @@ export default function AdminOrders() {
   const handleDepositPercentChange = (val) => {
     const total = editTotalAmount || editForm.getFieldValue("total_amount") || 0;
     editForm.setFieldsValue({ deposit_amount: Math.round((total * (val || 0)) / 100) });
+  };
+
+  // Đổi hình thức chụp trong modal Sửa đơn (STUDIO / OUTDOOR)
+  const handleShootingTypeChange = (type) => {
+    if (type === "STUDIO") {
+      editForm.setFieldsValue({
+        location: "Cao Hiển Studio",
+        travel_surcharge_amount: 0,
+        travel_surcharge_status: "NOT_APPLICABLE",
+      });
+      setEditTravelDistanceKm(0);
+      setEditTravelPricingSource("NOT_APPLICABLE");
+      handleTravelSurchargeChange(0);
+    } else {
+      if (editForm.getFieldValue("location") === "Cao Hiển Studio") {
+        editForm.setFieldsValue({ location: "" });
+      }
+      setEditTravelDistanceKm(null);
+      setEditTravelPricingSource("");
+    }
+  };
+
+  // Tìm kiếm địa chỉ qua Photon API khi admin gõ địa điểm chụp ngoại cảnh
+  const handleAdminAddressSearch = (searchText) => {
+    if (!searchText || searchText.trim().length < 2) {
+      setEditLocationOptions([]);
+      return;
+    }
+    if (editSearchTimeout.current) {
+      clearTimeout(editSearchTimeout.current);
+    }
+    editSearchTimeout.current = setTimeout(async () => {
+      setEditLocationSearching(true);
+      try {
+        const query = encodeURIComponent(searchText.trim());
+        const url = `https://photon.komoot.io/api/?q=${query}&limit=15&lang=default&bbox=102.14,8.56,109.46,23.39`;
+        const res = await axios.get(url);
+        if (res.data?.features) {
+          const suggestions = res.data.features
+            .filter((f) => f.properties?.countrycode === "VN")
+            .map((f, idx) => {
+              const p = f.properties;
+              const parts = [p.name, p.street, p.district, p.city || p.state, p.country].filter(Boolean);
+              const uniqueParts = [];
+              parts.forEach((item) => {
+                if (!uniqueParts.some((u) => u.toLowerCase().trim() === item.toLowerCase().trim())) {
+                  uniqueParts.push(item);
+                }
+              });
+              const label = uniqueParts.join(", ");
+              return {
+                value: label,
+                label: label,
+                key: `${label}-${idx}`,
+                coordinates: Array.isArray(f.geometry?.coordinates)
+                  ? { lon: Number(f.geometry.coordinates[0]), lat: Number(f.geometry.coordinates[1]) }
+                  : null,
+              };
+            })
+            .filter((item) => Boolean(item.coordinates));
+          setEditLocationOptions(suggestions);
+        }
+      } catch (err) {
+        console.error("Lỗi tìm kiếm địa chỉ Photon:", err);
+      } finally {
+        setEditLocationSearching(false);
+      }
+    }, 350);
+  };
+
+  // Tính số km và số tiền phụ thu tự động qua API OSRM
+  const calculateAdminTravel = async (coords, customText) => {
+    const locText = customText || editForm.getFieldValue("location");
+    if (!coords && (!locText || !locText.trim())) {
+      message.warning("Vui lòng nhập địa điểm chụp ngoại cảnh trước khi tính.");
+      return;
+    }
+
+    setEditLocationCalculating(true);
+    try {
+      let targetCoords = coords;
+      if (!targetCoords && locText) {
+        const query = encodeURIComponent(locText.trim());
+        const url = `https://photon.komoot.io/api/?q=${query}&limit=3&lang=default&bbox=102.14,8.56,109.46,23.39`;
+        const photonRes = await axios.get(url);
+        const first = photonRes.data?.features?.find((f) => f.geometry?.coordinates);
+        if (first) {
+          targetCoords = {
+            lon: Number(first.geometry.coordinates[0]),
+            lat: Number(first.geometry.coordinates[1]),
+          };
+        }
+      }
+
+      if (!targetCoords) {
+        message.warning("Không tìm thấy tọa độ đường bộ cho địa điểm này. Bạn có thể tự điền số tiền phụ thu.");
+        return;
+      }
+
+      const res = await axios.post(`${API_URL}/bookings/travel-estimate`, {
+        destination_coordinates: targetCoords,
+      });
+
+      const estimate = res.data;
+      if (estimate) {
+        setEditTravelDistanceKm(estimate.distanceKm);
+        setEditTravelPricingSource(estimate.source || "OSRM_ROUTE");
+
+        const newAmount = Number(estimate.surchargeAmount || 0);
+        const newStatus = estimate.requiresQuote ? "QUOTE_REQUIRED" : "ESTIMATED";
+
+        editForm.setFieldsValue({
+          travel_surcharge_amount: newAmount,
+          travel_surcharge_status: newStatus,
+        });
+
+        const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + newAmount;
+        const pct = editForm.getFieldValue("deposit_percent") || 30;
+        setEditTotalAmount(total);
+        editForm.setFieldsValue({
+          total_amount: total,
+          deposit_amount: Math.round((total * pct) / 100),
+        });
+
+        message.success(`Đã tính cự ly: ${estimate.distanceKm} km · Phụ thu tự động: ${estimate.surchargeText}`);
+      }
+    } catch (err) {
+      console.error("Lỗi tính phụ thu OSRM:", err);
+      message.error("Không thể kết nối dịch vụ tính tuyến. Bạn có thể tự điều chỉnh phụ thu thủ công.");
+    } finally {
+      setEditLocationCalculating(false);
+    }
   };
 
   // Gọi API đổi trạng thái đơn theo transition backend cho phép.
@@ -677,6 +827,8 @@ export default function AdminOrders() {
       const payload = {
         ...values,
         shoot_date: values.shoot_date ? values.shoot_date.format("YYYY-MM-DD") : undefined,
+        travel_distance_km: editTravelDistanceKm,
+        travel_pricing_source: editTravelPricingSource,
         contract_file_url: contractPdfUrl,
         contract_original_name: contractPdfName,
       };
@@ -1311,10 +1463,14 @@ export default function AdminOrders() {
               </Col>
               <Col span={8}>
                 <Form.Item label="Hình thức" name="shooting_type" rules={[{ required: true, message: "Vui lòng chọn hình thức" }]}>
-                  <Select size="large" options={[
-                    { value: "STUDIO", label: "Tại Studio" },
-                    { value: "OUTDOOR", label: "Ngoại cảnh" }
-                  ]} />
+                  <Select
+                    size="large"
+                    onChange={handleShootingTypeChange}
+                    options={[
+                      { value: "STUDIO", label: "Tại Studio" },
+                      { value: "OUTDOOR", label: "Ngoại cảnh" }
+                    ]}
+                  />
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -1327,15 +1483,102 @@ export default function AdminOrders() {
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item label="Địa điểm chụp" name="location" rules={[{ required: true, message: "Vui lòng nhập địa điểm" }]}>
-              <Input placeholder="Địa điểm buổi chụp" size="large" />
+
+            <Form.Item
+              label={
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <span>Địa điểm chụp</span>
+                  {editShootingType === "OUTDOOR" && (
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<CarOutlined />}
+                      loading={editLocationCalculating}
+                      onClick={() => calculateAdminTravel(null, editForm.getFieldValue("location"))}
+                      style={{ color: "#BFA16A", padding: 0, height: "auto", fontSize: 12, fontWeight: 500 }}
+                    >
+                      {editLocationCalculating ? "Đang tính..." : "Tính km & phụ thu tự động"}
+                    </Button>
+                  )}
+                </div>
+              }
+              name="location"
+              rules={[{ required: true, message: "Vui lòng nhập địa điểm" }]}
+            >
+              {editShootingType === "OUTDOOR" ? (
+                <AutoComplete
+                  options={editLocationOptions}
+                  onSearch={handleAdminAddressSearch}
+                  onSelect={(value, option) => {
+                    editForm.setFieldsValue({ location: value });
+                    if (option?.coordinates) {
+                      calculateAdminTravel(option.coordinates, value);
+                    }
+                  }}
+                  placeholder="Nhập địa chỉ hoặc chọn từ gợi ý (VD: Bến Ninh Kiều, Cần Thơ)..."
+                >
+                  <Input
+                    size="large"
+                    prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
+                    suffix={editLocationSearching ? <LoadingOutlined style={{ color: "#BFA16A" }} /> : null}
+                  />
+                </AutoComplete>
+              ) : (
+                <Input
+                  disabled
+                  placeholder="Cao Hiển Studio"
+                  size="large"
+                  prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
+                />
+              )}
             </Form.Item>
+
+            {editShootingType === "OUTDOOR" && editTravelDistanceKm !== null && (
+              <div
+                style={{
+                  marginBottom: 16,
+                  marginTop: -8,
+                  padding: "8px 14px",
+                  background: "rgba(191, 161, 106, 0.08)",
+                  border: "1px solid rgba(191, 161, 106, 0.25)",
+                  borderRadius: 8,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: 12,
+                }}
+              >
+                <span style={{ color: "#2F2F2F" }}>
+                  🚗 Tuyến đường: <strong style={{ color: "#BFA16A" }}>{editTravelDistanceKm} km</strong> một chiều (tính từ Trung tâm Bến Tre)
+                </span>
+                <Tag color="gold" style={{ margin: 0, fontWeight: 600 }}>
+                  {getBandForDistance(editTravelDistanceKm)?.tierName || "Theo cự ly"}
+                </Tag>
+              </div>
+            )}
 
             {/* TÀI CHÍNH */}
             <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Tài chính</Divider>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label="Phụ thu di chuyển (đ)" name="travel_surcharge_amount">
+                <Form.Item
+                  label={
+                    <Space>
+                      <span>Phụ thu di chuyển (đ)</span>
+                      <Tooltip title="Hệ thống tự tính theo cự ly bộ hành một chiều. Nhân viên có thể tùy chỉnh lại số tiền nếu muốn.">
+                        <InfoCircleOutlined style={{ color: "#BFA16A", fontSize: 13 }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  name="travel_surcharge_amount"
+                  extra={
+                    editShootingType === "OUTDOOR" && editTravelDistanceKm !== null ? (
+                      <span style={{ fontSize: 11, color: "#888" }}>
+                        💡 Đã tự tính cho {editTravelDistanceKm} km. Bạn có thể thay đổi số tiền này nếu cần.
+                      </span>
+                    ) : null
+                  }
+                >
                   <InputNumber
                     style={{ width: "100%" }}
                     min={0}

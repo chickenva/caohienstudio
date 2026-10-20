@@ -12,7 +12,6 @@ import {
   Button,
   message,
   Result,
-  AutoComplete,
   Checkbox,
   Card,
   Switch,
@@ -56,7 +55,7 @@ const Booking = () => {
   const [form] = Form.useForm();
   const location = useLocation();
   const navigate = useNavigate();
-  const locationValue = Form.useWatch("location", form) || "";
+
 
   const [mainServices, setMainServices] = useState([]);
   const [addonServices, setAddonServices] = useState([]);
@@ -73,9 +72,7 @@ const Booking = () => {
   const [isRangeMode, setIsRangeMode] = useState(false);
   const [rangeStartDate, setRangeStartDate] = useState(null);
   const [rangeEndDate, setRangeEndDate] = useState(null);
-  const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
   const [travelEstimate, setTravelEstimate] = useState(() => getReferenceTravelEstimate(DEFAULT_STUDIO_LOCATION));
-  const [travelEstimateLoading, setTravelEstimateLoading] = useState(false);
 
   // Reset ngày đã chọn khi khách đổi hình thức chụp.
   /**
@@ -85,7 +82,6 @@ const Booking = () => {
   const handleShootingTypeChange = (type) => {
     setShootingType(type);
     setSelectedDate(null);
-    setSelectedLocationCoordinates(null);
     form.setFieldsValue({ location: type === "STUDIO" ? "Cao Hiển Studio" : undefined });
     if (type === "STUDIO") {
       setSelectedWeatherCity(DEFAULT_STUDIO_LOCATION);
@@ -93,71 +89,13 @@ const Booking = () => {
   };
 
 
-  // States & logic cho gợi ý tìm kiếm địa chỉ
-  const [addressOptions, setAddressOptions] = useState([]);
-  const [searchTimeout, setSearchTimeout] = useState(null);
 
-  // Gợi ý địa chỉ ngoại cảnh bằng Photon API theo tỉnh/thành đang chọn.
-  const handleAddressSearch = (searchText) => {
-    if (!searchText || searchText.trim().length < 3) {
-      setAddressOptions([]);
-      return;
-    }
-
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(async () => {
-      try {
-        const cityName = selectedWeatherCity?.weatherName || selectedWeatherCity?.regionName || selectedWeatherCity?.name?.replace("TP. ", "") || "";
-        const query = encodeURIComponent(`${searchText} ${cityName}`.trim());
-        const url = `https://photon.komoot.io/api/?q=${query}&limit=20&lang=default&bbox=102.14,8.56,109.46,23.39`;
-        const res = await axios.get(url);
-        if (res.data && res.data.features) {
-          const suggestions = res.data.features
-            .filter((f) => f.properties.countrycode === "VN")
-            .map((f, idx) => {
-              const props = f.properties;
-              const name = props.name || "";
-              const street = props.street || "";
-              const district = props.district || "";
-              const city = props.city || props.state || "";
-              const country = props.country || "";
-
-              const parts = [name, street, district, city, country].filter(Boolean);
-              const uniqueParts = [];
-              parts.forEach(p => {
-                if (!uniqueParts.some(up => up.toLowerCase().trim() === p.toLowerCase().trim())) {
-                  uniqueParts.push(p);
-                }
-              });
-
-              const label = uniqueParts.join(", ");
-              return {
-                value: label,
-                label: label,
-                key: `${label}-${idx}`,
-                coordinates: Array.isArray(f.geometry?.coordinates)
-                  ? { lon: Number(f.geometry.coordinates[0]), lat: Number(f.geometry.coordinates[1]) }
-                  : null,
-              };
-            })
-            // Keep nearby off-center places too; those need their own route distance.
-            .filter((item) => Boolean(item.coordinates));
-          setAddressOptions(suggestions);
-        }
-      } catch (err) {
-        console.error("Lỗi tìm kiếm địa chỉ:", err);
-      }
-    }, 400);
-
-    setSearchTimeout(timeout);
-  };
 
   const defaultCity = DEFAULT_STUDIO_LOCATION;
   const [selectedWeatherCity, setSelectedWeatherCity] = useState(defaultCity);
 
+  // Cập nhật phụ thu dự tính theo bảng tham chiếu khu vực, không gọi OSRM phía khách.
+  // Nhân viên studio sẽ liên hệ để chốt địa điểm cụ thể và xác nhận phụ thu chính thức.
   useEffect(() => {
     if (shootingType !== "OUTDOOR") {
       setTravelEstimate({
@@ -168,57 +106,11 @@ const Booking = () => {
         requiresQuote: false,
         source: "NOT_APPLICABLE",
       });
-      setTravelEstimateLoading(false);
       return undefined;
     }
-
-    const hasCustomLocation = Boolean(String(locationValue).trim());
-    if (hasCustomLocation && !selectedLocationCoordinates) {
-      setTravelEstimate({
-        destinationId: selectedWeatherCity?.id || "",
-        distanceKm: null,
-        surchargeAmount: 0,
-        surchargeText: "Studio xác nhận",
-        requiresQuote: true,
-        source: "MANUAL_REVIEW",
-        reason: "Chọn địa chỉ từ danh sách gợi ý để tính tuyến thực tế; nếu tự nhập, studio sẽ xác nhận phụ thu.",
-      });
-      setTravelEstimateLoading(false);
-      return undefined;
-    }
-
-    if (!selectedLocationCoordinates) {
-      setTravelEstimate(getReferenceTravelEstimate(selectedWeatherCity));
-      setTravelEstimateLoading(false);
-      return undefined;
-    }
-
-    let cancelled = false;
-    setTravelEstimateLoading(true);
-    axios.post(`${API_URL}/bookings/travel-estimate`, {
-      destination_id: selectedWeatherCity?.id,
-      destination_coordinates: selectedLocationCoordinates,
-      has_custom_location: hasCustomLocation,
-    }).then(({ data }) => {
-      if (!cancelled) setTravelEstimate(data);
-    }).catch((error) => {
-      if (!cancelled) {
-        setTravelEstimate({
-          destinationId: selectedWeatherCity?.id || "",
-          distanceKm: null,
-          surchargeAmount: 0,
-          surchargeText: "Studio xác nhận",
-          requiresQuote: true,
-          source: "MANUAL_REVIEW",
-          reason: error.response?.data?.message || "Chưa tính được tuyến tự động; studio sẽ xác nhận phụ thu.",
-        });
-      }
-    }).finally(() => {
-      if (!cancelled) setTravelEstimateLoading(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [shootingType, selectedWeatherCity, locationValue, selectedLocationCoordinates]);
+    setTravelEstimate(getReferenceTravelEstimate(selectedWeatherCity));
+    return undefined;
+  }, [shootingType, selectedWeatherCity]);
 
   // States lưu danh sách ngày lễ và ngày nghỉ studio từ backend
   const [holidays, setHolidays] = useState([]);
@@ -478,7 +370,7 @@ const Booking = () => {
         const city = FORECAST_LOCATIONS.find(c => c.name === location.state.weatherCity || c.id === location.state.weatherCity || c.regionName === location.state.weatherCity);
         if (city) setSelectedWeatherCity(city);
       }
-      if (location.state.destinationCoordinates) setSelectedLocationCoordinates(location.state.destinationCoordinates);
+      if (location.state.destinationCoordinates) { /* no longer used in customer flow */ }
     }
 
     return () => {
@@ -502,7 +394,7 @@ const Booking = () => {
       if (monthDate) setCurrentCalendarMonth(dayjs(monthDate));
       const city = FORECAST_LOCATIONS.find((item) => item.name === savedDraft.weatherCity);
       if (city) setSelectedWeatherCity(city);
-      setSelectedLocationCoordinates(savedDraft.destinationCoordinates || null);
+
       return;
     }
 
@@ -556,10 +448,7 @@ const Booking = () => {
         message.warning("Vui lòng chọn ngày chụp trên lịch");
         return;
       }
-      if (travelEstimateLoading) {
-        message.info("Đang tính phụ thu theo tuyến đường, vui lòng chờ một chút.");
-        return;
-      }
+
       const selectedMainIds = Array.isArray(values.serviceId) ? values.serviceId : (values.serviceId ? [values.serviceId] : []);
       if (selectedMainIds.length === 0) {
         message.warning("Vui lòng chọn gói dịch vụ");
@@ -574,7 +463,6 @@ const Booking = () => {
         shooting_type: shootingType,
         location: shootingType === "STUDIO" ? "Cao Hiển Studio" : values.location,
         destination_id: shootingType === "OUTDOOR" ? selectedWeatherCity?.id : "",
-        destination_coordinates: shootingType === "OUTDOOR" ? selectedLocationCoordinates : null,
         travel_estimate: shootingType === "OUTDOOR" ? travelEstimate : null,
         note: values.note,
       };
@@ -589,7 +477,6 @@ const Booking = () => {
         rangeStartDate: rangeStartDate?.format("YYYY-MM-DD") || null,
         rangeEndDate: rangeEndDate?.format("YYYY-MM-DD") || null,
         weatherCity: selectedWeatherCity?.name || "",
-        destinationCoordinates: selectedLocationCoordinates,
         currentCalendarMonth: currentCalendarMonth.format("YYYY-MM-DD"),
       }));
       sessionStorage.setItem("pendingBookingData", JSON.stringify(submitData));
@@ -851,36 +738,24 @@ const Booking = () => {
                         style={{
                           marginTop: 6,
                           fontSize: 12,
-                          lineHeight: 1.4,
-                          padding: "4px 8px",
-                          borderRadius: 4,
-                          background: selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.08)" : "rgba(250, 140, 22, 0.08)",
-                          border: `1px solid ${selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.2)" : "rgba(250, 140, 22, 0.2)"}`,
+                          lineHeight: 1.5,
+                          padding: "8px 10px",
+                          borderRadius: 6,
+                          background: selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.06)" : "rgba(250, 140, 22, 0.06)",
+                          border: `1px solid ${selectedWeatherCity.tier === 1 ? "rgba(82, 196, 26, 0.18)" : "rgba(250, 140, 22, 0.18)"}`,
                         }}
                       >
                         <span style={{ color: travelEstimate?.requiresQuote ? "#d46b08" : travelEstimate?.surchargeAmount ? "#d46b08" : "#389e0d", fontWeight: 600 }}>
-                          {travelEstimateLoading ? "Đang tính tuyến..." : `${travelEstimate?.requiresQuote ? "📞 " : travelEstimate?.surchargeAmount ? "🚗 " : "✅ "}Phụ thu di chuyển: ${travelEstimate?.surchargeText || selectedWeatherCity.surchargeText}`}
+                          {`${travelEstimate?.requiresQuote ? "📞 " : travelEstimate?.surchargeAmount ? "🚗 " : "✅ "}Phụ thu dự tính: ${travelEstimate?.surchargeText || selectedWeatherCity.surchargeText}`}
                         </span>
-                        <span style={{ color: "#777", display: "block", fontSize: 11 }}>
-                          {travelEstimateLoading
-                            ? "Vui lòng chờ kết quả tuyến đường"
-                            : travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined
-                              ? `${travelEstimate.distanceKm} km một chiều${travelEstimate.source === "OSRM_ROUTE" ? " · tuyến OSRM tham khảo" : " · mốc trung tâm tham khảo"}`
-                              : (travelEstimate?.reason || "Studio sẽ xác nhận tuyến và phụ thu")}
+                        <span style={{ color: "#777", display: "block", fontSize: 11, marginTop: 2 }}>
+                          {travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined
+                            ? `${travelEstimate.distanceKm} km một chiều · mốc trung tâm tham khảo`
+                            : "Studio sẽ xác nhận tuyến và phụ thu chính thức"}
                         </span>
-                        <span style={{ color: "#888", display: "block", fontSize: 10, marginTop: 2 }}>
-                          Tính một chiều; phụ thu áp dụng một lần cho booking.
+                        <span style={{ color: "#BFA16A", display: "block", fontSize: 11, marginTop: 4, fontWeight: 600 }}>
+                          📋 Đây là giá dự tính. Nhân viên sẽ liên hệ để chốt nơi chụp cụ thể và xác nhận phụ thu chính thức.
                         </span>
-                        {!travelEstimateLoading && travelEstimate?.source === "OSRM_ROUTE" && (
-                          <a
-                            href="https://www.openstreetmap.org/copyright"
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ display: "block", color: "#888", fontSize: 10, marginTop: 2 }}
-                          >
-                            © OpenStreetMap contributors (ODbL)
-                          </a>
-                        )}
                       </div>
                     )}
                   </Col>
@@ -888,32 +763,19 @@ const Booking = () => {
                   {shootingType === "OUTDOOR" && (
                     <Col xs={24} sm={12} lg={6}>
                       <Form.Item
-                        label="Địa điểm mong muốn"
+                        label="Nơi chụp mong muốn (ghi chú)"
                         name="location"
                         style={{ marginBottom: 0 }}
                       >
-                        <AutoComplete
-                          options={addressOptions}
-                          onSearch={handleAddressSearch}
-                          onChange={(value) => {
-                            if (!addressOptions.some((item) => item.value === value)) {
-                              setSelectedLocationCoordinates(null);
-                            }
-                          }}
-                          onSelect={(value, option) => {
-                            const selectedOption = addressOptions.find((item) => item.value === value);
-                            const coordinates = option?.coordinates || selectedOption?.coordinates;
-                            setSelectedLocationCoordinates(coordinates || null);
-                          }}
-                          popupClassName="booking-select-dropdown"
-                        >
-                          <Input
-                            size="large"
-                            prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                            placeholder="Ví dụ: Công viên Hòa Bình"
-                          />
-                        </AutoComplete>
+                        <Input
+                          size="large"
+                          prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
+                          placeholder="VD: Công viên Hòa Bình, Cầu Rạch Miễu..."
+                        />
                       </Form.Item>
+                      <div style={{ fontSize: 11, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
+                        💡 Bạn có thể ghi chú nơi muốn chụp. Nhân viên studio sẽ liên hệ tư vấn và chốt địa điểm chính xác.
+                      </div>
                     </Col>
                   )}
                   {shootingType === "STUDIO" && (
@@ -1429,12 +1291,12 @@ const Booking = () => {
                         <Col xs={24} md={6} style={{ borderLeft: "1px solid #E8DED2", textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                           {shootingType === "OUTDOOR" && (
                             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: "#666", marginBottom: 8, textAlign: "left" }}>
-                              <span>Phụ thu di chuyển{travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined ? ` (${travelEstimate.distanceKm} km)` : ""}</span>
+                              <span>Phụ thu di chuyển (dự tính){travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined ? ` (~${travelEstimate.distanceKm} km)` : ""}</span>
                               <strong>{travelEstimate?.requiresQuote ? "Studio xác nhận" : `${travelSurcharge.toLocaleString("vi-VN")}đ`}</strong>
                             </div>
                           )}
                           <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>
-                            {travelEstimate?.requiresQuote && shootingType === "OUTDOOR" ? "Tạm tính (chưa gồm phụ thu)" : "Tổng Cộng"}
+                            {travelEstimate?.requiresQuote && shootingType === "OUTDOOR" ? "Tạm tính (chưa gồm phụ thu)" : "Tổng Cộng (dự tính)"}
                           </span>
                           <div style={{ fontSize: 24, fontWeight: 700, color: "#BFA16A" }}>
                             {finalPrice.toLocaleString("vi-VN")}đ
@@ -1442,6 +1304,11 @@ const Booking = () => {
                           <div style={{ fontSize: 12, color: "#666", marginTop: 6, fontWeight: 500 }}>
                             Tiền cọc (30%): <span style={{ color: "#2F2F2F", fontWeight: 600 }}>{Math.round(finalPrice * 0.3).toLocaleString("vi-VN")}đ</span>
                           </div>
+                          {shootingType === "OUTDOOR" && (
+                            <div style={{ fontSize: 10, color: "#999", marginTop: 4, lineHeight: 1.3 }}>
+                              * Nhân viên sẽ liên hệ chốt nơi chụp & phụ thu chính thức
+                            </div>
+                          )}
                         </Col>
                       </Row>
                     </div>

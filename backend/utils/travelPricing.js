@@ -90,12 +90,7 @@ async function getRoadDistanceKm(destination) {
 }
 
 async function calculateTravelEstimate({ destinationId, destinationCoordinates, hasCustomLocation = false } = {}) {
-  const destination = DESTINATIONS[destinationId];
-  if (!destination) throw new Error("Khu vực chụp không hợp lệ.");
-
-  if (hasCustomLocation && !isValidCoordinate(destinationCoordinates)) {
-    return quoteRequired(destinationId, null, "MANUAL_REVIEW", "Không xác định được tọa độ địa điểm; studio sẽ xác nhận phụ thu.");
-  }
+  const destination = destinationId ? DESTINATIONS[destinationId] : null;
 
   if (isValidCoordinate(destinationCoordinates)) {
     try {
@@ -103,11 +98,22 @@ async function calculateTravelEstimate({ destinationId, destinationCoordinates, 
         lat: Number(destinationCoordinates.lat),
         lon: Number(destinationCoordinates.lon),
       });
-      return formatEstimate(destinationId, distanceKm, "OSRM_ROUTE");
+      return formatEstimate(destinationId || "custom", distanceKm, "OSRM_ROUTE");
     } catch (error) {
       console.error("Không tính được tuyến phụ thu:", error.message);
-      return quoteRequired(destinationId, null, "MANUAL_REVIEW", "Chưa tính được tuyến tự động; studio sẽ xác nhận phụ thu.");
+      return quoteRequired(destinationId || "custom", null, "MANUAL_REVIEW", "Chưa tính được tuyến tự động; studio sẽ xác nhận phụ thu.");
     }
+  }
+
+  if (hasCustomLocation && !isValidCoordinate(destinationCoordinates) && !destination) {
+    return quoteRequired(destinationId || "custom", null, "MANUAL_REVIEW", "Không xác định được tọa độ địa điểm; studio sẽ xác nhận phụ thu.");
+  }
+
+  if (!destination) {
+    if (destinationId) {
+      throw new Error("Khu vực chụp không hợp lệ.");
+    }
+    throw new Error("Vui lòng cung cấp khu vực hoặc tọa độ địa điểm hợp lệ.");
   }
 
   if (destination.requiresQuote || !Number.isFinite(destination.referenceKm)) {
@@ -120,4 +126,6 @@ module.exports = {
   DESTINATIONS,
   STUDIO_ORIGIN,
   calculateTravelEstimate,
+  SURCHARGE_BANDS,
+  getBand,
 };

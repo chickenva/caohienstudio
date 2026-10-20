@@ -37,7 +37,7 @@ const DESTINATIONS = [
   { id: "lam-dong-da-lat", name: "Lâm Đồng (Đà Lạt)", regionName: "Lâm Đồng", weatherName: "Đà Lạt", referenceName: "Đà Lạt", referenceKm: 375, lat: 11.9404, lon: 108.4373, requiresQuote: true },
 ];
 
-const getBandForDistance = (distanceKm) => {
+export const getBandForDistance = (distanceKm) => {
   if (!Number.isFinite(Number(distanceKm))) return null;
   const roundedKm = Math.ceil(Number(distanceKm));
   return TRAVEL_SURCHARGE_BANDS.find((band) =>

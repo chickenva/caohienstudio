@@ -1258,8 +1258,12 @@ exports.updateBookingInfo = async (req, res) => {
       note,
       total_amount,
       deposit_amount,
+      travel_distance_km,
       travel_surcharge_amount,
       travel_surcharge_status,
+      travel_pricing_source,
+      travel_destination_id,
+      travel_destination_coordinates,
       contract_note,
       contract_file_url,
       contract_original_name,
@@ -1334,6 +1338,10 @@ exports.updateBookingInfo = async (req, res) => {
     }
     if (booking.shooting_type === "STUDIO") {
       booking.location = STUDIO_LOCATION;
+      booking.travel_distance_km = 0;
+      booking.travel_surcharge_amount = 0;
+      booking.travel_surcharge_status = "NOT_APPLICABLE";
+      booking.travel_pricing_source = "NOT_APPLICABLE";
     } else if (booking.shooting_type === "OUTDOOR" && !booking.location) {
       return res.status(400).json({ message: "Vui lòng nhập địa điểm ngoại cảnh" });
     }
@@ -1346,6 +1354,19 @@ exports.updateBookingInfo = async (req, res) => {
     // Cập nhật nhân sự
     if (assigned_staff_ids !== undefined) booking.assigned_staff_ids = assigned_staff_ids;
     if (external_staff !== undefined) booking.external_staff = external_staff;
+
+    if (travel_distance_km !== undefined) {
+      booking.travel_distance_km = travel_distance_km === null ? null : Number(travel_distance_km);
+    }
+    if (travel_pricing_source !== undefined) {
+      booking.travel_pricing_source = travel_pricing_source;
+    }
+    if (travel_destination_id !== undefined) {
+      booking.travel_destination_id = travel_destination_id;
+    }
+    if (travel_destination_coordinates !== undefined) {
+      booking.travel_destination_coordinates = travel_destination_coordinates;
+    }
 
     if (travel_surcharge_amount !== undefined && travel_surcharge_amount !== null) {
       const amount = Number(travel_surcharge_amount);
