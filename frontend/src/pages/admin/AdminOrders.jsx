@@ -51,6 +51,9 @@ import {
   CarOutlined,
   LoadingOutlined,
   InfoCircleOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -67,10 +70,62 @@ const { Title, Text, Paragraph } = Typography;
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
 
 const getBookingCustomerInfo = (booking) => ({
-  full_name: booking?.customer_id?.full_name || booking?.customer_full_name || "Khách hàng",
-  email: booking?.customer_id?.email || booking?.customer_email || "",
-  phone: booking?.customer_id?.phone || booking?.customer_phone || "",
+  full_name: booking?.customer_full_name || booking?.customer_id?.full_name || "Khách hàng",
+  email: booking?.customer_email || booking?.customer_id?.email || "",
+  phone: booking?.customer_phone || booking?.customer_id?.phone || "",
 });
+
+const getServiceId = (service) => String(service?._id || service || "");
+
+const getBookingMainServiceIds = (booking) => new Set([
+  ...(booking?.original_service_ids || []),
+  booking?.service_id,
+].map(getServiceId).filter(Boolean));
+
+// Legacy customer bookings also stored secondary main packages in extra_service_ids.
+// Exclude those references wherever the admin UI displays actual addons.
+const getBookingAddons = (booking) => {
+  const mainServiceIds = getBookingMainServiceIds(booking);
+  return (booking?.extra_service_ids || []).filter((service) => {
+    if (mainServiceIds.has(getServiceId(service))) return false;
+    if (!service || typeof service !== "object" || (!("allow_addon" in service) && !("category" in service))) return true;
+    const name = (service.name || "").toLocaleLowerCase("vi");
+    return service.allow_addon === true || service.category === "PRINT" ||
+      name.includes("gói lẻ lễ tối") || name.includes("gói thêm flycam");
+  });
+};
+
+// Only offer services configured as add-ons (plus legacy PRINT category items).
+// The evening and flycam add-ons remain conditional on compatible main packages.
+const getAddonServicesForMain = (services, mainServiceIds = []) => {
+  const selectedIds = new Set(mainServiceIds.map(String));
+  const selectedMains = services.filter((service) => selectedIds.has(String(service._id)));
+  const addons = services.filter((service) =>
+    !selectedIds.has(String(service._id)) && (service.allow_addon === true || service.category === "PRINT")
+  );
+
+  selectedMains.forEach((service) => {
+    const mainName = (service.name || "").toLocaleLowerCase("vi");
+    if (mainName.includes("chụp truyền thống") || mainName.includes("combo")) {
+      const eveningAddon = services.find((item) => (item.name || "").toLocaleLowerCase("vi").includes("gói lẻ lễ tối"));
+      if (eveningAddon && !addons.some((item) => String(item._id) === String(eveningAddon._id))) addons.push(eveningAddon);
+    }
+    if (mainName.includes("quay") || mainName.includes("combo")) {
+      const flycamAddon = services.find((item) => (item.name || "").toLocaleLowerCase("vi").includes("gói thêm flycam"));
+      if (flycamAddon && !addons.some((item) => String(item._id) === String(flycamAddon._id))) addons.push(flycamAddon);
+    }
+  });
+
+  const uniqueAddons = addons.filter((item, index, all) =>
+    all.findIndex((candidate) => String(candidate._id) === String(item._id)) === index
+  );
+  uniqueAddons.sort((a, b) => {
+    const aIsSpecial = ["gói lẻ lễ tối", "gói thêm flycam"].some((name) => (a.name || "").toLocaleLowerCase("vi").includes(name));
+    const bIsSpecial = ["gói lẻ lễ tối", "gói thêm flycam"].some((name) => (b.name || "").toLocaleLowerCase("vi").includes(name));
+    return aIsSpecial === bIsSpecial ? 0 : aIsSpecial ? -1 : 1;
+  });
+  return uniqueAddons;
+};
 
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
@@ -136,6 +191,7 @@ export default function AdminOrders() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [editForm] = Form.useForm();
+  const editDepositPercent = Form.useWatch("deposit_percent", editForm) || 30;
   const [savingEdit, setSavingEdit] = useState(false);
   const [editTotalAmount, setEditTotalAmount] = useState(0);
   // Giá gói chính và addon đã chọn để auto-tính tổng
@@ -212,14 +268,18 @@ export default function AdminOrders() {
   // Lấy danh sách tất cả dịch vụ (chỉ gọi 1 lần)
   // Tải danh sách dịch vụ để modal chỉnh đơn có thể chọn lại gói.
   const fetchServices = useCallback(async () => {
-    if (servicesList.length > 0) return;
+    if (servicesList.length > 0) return servicesList;
     setServicesLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/services`);
+      const res = await axios.get(`${API_URL}/services/admin/all`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       const list = Array.isArray(res.data) ? res.data : (res.data?.services || res.data?.data || []);
       setServicesList(list);
+      return list;
     } catch (err) {
       message.error("Không thể tải danh sách dịch vụ");
+      return [];
     } finally {
       setServicesLoading(false);
     }
@@ -430,7 +490,7 @@ export default function AdminOrders() {
 
   // Đổ dữ liệu booking vào form để admin chỉnh trước khi gửi hợp đồng.
   const openEditModal = async (record) => {
-    await fetchServices();
+    const serviceCatalog = await fetchServices();
     setEditTarget(record);
     setContractPdfUrl(record.contract_file_url || "");
     setContractPdfName(record.contract_original_name || "");
@@ -438,9 +498,15 @@ export default function AdminOrders() {
     const depositAmt = record.deposit_amount || Math.round(total * (record.deposit_percent || 30) / 100);
 
     const mainSvcIds = record.original_service_ids?.length
-      ? record.original_service_ids.map(s => s._id || s)
+      ? record.original_service_ids.map(getServiceId).filter(Boolean)
       : (record.service_id ? [record.service_id._id || record.service_id] : []);
-    const addonIds = (record.extra_service_ids || []).map(s => s._id || s);
+    // Old customer bookings stored secondary main packages in extra_service_ids too.
+    // Keep only actual addons in the edit control; original_service_ids remains the main-package source.
+    const allowedAddonIds = new Set(getAddonServicesForMain(serviceCatalog, mainSvcIds).map((service) => String(service._id)));
+    const catalogServiceIds = new Set(serviceCatalog.map((service) => String(service._id)));
+    const addonIds = getBookingAddons(record)
+      .map(getServiceId)
+      .filter((id) => id && (allowedAddonIds.has(id) || !catalogServiceIds.has(id)));
 
     setSelectedMainService(mainSvcIds);
     setSelectedAddonIds(addonIds);
@@ -450,6 +516,9 @@ export default function AdminOrders() {
     setEditLocationOptions([]);
 
     editForm.setFieldsValue({
+      customer_full_name: record.customer_full_name || record.customer_id?.full_name || "",
+      customer_phone: record.customer_phone || record.customer_id?.phone || "",
+      customer_email: record.customer_email || record.customer_id?.email || "",
       service_ids: mainSvcIds,
       extra_service_ids: addonIds,
       shoot_date: record.start_time ? dayjs(record.start_time) : null,
@@ -460,7 +529,6 @@ export default function AdminOrders() {
       contract_note: record.contract_note || "",
       total_amount: total,
       travel_surcharge_amount: record.travel_surcharge_amount || 0,
-      travel_surcharge_status: record.travel_surcharge_status || "NOT_APPLICABLE",
       deposit_percent: record.deposit_percent || 30,
       deposit_amount: depositAmt,
     });
@@ -486,7 +554,11 @@ export default function AdminOrders() {
   // Khi đổi gói chính, cập nhật lại tổng tiền và tiền cọc.
   const handleMainServiceChange = (svcIds) => {
     setSelectedMainService(svcIds);
-    const total = recalcTotalFromServices(svcIds, selectedAddonIds);
+    const allowedAddonIds = new Set(getAddonServicesForMain(servicesList, svcIds).map((service) => String(service._id)));
+    const retainedAddonIds = selectedAddonIds.filter((id) => allowedAddonIds.has(String(id)));
+    setSelectedAddonIds(retainedAddonIds);
+    editForm.setFieldsValue({ extra_service_ids: retainedAddonIds });
+    const total = recalcTotalFromServices(svcIds, retainedAddonIds);
     const pct = editForm.getFieldValue("deposit_percent") || 30;
     setEditTotalAmount(total);
     editForm.setFieldsValue({
@@ -518,20 +590,6 @@ export default function AdminOrders() {
     const amount = Math.max(0, Number(val || 0));
     const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
     const pct = editForm.getFieldValue("deposit_percent") || 30;
-    if (amount > 0) editForm.setFieldsValue({ travel_surcharge_status: "ESTIMATED" });
-    setEditTotalAmount(total);
-    editForm.setFieldsValue({
-      total_amount: total,
-      deposit_amount: Math.round((total * pct) / 100),
-    });
-  };
-
-  const handleTravelSurchargeStatusChange = (status) => {
-    const amount = status === "QUOTE_REQUIRED" || status === "NOT_APPLICABLE"
-      ? 0
-      : Number(editForm.getFieldValue("travel_surcharge_amount") || 0);
-    const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
-    const pct = editForm.getFieldValue("deposit_percent") || 30;
     setEditTotalAmount(total);
     editForm.setFieldsValue({
       travel_surcharge_amount: amount,
@@ -552,7 +610,6 @@ export default function AdminOrders() {
       editForm.setFieldsValue({
         location: "Cao Hiển Studio",
         travel_surcharge_amount: 0,
-        travel_surcharge_status: "NOT_APPLICABLE",
       });
       setEditTravelDistanceKm(0);
       setEditTravelPricingSource("NOT_APPLICABLE");
@@ -657,7 +714,6 @@ export default function AdminOrders() {
 
         editForm.setFieldsValue({
           travel_surcharge_amount: newAmount,
-          travel_surcharge_status: newStatus,
         });
 
         const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + newAmount;
@@ -823,9 +879,18 @@ export default function AdminOrders() {
     try {
       const values = await editForm.validateFields();
       setSavingEdit(true);
+      const surchargeAmount = Number(values.travel_surcharge_amount || 0);
+      const surchargeStatus = (values.shooting_type === "STUDIO" || surchargeAmount === 0)
+        ? "NOT_APPLICABLE"
+        : "ESTIMATED";
       // Chuyển dayjs sang định dạng YYYY-MM-DD và đính kèm thông tin file PDF hợp đồng
       const payload = {
         ...values,
+        customer_full_name: values.customer_full_name?.trim(),
+        customer_phone: values.customer_phone?.trim(),
+        customer_email: values.customer_email?.trim(),
+        travel_surcharge_amount: surchargeAmount,
+        travel_surcharge_status: surchargeStatus,
         shoot_date: values.shoot_date ? values.shoot_date.format("YYYY-MM-DD") : undefined,
         travel_distance_km: editTravelDistanceKm,
         travel_pricing_source: editTravelPricingSource,
@@ -900,16 +965,24 @@ export default function AdminOrders() {
     {
       title: "DỊCH VỤ",
       key: "services",
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{record.service_id?.name || "Dịch vụ"}</div>
-          {record.extra_service_ids?.length > 0 && (
-            <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
-              + {record.extra_service_ids.map(s => s.name).join(", ")}
+      render: (_, record) => {
+        const mainServices = record.original_service_ids?.length
+          ? record.original_service_ids
+          : record.service_id ? [record.service_id] : [];
+        const addons = getBookingAddons(record);
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>
+              {mainServices.map(service => service?.name).filter(Boolean).join(", ") || record.service_id?.name || "Dịch vụ"}
             </div>
-          )}
-        </div>
-      ),
+            {addons.length > 0 && (
+              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                + {addons.map(service => service?.name || "Gói đi kèm").join(", ")}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "LỊCH CHỤP",
@@ -999,12 +1072,29 @@ export default function AdminOrders() {
 
   // Lọc addon services (loại trừ gói chính đã chọn)
   // Loại gói chính khỏi danh sách addon để tránh chọn trùng.
-  const addonOptions = servicesList
-    .filter(s => !(selectedMainService || []).map(String).includes(String(s._id)))
+  const addonOptions = getAddonServicesForMain(servicesList, selectedMainService || [])
     .map(s => ({
       value: s._id,
-      label: `${s.name} — ${Number(s.base_price || 0).toLocaleString("vi-VN")}đ`,
+      label: `${s.name}${s.is_active === false ? " (Đã ẩn)" : ""} — ${Number(s.base_price || 0).toLocaleString("vi-VN")}đ`,
     }));
+  const knownAddonOptionIds = new Set(addonOptions.map(option => String(option.value)));
+  const catalogServiceIds = new Set(servicesList.map(service => String(service._id)));
+  const mainServiceIds = getBookingMainServiceIds(editTarget);
+  const unresolvedAddonOptions = getBookingAddons(editTarget)
+    .map(service => ({
+      id: getServiceId(service),
+      name: typeof service === "object" ? service.name : "",
+      price: typeof service === "object" ? service.base_price : null,
+    }))
+    .filter(service => service.id && !mainServiceIds.has(service.id) && !catalogServiceIds.has(service.id) && !knownAddonOptionIds.has(service.id))
+    .map(service => ({
+      value: service.id,
+      label: service.name
+        ? `${service.name}${service.price != null ? ` — ${Number(service.price).toLocaleString("vi-VN")}đ` : ""} (Không còn trong danh mục)`
+        : "Gói đi kèm không còn trong danh mục",
+      disabled: true,
+    }));
+  addonOptions.push(...unresolvedAddonOptions);
 
   return (
     <div>
@@ -1186,12 +1276,12 @@ export default function AdminOrders() {
             </Descriptions.Item>
             <Descriptions.Item label="Gói chính">
               {selectedBooking.original_service_ids?.length > 0
-                ? selectedBooking.original_service_ids.map(s => s.name).join(", ")
+                ? selectedBooking.original_service_ids.map(s => s?.name).filter(Boolean).join(", ")
                 : selectedBooking.service_id?.name}
             </Descriptions.Item>
             <Descriptions.Item label="Gói đi kèm">
-              {selectedBooking.extra_service_ids?.length > 0
-                ? selectedBooking.extra_service_ids.map(s => s.name).join(", ")
+              {getBookingAddons(selectedBooking).length > 0
+                ? getBookingAddons(selectedBooking).map(service => service?.name || "Gói đi kèm").join(", ")
                 : "Không có"}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày / buổi chụp">
@@ -1425,6 +1515,53 @@ export default function AdminOrders() {
         <Spin spinning={servicesLoading}>
           <Form form={editForm} layout="vertical">
 
+            {/* THÔNG TIN KHÁCH HÀNG */}
+            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Thông tin khách hàng</Divider>
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item
+                  label="Họ và tên khách hàng"
+                  name="customer_full_name"
+                  rules={[{ required: true, message: "Vui lòng nhập họ và tên khách hàng" }]}
+                >
+                  <Input
+                    prefix={<UserOutlined style={{ color: "#BFA16A" }} />}
+                    placeholder="Nguyễn Văn A"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  label="Số điện thoại"
+                  name="customer_phone"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập số điện thoại" },
+                    { pattern: /^[0-9+() -]{8,15}$/, message: "Số điện thoại không hợp lệ" }
+                  ]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined style={{ color: "#BFA16A" }} />}
+                    placeholder="0912 345 678"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  label="Email nhận hợp đồng"
+                  name="customer_email"
+                  rules={[{ type: "email", message: "Email không đúng định dạng" }]}
+                >
+                  <Input
+                    prefix={<MailOutlined style={{ color: "#BFA16A" }} />}
+                    placeholder="khachhang@gmail.com"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
             {/* DỊCH VỤ */}
             <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Dịch vụ</Divider>
             <Form.Item label="Gói chụp chính" name="service_ids" rules={[{ required: true, message: "Vui lòng chọn gói chụp chính" }]}>
@@ -1434,7 +1571,13 @@ export default function AdminOrders() {
                 optionFilterProp="label"
                 placeholder="Chọn gói chụp chính"
                 onChange={handleMainServiceChange}
-                options={servicesList.map(s => ({
+                options={servicesList.filter((service) => {
+                  const name = (service.name || "").toLocaleLowerCase("vi");
+                  const alreadySelected = (selectedMainService || []).map(String).includes(String(service._id));
+                  const isMainCandidate = service.category !== "PRINT" && service.allow_addon !== true &&
+                    !name.includes("gói lẻ lễ tối") && !name.includes("gói thêm flycam");
+                  return alreadySelected || isMainCandidate;
+                }).map(s => ({
                   value: s._id,
                   label: `${s.name} — ${Number(s.base_price || 0).toLocaleString("vi-VN")}đ`,
                 }))}
@@ -1560,11 +1703,11 @@ export default function AdminOrders() {
             {/* TÀI CHÍNH */}
             <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Tài chính</Divider>
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={24}>
                 <Form.Item
                   label={
                     <Space>
-                      <span>Phụ thu di chuyển (đ)</span>
+                      <span>Phụ thu di chuyển</span>
                       <Tooltip title="Hệ thống tự tính theo cự ly bộ hành một chiều. Nhân viên có thể tùy chỉnh lại số tiền nếu muốn.">
                         <InfoCircleOutlined style={{ color: "#BFA16A", fontSize: 13 }} />
                       </Tooltip>
@@ -1576,6 +1719,10 @@ export default function AdminOrders() {
                       <span style={{ fontSize: 11, color: "#888" }}>
                         💡 Đã tự tính cho {editTravelDistanceKm} km. Bạn có thể thay đổi số tiền này nếu cần.
                       </span>
+                    ) : editShootingType === "STUDIO" ? (
+                      <span style={{ fontSize: 11, color: "#888" }}>
+                        🏠 Chụp tại Studio: Không áp dụng phụ thu di chuyển (0đ)
+                      </span>
                     ) : null
                   }
                 >
@@ -1584,61 +1731,43 @@ export default function AdminOrders() {
                     min={0}
                     step={100000}
                     size="large"
-                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                    parser={(v) => v.replace(/,/g, "")}
+                    addonAfter="đ"
+                    disabled={editShootingType === "STUDIO"}
+                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
+                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
                     onChange={handleTravelSurchargeChange}
                   />
                 </Form.Item>
               </Col>
-              <Col span={12}>
-                <Form.Item label="Trạng thái phụ thu" name="travel_surcharge_status">
-                  <Select
-                    size="large"
-                    onChange={handleTravelSurchargeStatusChange}
-                    options={[
-                      { value: "NOT_APPLICABLE", label: "Không áp dụng" },
-                      { value: "ESTIMATED", label: "Đã xác định" },
-                      { value: "QUOTE_REQUIRED", label: "Studio cần báo giá" },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
             </Row>
+            <Form.Item name="deposit_percent" hidden>
+              <InputNumber onChange={handleDepositPercentChange} />
+            </Form.Item>
             <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item label="Tổng tiền (đ)" name="total_amount" rules={[{ required: true }]}>
+              <Col span={12}>
+                <Form.Item label="Tổng tiền" name="total_amount" rules={[{ required: true, message: "Vui lòng nhập tổng tiền" }]}>
                   <InputNumber
                     style={{ width: "100%" }}
                     min={0}
                     step={100000}
                     size="large"
-                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                    parser={(v) => v.replace(/,/g, "")}
+                    addonAfter="đ"
+                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
+                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
                     onChange={handleTotalAmountChange}
                   />
                 </Form.Item>
               </Col>
-              <Col span={8}>
-                <Form.Item label="Cọc (%)" name="deposit_percent">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={0} max={100}
-                    size="large"
-                    disabled
-                    formatter={(v) => `${v}%`}
-                    parser={(v) => v.replace("%", "")}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item label="Tiền cọc (đ)" name="deposit_amount">
+              <Col span={12}>
+                <Form.Item label={`Tiền cọc (${editDepositPercent}%)`} name="deposit_amount">
                   <InputNumber
                     style={{ width: "100%" }}
                     min={0}
                     step={100000}
                     size="large"
-                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                    parser={(v) => v.replace(/,/g, "")}
+                    addonAfter="đ"
+                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
+                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
                   />
                 </Form.Item>
               </Col>

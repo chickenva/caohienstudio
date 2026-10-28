@@ -67,6 +67,19 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
   * Cho phép Admin điều chỉnh phụ thu di chuyển linh hoạt trên `AdminOrders.jsx`.
   * Hỗ trợ cập nhật trạng thái phụ thu (`NOT_APPLICABLE`, `ESTIMATED`, `QUOTE_REQUIRED`).
 
+#### Tuần 4 — Chuẩn Hóa Modal Quản Trị Đơn & Tối Ưu UX Chốt Hợp Đồng
+* **Bổ sung mục Thông tin khách hàng vào Modal Chỉnh sửa thông tin đơn:**
+  * Thêm cụm Họ và tên khách hàng (`customer_full_name`), Số điện thoại (`customer_phone`), Email nhận hợp đồng (`customer_email`) trực tiếp trên đầu Modal `AdminOrders.jsx`.
+  * Hỗ trợ admin tra cứu liên hệ nhanh để gọi điện/Zalo tư vấn và cập nhật khi khách hàng thay đổi thông tin liên lạc.
+  * Backend (`bookingController.updateBookingInfo`) cập nhật trực tiếp vào đơn đặt lịch; hàm `getBookingCustomerInfo` và `contractPdf.js` ưu tiên lấy dữ liệu từ đơn hàng để Hợp đồng PDF luôn in đúng thông tin thực tế.
+* **Tối giản UX Tài chính & Loại bỏ Dropdown "Trạng thái phụ thu":**
+  * Gỡ bỏ hoàn toàn dropdown *Trạng thái phụ thu (Không áp dụng / Đã xác định / Studio cần báo giá)* khỏi UI để tránh làm rối nhân viên chốt đơn.
+  * Giữ lại 1 ô duy nhất: "Phụ thu di chuyển". Tự động khóa 0đ khi chụp tại Studio; tự động tính và cho phép sửa số tiền khi chụp Ngoại cảnh.
+  * Backend và Frontend tự động đồng bộ ngầm trạng thái phụ thu (`amount > 0 ? "ESTIMATED" : "NOT_APPLICABLE"`).
+* **Chuẩn hóa Ký hiệu Tiền tệ (`addonAfter="đ"`):**
+  * Bỏ chữ `(đ)` ở Label, chuyển sang dùng thuộc tính `addonAfter="đ"` nằm cố định ở góc phải bên trong từng ô `InputNumber`.
+  * Tối ưu hóa parser và formatter để xử lý số tiền tiếng Việt mượt mà, không bị lỗi khi xóa trắng hoặc nhập số liệu.
+
 ---
 
 ### 🚀 Giai đoạn 2: Hoàn thiện tính năng Studio & Mở rộng hệ thống

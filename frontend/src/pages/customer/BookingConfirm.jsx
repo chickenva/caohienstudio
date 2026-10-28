@@ -52,7 +52,7 @@ const BookingConfirm = () => {
   const [otpEmail, setOtpEmail] = useState("");
   const [submittedAsAccount, setSubmittedAsAccount] = useState(false);
   const [currentUser] = useState(readStoredUser);
-  const [isAuthenticated] = useState(() => Boolean(localStorage.getItem("token") && currentUser));
+  const [isAuthenticated] = useState(() => Boolean(localStorage.getItem("token")));
 
   useEffect(() => {
     if (location.state?.bookingData) {
@@ -372,7 +372,7 @@ const BookingConfirm = () => {
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Buổi và giờ chụp</div>
-                  <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7 }}>
+                  <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, fontWeight: 600 }}>
                     Studio sẽ liên hệ để tư vấn và chốt buổi, giờ chụp sau khi nhận yêu cầu.
                   </div>
                 </div>
@@ -406,10 +406,10 @@ const BookingConfirm = () => {
 
               {bookingData.shooting_type === "OUTDOOR" && (
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, color: "#555", fontSize: 14 }}>
-                  <span>
+                  <span style={{ fontWeight: 500 }}>
                     Phụ thu di chuyển{travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined ? ` (${travelEstimate.distanceKm} km một chiều)` : ""}
                   </span>
-                  <strong>{travelEstimate?.requiresQuote ? "Studio xác nhận" : `${travelSurcharge.toLocaleString("vi-VN")}đ`}</strong>
+                  <span style={{ fontWeight: 400 }}>{travelEstimate?.requiresQuote ? "Studio xác nhận" : `${travelSurcharge.toLocaleString("vi-VN")}đ`}</span>
                 </div>
               )}
 
@@ -452,88 +452,86 @@ const BookingConfirm = () => {
             </Col>
           </Row>
 
-          <Divider style={{ margin: "28px 0 22px" }} />
-          <div>
-            <h3 style={{ fontSize: 14, color: PRIMARY_COLOR, textTransform: "uppercase", letterSpacing: 2, margin: "0 0 8px" }}>
-              Thông tin khách hàng
-            </h3>
-            <Radio.Group
-              value={contactMode}
-              onChange={(event) => setContactMode(event.target.value)}
-              style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}
-            >
-              <Radio value="guest">Tiếp tục không cần tài khoản</Radio>
-              <Radio value="account">Đăng nhập / đăng ký</Radio>
-            </Radio.Group>
-
-            {contactMode === "guest" ? (
-              <Form
-                form={contactForm}
-                layout="vertical"
-                requiredMark={false}
-                initialValues={readSessionJson("pendingBookingContact") || {
-                  full_name: currentUser?.full_name || currentUser?.name || "",
-                  phone: currentUser?.phone || "",
-                  email: currentUser?.email || "",
-                }}
-                onValuesChange={(_, values) => {
-                  sessionStorage.setItem("pendingBookingContact", JSON.stringify(values));
-                }}
-              >
-                <Row gutter={16}>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      label="Họ và tên"
-                      name="full_name"
-                      rules={[{ required: true, whitespace: true, message: "Vui lòng nhập họ và tên." }]}
-                    >
-                      <Input size="large" placeholder="Nguyễn Văn A" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      label="Số điện thoại"
-                      name="phone"
-                      rules={[
-                        { required: true, message: "Vui lòng nhập số điện thoại." },
-                        { pattern: /^0[0-9]{9,10}$/, message: "Số điện thoại cần bắt đầu bằng 0 và có 10–11 chữ số." },
-                      ]}
-                    >
-                      <Input size="large" placeholder="0912345678" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Form.Item
-                      label="Email"
-                      name="email"
-                      rules={[{ required: true, type: "email", message: "Vui lòng nhập email hợp lệ." }]}
-                    >
-                      <Input size="large" placeholder="email@example.com" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Form>
-            ) : isAuthenticated ? (
-              <div style={{ background: "#fff", border: "1px solid #E8DED2", padding: "16px 18px", color: "#555", lineHeight: 1.8 }}>
-                <strong>{currentUser?.full_name || currentUser?.name || "Tài khoản của bạn"}</strong>
-                <div>{currentUser?.phone || "Chưa có số điện thoại"}</div>
-                <div>{currentUser?.email || ""}</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Button
-                  type="primary"
-                  onClick={() => navigate("/login", { state: { returnTo: "/booking/confirm" } })}
-                  style={{ background: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
+          {!isAuthenticated && (
+            <>
+              <Divider style={{ margin: "28px 0 22px" }} />
+              <div>
+                <h3 style={{ fontSize: 14, color: PRIMARY_COLOR, textTransform: "uppercase", letterSpacing: 2, margin: "0 0 8px" }}>
+                  Thông tin khách hàng
+                </h3>
+                <Radio.Group
+                  value={contactMode}
+                  onChange={(event) => setContactMode(event.target.value)}
+                  style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}
                 >
-                  ĐĂNG NHẬP
-                </Button>
-                <Button onClick={() => navigate("/register", { state: { returnTo: "/booking/confirm" } })}>
-                  ĐĂNG KÝ
-                </Button>
+                  <Radio value="guest">Tiếp tục không cần tài khoản</Radio>
+                  <Radio value="account">Đăng nhập / đăng ký</Radio>
+                </Radio.Group>
+
+                {contactMode === "guest" ? (
+                  <Form
+                    form={contactForm}
+                    layout="vertical"
+                    requiredMark={false}
+                    initialValues={readSessionJson("pendingBookingContact") || {
+                      full_name: currentUser?.full_name || currentUser?.name || "",
+                      phone: currentUser?.phone || "",
+                      email: currentUser?.email || "",
+                    }}
+                    onValuesChange={(_, values) => {
+                      sessionStorage.setItem("pendingBookingContact", JSON.stringify(values));
+                    }}
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          label="Họ và tên"
+                          name="full_name"
+                          rules={[{ required: true, whitespace: true, message: "Vui lòng nhập họ và tên." }]}
+                        >
+                          <Input size="large" placeholder="Nguyễn Văn A" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          label="Số điện thoại"
+                          name="phone"
+                          rules={[
+                            { required: true, message: "Vui lòng nhập số điện thoại." },
+                            { pattern: /^0[0-9]{9,10}$/, message: "Số điện thoại cần bắt đầu bằng 0 và có 10–11 chữ số." },
+                          ]}
+                        >
+                          <Input size="large" placeholder="0912345678" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          label="Email"
+                          name="email"
+                          rules={[{ required: true, type: "email", message: "Vui lòng nhập email hợp lệ." }]}
+                        >
+                          <Input size="large" placeholder="email@example.com" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Form>
+                ) : (
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <Button
+                      type="primary"
+                      onClick={() => navigate("/login", { state: { returnTo: "/booking/confirm" } })}
+                      style={{ background: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
+                    >
+                      ĐĂNG NHẬP
+                    </Button>
+                    <Button onClick={() => navigate("/register", { state: { returnTo: "/booking/confirm" } })}>
+                      ĐĂNG KÝ
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
 
           <div style={{ marginTop: 40, textAlign: "center" }}>
             <Button

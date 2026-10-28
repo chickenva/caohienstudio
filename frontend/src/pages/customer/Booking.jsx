@@ -2,12 +2,13 @@
  * Booking.jsx
  * Trang đặt lịch chụp: chọn dịch vụ, ngày dự kiến và địa điểm.
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Form,
   Row,
   Col,
   Select,
+  AutoComplete,
   Input,
   Button,
   message,
@@ -50,6 +51,37 @@ const readSessionJson = (key) => {
   }
 };
 
+const normalizeGeoText = (value = "") => String(value)
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/đ/gi, "d")
+  .toLocaleLowerCase("vi")
+  .trim();
+
+const normalizeCoordinates = (coordinates) => {
+  const lat = Number(coordinates?.lat);
+  const lon = Number(coordinates?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return { lat, lon };
+};
+
+const matchesSelectedRegion = (properties = {}, city) => {
+  const regionTerms = [city?.regionName, city?.weatherName]
+    .map(normalizeGeoText)
+    .filter((term) => term.length > 2);
+  const regionFields = [
+    properties.state,
+    properties.state_district,
+    properties.city,
+    properties.county,
+    properties.district,
+    properties.locality,
+    properties.municipality,
+  ].map(normalizeGeoText).filter(Boolean);
+
+  return regionTerms.some((term) => regionFields.some((field) => field === term || field.includes(term) || term.includes(field)));
+};
+
 // Màn khách hàng chọn dịch vụ, hình thức chụp và ngày dự kiến.
 const Booking = () => {
   const [form] = Form.useForm();
@@ -73,44 +105,157 @@ const Booking = () => {
   const [rangeStartDate, setRangeStartDate] = useState(null);
   const [rangeEndDate, setRangeEndDate] = useState(null);
   const [travelEstimate, setTravelEstimate] = useState(() => getReferenceTravelEstimate(DEFAULT_STUDIO_LOCATION));
+  const defaultCity = DEFAULT_STUDIO_LOCATION;
+  const [selectedWeatherCity, setSelectedWeatherCity] = useState(defaultCity);
+  const [selectedLocationCoordinates, setSelectedLocationCoordinates] = useState(null);
+  const [geocodedLocationLabel, setGeocodedLocationLabel] = useState("");
+  const [addressOptions, setAddressOptions] = useState([]);
+  const [addressSearching, setAddressSearching] = useState(false);
+  const [travelEstimateLoading, setTravelEstimateLoading] = useState(false);
+  const addressSearchTimeoutRef = useRef(null);
+  const addressRequestIdRef = useRef(0);
+  const travelEstimateRequestIdRef = useRef(0);
 
-  // Reset ngày đã chọn khi khách đổi hình thức chụp.
-  /**
-   * Hàm xử lý khi người dùng đổi Hình thức chụp (STUDIO / OUTDOOR).
-   * Xử lý: Reset khu vực và ngày đã chọn vì lịch của 2 hình thức là độc lập.
-   */
+  const clearLocationSearch = () => {
+    if (addressSearchTimeoutRef.current) {
+      clearTimeout(addressSearchTimeoutRef.current);
+      addressSearchTimeoutRef.current = null;
+    }
+    addressRequestIdRef.current += 1;
+    setAddressOptions([]);
+    setAddressSearching(false);
+  };
+
+  // Reset ngày và địa điểm đã chọn khi khách đổi hình thức chụp.
   const handleShootingTypeChange = (type) => {
     setShootingType(type);
     setSelectedDate(null);
+    clearLocationSearch();
+    setSelectedLocationCoordinates(null);
+    setGeocodedLocationLabel("");
     form.setFieldsValue({ location: type === "STUDIO" ? "Cao Hiển Studio" : undefined });
     if (type === "STUDIO") {
       setSelectedWeatherCity(DEFAULT_STUDIO_LOCATION);
     }
   };
 
+  const handleAddressSearch = (searchText) => {
+    const trimmedSearch = String(searchText || "").trim();
+    if (addressSearchTimeoutRef.current) {
+      clearTimeout(addressSearchTimeoutRef.current);
+      addressSearchTimeoutRef.current = null;
+    }
+    const requestId = ++addressRequestIdRef.current;
+    if (trimmedSearch.length < 3 || !selectedWeatherCity) {
+      setAddressOptions([]);
+      setAddressSearching(false);
+      return;
+    }
 
+    setAddressSearching(true);
+    addressSearchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const regionName = selectedWeatherCity.regionName || selectedWeatherCity.name;
+        const query = encodeURIComponent(`${trimmedSearch}, ${regionName}, Vietnam`);
+        const url = `https://photon.komoot.io/api/?q=${query}&limit=30&lang=default&bbox=102.14,8.56,109.46,23.39`;
+        const response = await axios.get(url);
+        if (requestId !== addressRequestIdRef.current) return;
 
+        const features = Array.isArray(response.data?.features) ? response.data.features : [];
+        const suggestions = features
+          .filter((feature) => feature.properties?.countrycode === "VN")
+          .filter((feature) => matchesSelectedRegion(feature.properties, selectedWeatherCity))
+          .map((feature, index) => {
+            const properties = feature.properties || {};
+            const parts = [
+              properties.name,
+              properties.street,
+              properties.district,
+              properties.city,
+              properties.state,
+            ].filter(Boolean);
+            const uniqueParts = parts.filter((part, partIndex) =>
+              parts.findIndex((candidate) => normalizeGeoText(candidate) === normalizeGeoText(part)) === partIndex
+            );
+            const label = uniqueParts.join(", ");
+            const point = feature.geometry?.coordinates;
+            const coordinates = Array.isArray(point) ? normalizeCoordinates({ lon: point[0], lat: point[1] }) : null;
+            return label && coordinates ? {
+              value: label,
+              label,
+              key: `${label}-${index}`,
+              coordinates,
+            } : null;
+          })
+          .filter(Boolean);
+        setAddressOptions(suggestions);
+      } catch (error) {
+        if (requestId === addressRequestIdRef.current) {
+          console.error("Lỗi tìm kiếm địa điểm:", error);
+          setAddressOptions([]);
+        }
+      } finally {
+        if (requestId === addressRequestIdRef.current) setAddressSearching(false);
+      }
+    }, 400);
+  };
 
-  const defaultCity = DEFAULT_STUDIO_LOCATION;
-  const [selectedWeatherCity, setSelectedWeatherCity] = useState(defaultCity);
+  // Hủy kết quả tìm kiếm cũ khi rời trang.
+  useEffect(() => () => {
+    if (addressSearchTimeoutRef.current) clearTimeout(addressSearchTimeoutRef.current);
+    addressRequestIdRef.current += 1;
+    travelEstimateRequestIdRef.current += 1;
+  }, []);
 
-  // Cập nhật phụ thu dự tính theo bảng tham chiếu khu vực, không gọi OSRM phía khách.
-  // Nhân viên studio sẽ liên hệ để chốt địa điểm cụ thể và xác nhận phụ thu chính thức.
+  // Tính lại phụ thu theo tọa độ địa điểm được chọn; nếu khách chỉ nhập chữ,
+  // dùng mốc trung tâm của khu vực để hiển thị dự tính.
   useEffect(() => {
+    const requestId = ++travelEstimateRequestIdRef.current;
+    let active = true;
     if (shootingType !== "OUTDOOR") {
       setTravelEstimate({
         destinationId: selectedWeatherCity?.id || "",
-        distanceKm: 0,
+        distanceKm: null,
         surchargeAmount: 0,
         surchargeText: "Không áp dụng",
         requiresQuote: false,
         source: "NOT_APPLICABLE",
       });
+      setTravelEstimateLoading(false);
       return undefined;
     }
-    setTravelEstimate(getReferenceTravelEstimate(selectedWeatherCity));
-    return undefined;
-  }, [shootingType, selectedWeatherCity]);
+
+    if (!selectedLocationCoordinates) {
+      setTravelEstimate(getReferenceTravelEstimate(selectedWeatherCity));
+      setTravelEstimateLoading(false);
+      return () => { active = false; };
+    }
+
+    setTravelEstimateLoading(true);
+    axios.post(`${API_URL}/bookings/travel-estimate`, {
+      destination_id: selectedWeatherCity?.id,
+      destination_coordinates: selectedLocationCoordinates,
+      has_custom_location: true,
+    }).then((response) => {
+      if (active && requestId === travelEstimateRequestIdRef.current) setTravelEstimate(response.data);
+    }).catch((error) => {
+      if (!active || requestId !== travelEstimateRequestIdRef.current) return;
+      console.error("Lỗi tính phụ thu theo địa điểm:", error);
+      setTravelEstimate({
+        destinationId: selectedWeatherCity?.id || "",
+        distanceKm: null,
+        surchargeAmount: 0,
+        surchargeText: "Studio xác nhận",
+        requiresQuote: true,
+        source: "MANUAL_REVIEW",
+        reason: "Chưa tính được tuyến tự động; studio sẽ xác nhận phụ thu.",
+      });
+    }).finally(() => {
+      if (active && requestId === travelEstimateRequestIdRef.current) setTravelEstimateLoading(false);
+    });
+
+    return () => { active = false; };
+  }, [shootingType, selectedWeatherCity, selectedLocationCoordinates]);
 
   // States lưu danh sách ngày lễ và ngày nghỉ studio từ backend
   const [holidays, setHolidays] = useState([]);
@@ -370,7 +515,11 @@ const Booking = () => {
         const city = FORECAST_LOCATIONS.find(c => c.name === location.state.weatherCity || c.id === location.state.weatherCity || c.regionName === location.state.weatherCity);
         if (city) setSelectedWeatherCity(city);
       }
-      if (location.state.destinationCoordinates) { /* no longer used in customer flow */ }
+      const coordinates = normalizeCoordinates(location.state.destinationCoordinates);
+      if (coordinates) {
+        setSelectedLocationCoordinates(coordinates);
+        setGeocodedLocationLabel(location.state.location || "");
+      }
     }
 
     return () => {
@@ -392,8 +541,15 @@ const Booking = () => {
       setRangeEndDate(savedDraft.rangeEndDate ? dayjs(savedDraft.rangeEndDate) : null);
       const monthDate = savedDraft.currentCalendarMonth || savedDraft.selectedDate || savedDraft.rangeStartDate;
       if (monthDate) setCurrentCalendarMonth(dayjs(monthDate));
-      const city = FORECAST_LOCATIONS.find((item) => item.name === savedDraft.weatherCity);
+      const city = FORECAST_LOCATIONS.find((item) =>
+        item.id === savedDraft.weatherCityId || item.name === savedDraft.weatherCity || item.regionName === savedDraft.weatherCity
+      );
       if (city) setSelectedWeatherCity(city);
+      const restoredCoordinates = normalizeCoordinates(savedDraft.destinationCoordinates);
+      if (restoredCoordinates) {
+        setSelectedLocationCoordinates(restoredCoordinates);
+        setGeocodedLocationLabel(restoredValues.location || "");
+      }
 
       return;
     }
@@ -448,6 +604,10 @@ const Booking = () => {
         message.warning("Vui lòng chọn ngày chụp trên lịch");
         return;
       }
+      if (shootingType === "OUTDOOR" && travelEstimateLoading) {
+        message.info("Đang tính phụ thu theo địa điểm. Vui lòng thử lại sau giây lát.");
+        return;
+      }
 
       const selectedMainIds = Array.isArray(values.serviceId) ? values.serviceId : (values.serviceId ? [values.serviceId] : []);
       if (selectedMainIds.length === 0) {
@@ -458,11 +618,13 @@ const Booking = () => {
       const submitData = {
         service_id: selectedMainIds[0],
         original_service_ids: selectedMainIds,
-        extra_service_ids: [...selectedMainIds.slice(1), ...(Array.isArray(values.extra_service_ids) ? values.extra_service_ids : [])],
+        // Keep main packages only in original_service_ids. extra_service_ids is reserved for real add-ons.
+        extra_service_ids: Array.isArray(values.extra_service_ids) ? values.extra_service_ids : [],
         shoot_date: selectedDate.format("YYYY-MM-DD"),
         shooting_type: shootingType,
         location: shootingType === "STUDIO" ? "Cao Hiển Studio" : values.location,
         destination_id: shootingType === "OUTDOOR" ? selectedWeatherCity?.id : "",
+        destination_coordinates: shootingType === "OUTDOOR" ? selectedLocationCoordinates : null,
         travel_estimate: shootingType === "OUTDOOR" ? travelEstimate : null,
         note: values.note,
       };
@@ -477,6 +639,8 @@ const Booking = () => {
         rangeStartDate: rangeStartDate?.format("YYYY-MM-DD") || null,
         rangeEndDate: rangeEndDate?.format("YYYY-MM-DD") || null,
         weatherCity: selectedWeatherCity?.name || "",
+        weatherCityId: selectedWeatherCity?.id || "",
+        destinationCoordinates: shootingType === "OUTDOOR" ? selectedLocationCoordinates : null,
         currentCalendarMonth: currentCalendarMonth.format("YYYY-MM-DD"),
       }));
       sessionStorage.setItem("pendingBookingData", JSON.stringify(submitData));
@@ -493,6 +657,7 @@ const Booking = () => {
   const getMainServicesToDisplay = () => {
     return allServices.filter(s => {
       if (s.category === "PRINT") return false;
+      if (s.allow_addon === true) return false;
       const nameLow = (s.name || "").toLowerCase();
       if (nameLow.includes("gói lẻ lễ tối") || nameLow.includes("gói thêm flycam")) return false;
       return true;
@@ -507,6 +672,7 @@ const Booking = () => {
     
     // Always include PRINT category
     addons.push(...allServices.filter(s => s.category === "PRINT"));
+    addons.push(...allServices.filter(s => s.allow_addon === true));
     
     selectedMains.forEach(selectedMain => {
       if (selectedMain) {
@@ -706,18 +872,19 @@ const Booking = () => {
                         onChange={(val) => {
                           const city = FORECAST_LOCATIONS.find((c) => c.name === val);
                           if (city) {
+                            clearLocationSearch();
                             setSelectedWeatherCity(city);
                             setSelectedLocationCoordinates(null);
-                            setAddressOptions([]);
+                            setGeocodedLocationLabel("");
                             form.setFieldsValue({ location: undefined });
                           }
                         }}
                         filterOption={(input, option) =>
-                          (option?.children ?? "").toLowerCase().includes(input.toLowerCase())
+                          String(option?.children ?? "").toLocaleLowerCase("vi").includes(input.toLocaleLowerCase("vi"))
                         }
                         size="large"
                         popupClassName="booking-select-dropdown"
-                        disabled={shootingType === "STUDIO"}
+                        disabled={shootingType !== "OUTDOOR"}
                       >
                         {SHOOTING_LOCATION_TIERS.map((tierGroup) => (
                           <Select.OptGroup
@@ -763,18 +930,38 @@ const Booking = () => {
                   {shootingType === "OUTDOOR" && (
                     <Col xs={24} sm={12} lg={6}>
                       <Form.Item
-                        label="Nơi chụp mong muốn (ghi chú)"
+                        label="Địa điểm mong muốn"
                         name="location"
                         style={{ marginBottom: 0 }}
                       >
-                        <Input
-                          size="large"
-                          prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                          placeholder="VD: Công viên Hòa Bình, Cầu Rạch Miễu..."
-                        />
+                        <AutoComplete
+                          options={addressOptions}
+                          onSearch={handleAddressSearch}
+                          onSelect={(value, option) => {
+                            const coordinates = normalizeCoordinates(option?.coordinates);
+                            setSelectedLocationCoordinates(coordinates);
+                            setGeocodedLocationLabel(value);
+                          }}
+                          onChange={(value) => {
+                            if (value !== geocodedLocationLabel) {
+                              setSelectedLocationCoordinates(null);
+                              setGeocodedLocationLabel("");
+                              setAddressOptions([]);
+                            }
+                          }}
+                          filterOption={false}
+                          notFoundContent={addressSearching ? "Đang tìm địa điểm..." : null}
+                          popupClassName="booking-select-dropdown"
+                        >
+                          <Input
+                            size="large"
+                            prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
+                            placeholder={`Tìm địa điểm tại ${selectedWeatherCity?.regionName || selectedWeatherCity?.name || "khu vực đã chọn"}...`}
+                          />
+                        </AutoComplete>
                       </Form.Item>
                       <div style={{ fontSize: 11, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
-                        💡 Bạn có thể ghi chú nơi muốn chụp. Nhân viên studio sẽ liên hệ tư vấn và chốt địa điểm chính xác.
+                        💡 Nhập tên địa điểm trong khu vực đã chọn và chọn gợi ý để xác định vị trí, tính phụ thu dự kiến.
                       </div>
                     </Col>
                   )}
@@ -1249,9 +1436,9 @@ const Booking = () => {
                         </h3>
                       </div>
 
-                      <Row gutter={[32, 20]} align="top">
+                      <Row gutter={[24, 20]} align="top">
                         {/* Cột 1: Dịch vụ chính */}
-                        <Col xs={24} md={9}>
+                        <Col xs={24} md={12} lg={6}>
                           <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 8 }}>
                             Dịch Vụ Chính
                           </span>
@@ -1268,7 +1455,7 @@ const Booking = () => {
                         </Col>
 
                         {/* Cột 2: Các gói đi kèm */}
-                        <Col xs={24} md={9} style={{ borderLeft: "1px solid #E8DED2" }}>
+                        <Col xs={24} md={12} lg={6} className="booking-cost-column booking-cost-divider">
                           <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 8 }}>
                             Các Gói Đi Kèm
                           </span>
@@ -1287,14 +1474,30 @@ const Booking = () => {
                           )}
                         </Col>
 
-                        {/* Cột 3: Tổng cộng (Nằm gọn bên phải) */}
-                        <Col xs={24} md={6} style={{ borderLeft: "1px solid #E8DED2", textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                          {shootingType === "OUTDOOR" && (
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: "#666", marginBottom: 8, textAlign: "left" }}>
-                              <span>Phụ thu di chuyển (dự tính){travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined ? ` (~${travelEstimate.distanceKm} km)` : ""}</span>
-                              <strong>{travelEstimate?.requiresQuote ? "Studio xác nhận" : `${travelSurcharge.toLocaleString("vi-VN")}đ`}</strong>
+                        {/* Cột 3: Phụ thu dự tính */}
+                        <Col xs={24} md={12} lg={6} className="booking-cost-column booking-cost-divider">
+                          <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 8 }}>
+                            Phụ Thu Dự Tính
+                          </span>
+                          <div style={{ fontSize: 13.5, color: "#2F2F2F", fontWeight: 500 }}>
+                            {shootingType === "OUTDOOR"
+                              ? travelEstimateLoading
+                                ? "Đang tính phụ thu..."
+                                : travelEstimate?.requiresQuote
+                                  ? "Studio xác nhận"
+                                  : `${travelSurcharge.toLocaleString("vi-VN")}đ`
+                              : shootingType === "STUDIO" ? "Không áp dụng" : "Chọn hình thức chụp"}
+                          </div>
+                          {shootingType === "OUTDOOR" && travelEstimate?.distanceKm !== null && travelEstimate?.distanceKm !== undefined && (
+                            <div style={{ fontSize: 11, color: "#777", marginTop: 4 }}>
+                              {travelEstimate.distanceKm} km một chiều
+                              {travelEstimate.source === "CITY_REFERENCE" ? " · mốc trung tâm" : " · địa điểm đã chọn"}
                             </div>
                           )}
+                        </Col>
+
+                        {/* Cột 4: Tổng cộng */}
+                        <Col xs={24} md={12} lg={6} className="booking-cost-column booking-cost-divider" style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                           <span style={{ color: "#888", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, display: "block", marginBottom: 4 }}>
                             {travelEstimate?.requiresQuote && shootingType === "OUTDOOR" ? "Tạm tính (chưa gồm phụ thu)" : "Tổng Cộng (dự tính)"}
                           </span>
@@ -1440,6 +1643,19 @@ const Booking = () => {
             }
             .booking-form-luxury .ant-select-arrow {
               color: #BFA16A !important;
+            }
+
+            .booking-cost-divider {
+              border-left: 1px solid #E8DED2;
+              padding-left: 16px !important;
+            }
+            @media (max-width: 991px) {
+              .booking-cost-divider {
+                border-left: 0;
+                border-top: 1px solid #E8DED2;
+                padding-left: 12px !important;
+                padding-top: 16px !important;
+              }
             }
 
             /* Gold Checkbox Override - Global overrides on this page to completely erase blue */

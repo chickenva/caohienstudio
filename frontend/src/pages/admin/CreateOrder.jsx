@@ -82,6 +82,7 @@ const OrdersCreate = () => {
   const getMainServicesToDisplay = () => {
     return allServices.filter((s) => {
       if (s.category === "PRINT") return false;
+      if (s.allow_addon === true) return false;
       const nameLow = (s.name || "").toLowerCase();
       if (nameLow.includes("gói lẻ lễ tối") || nameLow.includes("gói thêm flycam")) return false;
       return true;
@@ -95,6 +96,7 @@ const OrdersCreate = () => {
 
     // PRINT luôn hiển thị
     addons.push(...allServices.filter((s) => s.category === "PRINT"));
+    addons.push(...allServices.filter((s) => s.allow_addon === true));
 
     selectedMains.forEach((selectedMain) => {
       const mainName = (selectedMain.name || "").toLowerCase();
@@ -256,10 +258,8 @@ const OrdersCreate = () => {
 
         service_id: selectedMainIds[0],
         original_service_ids: selectedMainIds,
-        extra_service_ids: [
-          ...selectedMainIds.slice(1),
-          ...selectedAddonIds,
-        ],
+        // Main packages are stored in original_service_ids; this field contains add-ons only.
+        extra_service_ids: selectedAddonIds,
         shoot_date: shootDateFormatted,
         shooting_type: isStudio ? "STUDIO" : "OUTDOOR",
         shooting_session: values.shooting_session,

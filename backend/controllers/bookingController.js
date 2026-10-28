@@ -75,9 +75,9 @@ const generateGuestEmailFromPhone = (phone) => {
 const getBookingCustomer = (booking) => {
   const account = booking?.customer_id;
   return {
-    full_name: account?.full_name || booking?.customer_full_name || "Khách hàng",
-    email: account?.email || booking?.customer_email || "",
-    phone: account?.phone || booking?.customer_phone || "",
+    full_name: booking?.customer_full_name || account?.full_name || "Khách hàng",
+    email: booking?.customer_email || account?.email || "",
+    phone: booking?.customer_phone || account?.phone || "",
   };
 };
 
@@ -410,26 +410,45 @@ exports.createBookingRequest = async (req, res) => {
       });
     }
 
-    const service = await Service.findById(service_id);
-    if (!service || !service.is_active) {
-      return res.status(404).json({ message: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng cung cấp" });
+    // original_service_ids contains every selected main package; service_id is the primary one.
+    // Keep the primary first and normalize duplicates before validating/pricing.
+    const requestedMainIds = Array.isArray(original_service_ids) && original_service_ids.length > 0
+      ? original_service_ids
+      : [service_id];
+    const mainServiceIds = [...new Set([service_id, ...requestedMainIds].map((id) => String(id || "")).filter(Boolean))];
+    const foundMainServices = await Service.find({
+      _id: { $in: mainServiceIds },
+      is_active: true,
+    });
+    if (foundMainServices.length !== mainServiceIds.length) {
+      return res.status(404).json({ message: "Một hoặc nhiều gói dịch vụ chính không hợp lệ hoặc đã ngừng cung cấp" });
     }
+    const mainServiceById = new Map(foundMainServices.map((item) => [String(item._id), item]));
+    const mainServices = mainServiceIds.map((id) => mainServiceById.get(id));
+    const service = mainServices[0];
 
     // Validate gói đi kèm
     let validatedAddonIds = [];
     let addonTotalPrice = 0;
 
-    if (extra_service_ids && Array.isArray(extra_service_ids) && extra_service_ids.length > 0) {
+    // Older clients also placed secondary main packages in extra_service_ids.
+    // Ignore those duplicates so the field and stored data contain add-ons only.
+    const mainServiceIdSet = new Set(mainServiceIds);
+    const requestedAddonIds = Array.isArray(extra_service_ids)
+      ? [...new Set(extra_service_ids.map((id) => String(id || "")).filter((id) => id && !mainServiceIdSet.has(id)))]
+      : [];
+    if (requestedAddonIds.length > 0) {
       const addonServices = await Service.find({
-        _id: { $in: extra_service_ids },
+        _id: { $in: requestedAddonIds },
         is_active: true,
       });
 
-      if (addonServices.length !== extra_service_ids.length) {
+      if (addonServices.length !== requestedAddonIds.length) {
         return res.status(400).json({ message: "Một hoặc nhiều gói đi kèm không hợp lệ" });
       }
 
-      validatedAddonIds = addonServices.map((s) => s._id);
+      const addonServiceById = new Map(addonServices.map((item) => [String(item._id), item]));
+      validatedAddonIds = requestedAddonIds.map((id) => addonServiceById.get(id)._id);
       addonTotalPrice = addonServices.reduce((sum, s) => sum + Number(s.base_price || 0), 0);
     }
 
@@ -490,7 +509,7 @@ exports.createBookingRequest = async (req, res) => {
       try {
         travelEstimate = await calculateTravelEstimate({
           destinationId: destination_id || "ben-tre",
-          destinationCoordinates,
+          destinationCoordinates: destination_coordinates,
           hasCustomLocation: Boolean(String(location || "").trim()),
         });
       } catch (estimateError) {
@@ -514,7 +533,8 @@ exports.createBookingRequest = async (req, res) => {
     }
 
     const travelSurchargeAmount = travelEstimate.requiresQuote ? 0 : Number(travelEstimate.surchargeAmount || 0);
-    const totalAmount = Number(service.base_price || 0) + addonTotalPrice + travelSurchargeAmount;
+    const mainServiceTotal = mainServices.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
+    const totalAmount = mainServiceTotal + addonTotalPrice + travelSurchargeAmount;
     const depositPercent = 30;
     const depositAmount = Math.round((totalAmount * depositPercent) / 100);
     const finalLocation = shooting_type === "STUDIO" ? STUDIO_LOCATION : (location || "");
@@ -525,7 +545,7 @@ exports.createBookingRequest = async (req, res) => {
       customer_email: accountCustomer?.email || guestCustomer?.email,
       customer_phone: accountCustomer?.phone || guestCustomer?.phone,
       service_id: service._id,
-      original_service_ids: original_service_ids || [service._id],
+      original_service_ids: mainServices.map((item) => item._id),
       extra_service_ids: validatedAddonIds,
       shooting_type,
       shooting_session,
@@ -1152,9 +1172,30 @@ exports.createBookingForAdmin = async (req, res) => {
       });
     }
 
+    const adminMainIds = [...new Set([
+      service_id,
+      ...(Array.isArray(original_service_ids) ? original_service_ids : []),
+    ].map((id) => String(id || "")).filter(Boolean))];
+    const adminMainIdSet = new Set(adminMainIds);
+    const adminAddonIds = Array.isArray(extra_service_ids)
+      ? [...new Set(extra_service_ids.map((id) => String(id || "")).filter((id) => id && !adminMainIdSet.has(id)))]
+      : [];
+    const adminMainServices = await Service.find({ _id: { $in: adminMainIds } });
+    if (adminMainServices.length !== adminMainIds.length) {
+      return res.status(404).json({ message: "Một hoặc nhiều gói dịch vụ chính không tồn tại" });
+    }
+    const adminAddonServices = adminAddonIds.length > 0
+      ? await Service.find({ _id: { $in: adminAddonIds } })
+      : [];
+    if (adminAddonServices.length !== adminAddonIds.length) {
+      return res.status(400).json({ message: "Một hoặc nhiều gói đi kèm không tồn tại" });
+    }
+    const calculatedTotalAmount = adminMainServices.reduce((sum, item) => sum + Number(item.base_price || 0), 0) +
+      adminAddonServices.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
+
     const finalTotalAmount = total_amount !== undefined && total_amount !== null
       ? Number(total_amount)
-      : Number(service.base_price || 0);
+      : calculatedTotalAmount;
 
     if (finalTotalAmount < 0) {
       return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
@@ -1173,9 +1214,9 @@ exports.createBookingForAdmin = async (req, res) => {
     const bookingPayload = {
       customer_id: customer._id,
       service_id: service._id,
-      original_service_ids: original_service_ids || [service._id],
+      original_service_ids: adminMainIds,
       assigned_staff_ids: assigned_staff_ids || [],
-      extra_service_ids: extra_service_ids || [],
+      extra_service_ids: adminAddonIds,
       external_staff: external_staff || [],
       shooting_type: effectiveShootingType,
       shooting_session: effectiveShootingSession,
@@ -1267,6 +1308,10 @@ exports.updateBookingInfo = async (req, res) => {
       contract_note,
       contract_file_url,
       contract_original_name,
+      // Thông tin khách hàng
+      customer_full_name,
+      customer_phone,
+      customer_email,
     } = req.body;
 
     const booking = await Booking.findById(id)
@@ -1302,13 +1347,20 @@ exports.updateBookingInfo = async (req, res) => {
     }
 
     if (extra_service_ids !== undefined) {
-      if (Array.isArray(extra_service_ids) && extra_service_ids.length > 0) {
-        const addonServices = await Service.find({ _id: { $in: extra_service_ids } });
-        if (addonServices.length !== extra_service_ids.length) {
+      const currentMainIds = new Set((booking.original_service_ids?.length
+        ? booking.original_service_ids
+        : [booking.service_id]).map((item) => String(item?._id || item || "")));
+      const actualAddonIds = Array.isArray(extra_service_ids)
+        ? [...new Set(extra_service_ids.map((item) => String(item?._id || item || ""))
+          .filter((id) => id && !currentMainIds.has(id)))]
+        : [];
+      if (actualAddonIds.length > 0) {
+        const addonServices = await Service.find({ _id: { $in: actualAddonIds } });
+        if (addonServices.length !== actualAddonIds.length) {
           return res.status(400).json({ message: "Một hoặc nhiều gói đi kèm không hợp lệ" });
         }
       }
-      booking.extra_service_ids = extra_service_ids;
+      booking.extra_service_ids = actualAddonIds;
       autoRecalcTotal = true;
     }
 
@@ -1351,6 +1403,17 @@ exports.updateBookingInfo = async (req, res) => {
     if (contract_file_url !== undefined) booking.contract_file_url = contract_file_url;
     if (contract_original_name !== undefined) booking.contract_original_name = contract_original_name;
 
+    // Cập nhật thông tin khách hàng
+    if (customer_full_name !== undefined) {
+      booking.customer_full_name = String(customer_full_name || "").trim();
+    }
+    if (customer_phone !== undefined) {
+      booking.customer_phone = String(customer_phone || "").trim();
+    }
+    if (customer_email !== undefined) {
+      booking.customer_email = String(customer_email || "").trim().toLowerCase();
+    }
+
     // Cập nhật nhân sự
     if (assigned_staff_ids !== undefined) booking.assigned_staff_ids = assigned_staff_ids;
     if (external_staff !== undefined) booking.external_staff = external_staff;
@@ -1374,6 +1437,11 @@ exports.updateBookingInfo = async (req, res) => {
         return res.status(400).json({ message: "Phụ thu di chuyển không hợp lệ." });
       }
       booking.travel_surcharge_amount = amount;
+      if (travel_surcharge_status === undefined) {
+        booking.travel_surcharge_status = (booking.shooting_type === "STUDIO" || amount === 0)
+          ? "NOT_APPLICABLE"
+          : "ESTIMATED";
+      }
     }
     if (travel_surcharge_status !== undefined) {
       if (!["NOT_APPLICABLE", "ESTIMATED", "QUOTE_REQUIRED"].includes(travel_surcharge_status)) {
@@ -1398,8 +1466,12 @@ exports.updateBookingInfo = async (req, res) => {
       booking.total_amount = newTotalAmount;
       autoRecalcTotal = false;
     } else if (autoRecalcTotal) {
-      const mainService = await Service.findById(booking.service_id);
-      const mainPrice = Number(mainService?.base_price || 0);
+      const mainIds = [...new Set([
+        ...(booking.original_service_ids || []),
+        booking.service_id,
+      ].map((item) => String(item?._id || item || "")).filter(Boolean))];
+      const mainServices = await Service.find({ _id: { $in: mainIds } });
+      const mainPrice = mainServices.reduce((sum, item) => sum + Number(item.base_price || 0), 0);
       let addonPrice = 0;
       if (booking.extra_service_ids && booking.extra_service_ids.length > 0) {
         const addons = await Service.find({ _id: { $in: booking.extra_service_ids } });
@@ -1488,7 +1560,7 @@ exports.getAllBookingsForAdmin = async (req, res) => {
     const bookings = await Booking.find(query)
       .populate("customer_id", "full_name email phone")
       .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
-      .populate("extra_service_ids", "name base_price")
+      .populate("extra_service_ids", "name base_price category allow_addon")
       .populate("assigned_staff_ids", "full_name email phone")
       .sort({ createdAt: -1 });
 

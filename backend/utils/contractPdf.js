@@ -217,9 +217,9 @@ const generateContractPdf = async (booking, contractLink) => {
 
     const customer = booking.customer_id || {};
     const customerLines = [
-      ["Họ và tên:", customer.full_name || "—"],
-      ["Số điện thoại:", customer.phone || "—"],
-      ["Email:", customer.email || "—"],
+      ["Họ và tên:", booking.customer_full_name || customer.full_name || "—"],
+      ["Số điện thoại:", booking.customer_phone || customer.phone || "—"],
+      ["Email:", booking.customer_email || customer.email || "—"],
     ];
 
     for (const [lbl, val] of customerLines) {
