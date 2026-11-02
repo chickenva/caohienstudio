@@ -8,21 +8,7 @@ const OTP        = require("../models/OTP");
 const SiteLock   = require("../models/SiteLock");
 const bcrypt     = require("bcryptjs");
 const jwt        = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
-
-// Transporter Gmail dùng chung cho toàn bộ controller (Tối ưu cho Cloud/Render)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const { sendOtpEmail } = require("../services/emailSender");
 
 // ==========================================
 // REGEX VALIDATION
@@ -30,6 +16,7 @@ const transporter = nodemailer.createTransport({
 
 // Số điện thoại Việt Nam: bắt đầu bằng 0, tổng 10-11 chữ số
 const PHONE_REGEX = /^0[0-9]{9,10}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Họ tên: chỉ cho phép chữ cái và khoảng trắng (hỗ trợ tiếng Việt)
 const NAME_REGEX = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$/;
@@ -37,48 +24,38 @@ const NAME_REGEX = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèé
 // Mật khẩu: 8-16 ký tự, phải có chữ thường, chữ hoa, số và ký tự đặc biệt
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()>\.]).{8,16}$/;
 
-// ==========================================
-// HELPER: GỬI EMAIL OTP
-// ==========================================
-
 /**
- * Gửi email chứa mã OTP đến địa chỉ email chỉ định.
- * Template HTML đồng bộ với thiết kế mail của studio.
- * @param {string} toEmail     - Địa chỉ email nhận
- * @param {string} subject     - Tiêu đề email
- * @param {string} description - Mô tả mục đích OTP trong thân email
- * @param {string} otpCode     - Mã OTP 4 chữ số
+ * Lưu OTP mới, gửi qua Resend, rồi mới dọn mã cũ.
+ * Nếu Resend lỗi, chỉ xóa mã mới và giữ nguyên mã còn hiệu lực trước đó.
  */
-const sendOtpEmail = async (toEmail, subject, description, otpCode) => {
-  await transporter.sendMail({
-    from:    `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
-    to:      toEmail,
-    subject,
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; color: #000; max-width: 500px; margin: 0 auto; padding: 20px;">
-        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Cao Hiển Studio</h2>
-        <p style="font-size: 16px; margin-bottom: 12px; color: #333;">Xin chào,</p>
-        <p style="font-size: 16px; margin-bottom: 30px; color: #333;">${description}</p>
-        <div style="background-color: #f4f4f4; border-radius: 12px; padding: 24px; margin: 0 auto 30px auto; max-width: 300px;">
-          <span style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #000;">${otpCode}</span>
-        </div>
-        <p style="font-size: 15px; color: #555; margin-bottom: 40px;">Mã này sẽ hết hạn trong 5 phút.</p>
-        <p style="font-size: 13px; color: #999;">© ${new Date().getFullYear()} Cao Hiển Studio. All rights reserved.</p>
-      </div>
-    `,
-  });
+const issueOtp = async (email, subject, description) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+  const otpRecord = await new OTP({ email: normalizedEmail, otp: otpCode }).save();
+
+  try {
+    await sendOtpEmail(normalizedEmail, subject, description, otpCode);
+  } catch (error) {
+    try {
+      await OTP.deleteOne({ _id: otpRecord._id });
+    } catch (cleanupError) {
+      console.error("Không thể xóa OTP chưa gửi được:", cleanupError.message);
+    }
+    throw error;
+  }
+
+  try {
+    await OTP.deleteMany({ email: normalizedEmail, _id: { $ne: otpRecord._id } });
+  } catch (cleanupError) {
+    console.error("Không thể dọn OTP cũ:", cleanupError.message);
+  }
+  return otpCode;
 };
 
-/**
- * Tạo OTP 4 chữ số, xóa OTP cũ cùng email và lưu OTP mới vào DB.
- * @param {string} email
- * @returns {string} mã OTP mới
- */
-const createAndSaveOtp = async (email) => {
-  const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-  await OTP.deleteMany({ email });
-  await new OTP({ email, otp: otpCode }).save();
-  return otpCode;
+const respondOtpSendError = (res, error, fallbackMessage) => {
+  const response = { message: error.publicMessage || fallbackMessage };
+  if (process.env.NODE_ENV !== "production") response.error = error.message;
+  return res.status(error.statusCode || 500).json(response);
 };
 
 // ==========================================
@@ -252,25 +229,26 @@ exports.resetPassword = async (req, res) => {
  */
 exports.sendRegisterOtp = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Email không hợp lệ!" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email đã được sử dụng!" });
     }
 
-    const otpCode = await createAndSaveOtp(email);
-    await sendOtpEmail(
+    await issueOtp(
       email,
       "Mã xác thực Đăng ký tài khoản - Cao Hiển Studio",
       "Sử dụng mã xác thực dưới đây để hoàn tất việc đăng ký tài khoản.",
-      otpCode,
     );
 
     res.status(200).json({ message: "Mã OTP đã được gửi!" });
   } catch (error) {
     console.error("Lỗi gửi OTP đăng ký:", error);
-    res.status(500).json({ message: "Lỗi server khi gửi OTP", error: error.message });
+    respondOtpSendError(res, error, "Không thể gửi mã OTP đăng ký. Vui lòng thử lại.");
   }
 };
 
@@ -281,24 +259,26 @@ exports.sendRegisterOtp = async (req, res) => {
  */
 exports.forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Email không hợp lệ!" });
+    }
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy tài khoản với email này!" });
     }
 
-    const otpCode = await createAndSaveOtp(email);
-    await sendOtpEmail(
+    await issueOtp(
       email,
       "Mã xác thực Khôi phục mật khẩu - Cao Hiển Studio",
       "Sử dụng mã xác thực dưới đây để khôi phục mật khẩu của bạn.",
-      otpCode,
     );
 
     res.status(200).json({ message: "Mã OTP đã được gửi!" });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi server", error });
+    console.error("Lỗi gửi OTP khôi phục mật khẩu:", error);
+    respondOtpSendError(res, error, "Không thể gửi mã OTP. Vui lòng thử lại.");
   }
 };
 
@@ -308,8 +288,13 @@ exports.forgotPassword = async (req, res) => {
  */
 exports.verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    const record = await OTP.findOne({ email, otp });
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const otp = String(req.body.otp || "").trim();
+    const record = await OTP.findOne({
+      email,
+      otp,
+      createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+    });
 
     if (!record) {
       return res.status(400).json({ message: "Mã OTP không chính xác hoặc đã hết hạn!" });
@@ -330,20 +315,22 @@ exports.verifyOTP = async (req, res) => {
 exports.sendUpdateOtp = async (req, res) => {
   try {
     const user        = await User.findById(req.user.id);
-    const { email }   = req.body;
-    const targetEmail = email || user.email;
+    if (!user) return res.status(404).json({ message: "Không tìm thấy tài khoản." });
+    const targetEmail = String(req.body.email || user.email || "").trim().toLowerCase();
+    if (!EMAIL_REGEX.test(targetEmail)) {
+      return res.status(400).json({ message: "Email không hợp lệ!" });
+    }
 
-    const otpCode = await createAndSaveOtp(targetEmail);
-    await sendOtpEmail(
+    await issueOtp(
       targetEmail,
       "Mã xác nhận thay đổi thông tin bảo mật - Cao Hiển Studio",
       "Sử dụng mã xác thực dưới đây để xác nhận thay đổi thông tin bảo mật.",
-      otpCode,
     );
 
     res.status(200).json({ message: "Mã OTP đã được gửi đến Email của bạn!" });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi gửi mail" });
+    console.error("Lỗi gửi OTP cập nhật tài khoản:", error);
+    respondOtpSendError(res, error, "Không thể gửi mã OTP. Vui lòng thử lại.");
   }
 };
 
@@ -372,7 +359,8 @@ exports.getMe = async (req, res) => {
  */
 exports.updateProfile = async (req, res) => {
   try {
-    const { full_name, phone, email, otp } = req.body;
+    const { full_name, phone, otp } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
 
     const currentUser = await User.findById(req.user.id);
     if (!currentUser) {
@@ -390,7 +378,7 @@ exports.updateProfile = async (req, res) => {
     }
 
     // Đổi email: yêu cầu OTP hợp lệ
-    const isEmailChanged = email && email.trim() !== "" && email !== currentUser.email;
+    const isEmailChanged = email && email !== currentUser.email;
 
     if (isEmailChanged) {
       // Kiểm tra email mới chưa được dùng bởi tài khoản khác
@@ -405,7 +393,11 @@ exports.updateProfile = async (req, res) => {
       }
 
       // Xác thực OTP
-      const otpRecord = await OTP.findOne({ email, otp });
+      const otpRecord = await OTP.findOne({
+        email,
+        otp: String(otp).trim(),
+        createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+      });
       if (!otpRecord) {
         return res.status(400).json({ message: "Mã OTP không chính xác hoặc đã hết hạn!" });
       }

@@ -193,7 +193,7 @@ const generateContractPdf = async (booking, contractLink) => {
     const studioLines = [
       ["Tên đơn vị:", "Cao Hiển Studio"],
       ["Địa chỉ:", "34B4 DT 887 , phường An Hội , tỉnh Vĩnh Long"],
-      ["Email liên hệ:", process.env.ADMIN_EMAIL || process.env.EMAIL_USER || "caohienstudio@gmail.com"],
+      ["Email liên hệ:", process.env.CONTACT_RECEIVER_EMAIL || process.env.ADMIN_EMAIL || "caohienstudio@gmail.com"],
     ];
 
     for (const [lbl, val] of studioLines) {

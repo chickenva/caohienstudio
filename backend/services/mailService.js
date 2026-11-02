@@ -2,24 +2,11 @@
  * mailService.js
  * Tập hợp tất cả email transactional của hệ thống Cao Hiển Studio:
  *  - Xác nhận đặt lịch, nhắc lịch chụp, gửi hợp đồng PDF, xác nhận nhận cọc.
- * Sử dụng Nodemailer + Gmail transport, template HTML đồng nhất với thương hiệu.
+ * Gửi toàn bộ thư qua Resend REST API; template HTML đồng nhất với thương hiệu.
  */
-const nodemailer = require("nodemailer");
 const moment     = require("moment");
 
-// Cấu hình transporter (Tối ưu cho Cloud/Render)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const { sendMail } = require("./emailSender");
 
 // Định dạng tiền VND trong nội dung email.
 const formatCurrency = (amount) => {
@@ -119,13 +106,12 @@ exports.sendBookingSuccessEmail = async (booking, customer) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Xác nhận đặt lịch chụp ảnh thành công (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Xác Nhận Đặt Lịch Thành Công", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email xác nhận đặt lịch:", error);
   }
@@ -140,7 +126,7 @@ exports.sendBookingSuccessEmail = async (booking, customer) => {
  */
 exports.sendBookingSuccessToAdminEmail = async (booking, customer) => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail) return;
 
     const customerInfo = customer || {
@@ -177,13 +163,12 @@ exports.sendBookingSuccessToAdminEmail = async (booking, customer) => {
     `;
 
     const mailOptions = {
-      from: `"Hệ thống Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: adminEmail,
       subject: `[Cao Hien Studio - Admin] Đơn đặt lịch chụp ảnh mới (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Có Đơn Đặt Lịch Mới", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email báo đơn mới cho admin:", error);
   }
@@ -246,13 +231,12 @@ exports.sendContractEmail = async (booking, customer, data) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Hợp đồng dịch vụ nhiếp ảnh (Mã đơn: #${bookingCode})`,
       html: baseTemplate("Hợp Đồng Dịch Vụ Nhiếp Ảnh", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email hợp đồng:", error);
   }
@@ -315,13 +299,12 @@ exports.sendDepositConfirmedEmail = async (booking, customer, data) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Xác nhận đặt lịch chính thức (Mã đơn: #${bookingCode})`,
       html: baseTemplate("Xác Nhận Đặt Lịch Chính Thức", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email xác nhận nhận cọc:", error);
   }
@@ -380,13 +363,12 @@ exports.sendStatusChangeEmail = async (booking, customer) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Thông báo cập nhật trạng thái đơn hàng (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Cập Nhật Trạng Thái", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email cập nhật trạng thái:", error);
   }
@@ -424,13 +406,12 @@ exports.sendReminderToCustomerEmail = async (booking, customer) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Lịch chụp ảnh của bạn vào ngày mai (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Nhắc Nhở Lịch Chụp", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email nhắc nhở khách hàng:", error);
   }
@@ -466,13 +447,12 @@ exports.sendReminderToAdminEmail = async (booking, adminEmail) => {
     `;
 
     const mailOptions = {
-      from: `"Hệ thống Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: adminEmail,
       subject: `[Cao Hien Studio - Admin] Danh sách lịch chụp cần thực hiện hôm nay (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Lịch Chụp Hôm Nay", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email nhắc nhở Admin:", error);
   }
@@ -506,13 +486,12 @@ exports.sendAutoInProgressToAdminEmail = async (booking, adminEmail) => {
     `;
 
     const mailOptions = {
-      from: `"Hệ thống Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: adminEmail,
       subject: `[Cao Hien Studio - Admin] Cap nhat trang thai don hang (Ma don: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Cap Nhat Trang Thai", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Loi gui email bao cap nhat trang thai:", error);
   }
@@ -578,14 +557,16 @@ exports.sendRescheduleEmail = async (booking, customer, data) => {
     `;
 
     const mailOptions = {
-      from: `"Cao Hien Studio" <${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `[Cao Hien Studio] Thông báo cập nhật lịch chụp (Mã đơn: #${booking._id.toString().slice(-8).toUpperCase()})`,
       html: baseTemplate("Thông Báo Dời Lịch Chụp", content),
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
   } catch (error) {
     console.error("Lỗi gửi email thông báo dời lịch:", error);
   }
 };
+
+
+exports.sendMail = sendMail;

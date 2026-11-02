@@ -101,10 +101,10 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
 5. **AI Chatbot CSKH (Google Gemini API):**
    * Tích hợp Gemini Flash API (`@google/generative-ai`) tại `aiChatController.js` và widget góc màn hình `AIChatWidget.jsx`.
    * Cung cấp ngữ cảnh studio để giải đáp dịch vụ, thời gian làm việc và giá cả tự động.
-6. **Hệ thống Email linh hoạt (Resend API + SMTP Gmail):**
-   * Local development: dùng SMTP Gmail (`EMAIL_USER`, `EMAIL_PASS`).
-   * Render Free Hosting: tự động chuyển sang Resend API (`RESEND_API_KEY`, `EMAIL_FROM`) qua HTTPS để không bị chặn outbound SMTP port.
-   * Hỗ trợ gửi mã OTP xác thực email và gửi hợp đồng PDF đính kèm.
+6. **Hệ thống Email chuẩn hóa toàn diện (Resend REST API qua HTTPS):**
+   * Đã loại bỏ hoàn toàn Nodemailer SMTP và App Password Gmail (khắc phục triệt để việc Render chặn outbound SMTP ports 25, 465, 587).
+   * Thống nhất 100% gửi qua Resend REST API (`RESEND_API_KEY`, `EMAIL_FROM`) cho cả Local Development và Render Production.
+   * Sử dụng verified custom domain trên Resend, đảm bảo gửi OTP và hợp đồng tức thì, không bị spam filter hay timeout.
 7. **Tự động hóa Hợp đồng Studio & Bỏ Cổng Thanh Toán VNPay/PayOS:**
    * Đã loại bỏ hoàn toàn cổng thanh toán phức tạp (VNPay, PayOS) để phù hợp với thực tế vận hành của studio ảnh cưới hỏi.
    * Thanh toán thực hiện bằng Tiền mặt tại studio HOAC Chuyển khoản ngân hàng theo mã QR cố định.
@@ -130,7 +130,7 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
   * `controllers/`: Chứa toàn bộ business logic (booking, auth, camera, holiday, service, banner, upload...).
   * `models/`: Schema Mongoose (`Booking`, `User`, `Service`, `CameraRental`, `Holiday`, `Banner`, `SiteLock`, `Payment`...).
   * `routes/`: Express routers phân tách rõ ràng theo domain.
-  * `services/`: Encapsulation cho Google Drive, Mailer (SMTP & Resend), AI Gemini.
+  * `services/`: Encapsulation cho Google Drive, Mailer (Resend API `emailSender.js`), AI Gemini.
   * `utils/`: `contractPdf.js` (sinh PDF hợp đồng), `travelPricing.js` (tính cự ly và phụ thu OSRM).
   * `middleware/`: Auth middleware (`verifyToken`, `isAdmin`, `isSuperAdmin`), Multer upload.
   * `jobs/`: `cronJobs.js` thực hiện các tác vụ định kỳ.
@@ -184,7 +184,8 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
    * Không đưa cổng thanh toán tự động bên thứ ba (VNPay, PayOS) vào luồng thanh toán chính trừ khi có chỉ đạo mới.
    * Phụ thu di chuyển chụp ngoại cảnh phải luôn tuân thủ bảng 7 bậc cự ly tại `backend/utils/travelPricing.js` và `frontend/src/utils/shootingLocations.js`.
 4. **Về Gửi Email & Môi trường Deploy:**
-   * Luôn hỗ trợ cả hai phương thức: `smtp` cho máy local và `resend` qua HTTP API cho môi trường Render production.
+   * Thống nhất 100% sử dụng Resend REST API qua HTTPS port 443 cho cả Localhost và Render Deploy (`RESEND_API_KEY`, `EMAIL_FROM`).
+   * Không sử dụng Nodemailer SMTP hay cổng TCP SMTP (25, 465, 587) để tránh bị chặn kết nối.
 5. **Về Tài liệu Khóa Luận:**
    * Khi chỉnh sửa hoặc tham chiếu tài liệu Word, luôn đối chiếu với [WORD_RUBRIC.md](WORD_RUBRIC.md).
    * Không tự bịa đặt số liệu kiểm thử hay khảo sát thực tế.

@@ -45,8 +45,8 @@ const setupCronJobs = () => {
       });
 
       for (const booking of todayBookings) {
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
-        await mailService.sendReminderToAdminEmail(booking, adminEmail);
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail) await mailService.sendReminderToAdminEmail(booking, adminEmail);
       }
       console.log(`[CRON] Đã gửi nhắc nhở cho Admin về ${todayBookings.length} lịch chụp hôm nay.`);
 

@@ -17,7 +17,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
 | **Tuần 2: Đối sánh thị trường & Lịch biểu** | Khảo sát đối sánh 4 studio (Gạo Nâu, HThao Studio, Ảnh Tiệc Vĩnh Long, Cao Hiển). Cải tiến giao diện chọn lịch có hiển thị ngày lễ, ngày âm lịch và ngày studio tạm nghỉ. | Hoàn thành |
 | **Tuần 3: Định tuyến OSRM & Phụ thu cự ly** | Chuẩn hóa bảng phụ thu di chuyển 7 bậc cự ly (0–30 km miễn phí đến trên 250 km báo phí riêng). Tích hợp OSRM Road Distance API tính tuyến thực tế từ Studio Bến Tre. Lưu nháp `sessionStorage` cho luồng đăng ký/đăng nhập/khách vãng lai. | Hoàn thành |
 | **Mở rộng tính năng Studio** | Thêm phân hệ cho thuê thiết bị/máy ảnh (`CameraRental`), quản lý Banner quảng cáo, chế độ bảo trì `SiteLock`, phân quyền `Super Admin`, đồng bộ ảnh Cloudinary & Google Drive API. | Hoàn thành |
-| **Tự động hóa Hợp đồng & Mail** | Sinh hợp đồng PDF tự động (`PDFKit`) tích hợp mã QR tra cứu đơn; quy trình xác nhận cọc tiền mặt / chuyển khoản thủ công (thay thế VNPay/PayOS); gửi email OTP & thông báo qua Resend/SMTP. | Hoàn thành |
+| **Tự động hóa Hợp đồng & Mail** | Sinh hợp đồng PDF tự động (`PDFKit`) tích hợp mã QR tra cứu đơn; quy trình xác nhận cọc tiền mặt / chuyển khoản thủ công (thay thế VNPay/PayOS); gửi toàn bộ OTP và thông báo qua Resend REST API. | Hoàn thành |
 
 ---
 
@@ -81,7 +81,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
 * **Trí tuệ nhân tạo:** Google Generative AI (Gemini Flash API `@google/generative-ai`)
 * **Xử lý tài liệu:** PDFKit (tạo file PDF hợp đồng studio), QRCode
 * **Lưu trữ đám mây:** Cloudinary API (ảnh upload linh hoạt), Google Drive API (`googleapis`)
-* **Gửi Email:** Nodemailer (SMTP Gmail local) & Resend HTTPS API (cho cloud hosting Render)
+* **Gửi Email:** Resend REST API qua HTTPS cho cả môi trường local và Render
 * **Tác vụ ngầm:** Node-cron (nhắc lịch hẹn và dọn dẹp dữ liệu)
 
 ---
@@ -165,10 +165,9 @@ JWT_SECRET=your_jwt_super_secret_key
 FRONTEND_URL=http://localhost:5173
 BACKEND_URL=http://localhost:5000
 
-# Dịch vụ gửi email (SMTP Local hoặc Resend trên cloud)
-EMAIL_PROVIDER=smtp
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_gmail_app_password
+# Email (Resend REST API - dùng giống nhau ở local và Render)
+RESEND_API_KEY=re_your_rotated_api_key
+EMAIL_FROM="Cao Hiển Studio <noreply@your-verified-domain.com>"
 CONTACT_RECEIVER_EMAIL=your_email@gmail.com
 
 # Cấu hình Super Admin tự khởi tạo
@@ -188,6 +187,10 @@ OSRM_ROUTER_URL=https://router.project-osrm.org
 STUDIO_ORIGIN_LAT=10.2433
 STUDIO_ORIGIN_LON=106.3756
 ```
+
+* **Local:** đặt `RESEND_API_KEY`, `EMAIL_FROM`, `CONTACT_RECEIVER_EMAIL` và `ADMIN_EMAIL` trong `backend/.env`.
+* **Render:** mở dịch vụ backend → **Environment**, khai báo cùng các biến trên rồi redeploy backend.
+* `EMAIL_FROM` phải là địa chỉ thuộc domain đã xác minh trên Resend. `RESEND_API_KEY` là secret backend: không đặt trong `frontend/.env`, không thêm tiền tố `VITE_`, và không commit giá trị thật.
 
 Tạo file `.env` tại thư mục `frontend/` dựa trên `frontend/.env.example`:
 

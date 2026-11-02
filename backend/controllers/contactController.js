@@ -3,84 +3,9 @@
  * Xử lý yêu cầu liên hệ/tư vấn từ khách hàng qua form website.
  * Luồng: Gửi OTP → Xác thực OTP → Submit form (lưu DB + gửi mail về studio).
  */
-const nodemailer = require("nodemailer");
 const Contact   = require("../models/Contact");
 const OTP       = require("../models/OTP");
-
-// Khởi tạo transporter Gmail dùng chung cho toàn bộ controller (Tối ưu cho Cloud/Render)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  tls: { rejectUnauthorized: false },
-});
-
-const buildEmailError = (message, statusCode = 503, publicMessage = message) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  error.publicMessage = publicMessage;
-  return error;
-};
-
-// Render Free blocks outbound SMTP, so deployed Render services use an HTTPS mail API.
-const sendOtpEmail = async ({ to, subject, html }) => {
-  const provider = String(
-    process.env.EMAIL_PROVIDER || (process.env.RENDER === "true" ? "resend" : "smtp"),
-  ).trim().toLowerCase();
-
-  if (provider === "resend") {
-    const apiKey = String(process.env.RESEND_API_KEY || "").trim();
-    const from = String(process.env.EMAIL_FROM || "").trim();
-    if (!apiKey || !from) {
-      throw buildEmailError(
-        "Resend requires RESEND_API_KEY and EMAIL_FROM.",
-        503,
-        "Email OTP chưa được cấu hình trên môi trường deploy. Cần khai báo RESEND_API_KEY và EMAIL_FROM đã xác minh.",
-      );
-    }
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [to], subject, html }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      console.error("Resend từ chối gửi OTP:", response.status, result.message || result.name || "Không có chi tiết");
-      throw buildEmailError(
-        `Resend API returned ${response.status}.`,
-        502,
-        "Nhà cung cấp email từ chối gửi OTP. Kiểm tra API key và địa chỉ EMAIL_FROM đã xác minh.",
-      );
-    }
-    return result;
-  }
-
-  if (provider !== "smtp") {
-    throw buildEmailError(`EMAIL_PROVIDER không hợp lệ: ${provider}`, 503, "Cấu hình dịch vụ gửi email không hợp lệ.");
-  }
-
-  const senderEmail = String(process.env.EMAIL_USER || "").trim();
-  const senderPassword = String(process.env.EMAIL_PASS || "").trim();
-  if (!senderEmail || !senderPassword) {
-    throw buildEmailError(
-      "SMTP requires EMAIL_USER and EMAIL_PASS.",
-      503,
-      "Dịch vụ gửi email local chưa được cấu hình EMAIL_USER và EMAIL_PASS.",
-    );
-  }
-
-  return transporter.sendMail({
-    from: `"Cao Hien Studio" <${senderEmail}>`,
-    to,
-    subject,
-    html,
-  });
-};
+const { sendMail, sendOtpEmail } = require("../services/emailSender");
 
 /**
  * [POST] /api/contacts/send-otp
@@ -227,9 +152,8 @@ exports.submitContact = async (req, res) => {
       : "";
 
     // Gửi email thông báo về hòm thư studio
-    await transporter.sendMail({
-      from:    `"Cao Hien Studio Website" <${process.env.EMAIL_USER}>`,
-      to:      process.env.CONTACT_RECEIVER_EMAIL || process.env.EMAIL_USER,
+    await sendMail({
+      to:      process.env.CONTACT_RECEIVER_EMAIL || process.env.ADMIN_EMAIL,
       subject: `Khách hàng mới cần tư vấn: ${name}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 30px 15px;">
