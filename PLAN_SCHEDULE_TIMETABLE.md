@@ -60,7 +60,7 @@ Bổ sung các ca chụp phản ánh đúng 100% ca chụp thực tế:
 * **Đồng bộ vào Backend:**
   * `start_time = Ngày chụp + Giờ bắt đầu` (lưu chuẩn ISO UTC+7).
   * `end_time = Ngày chụp + Giờ kết thúc` (lưu chuẩn ISO UTC+7).
-* **Đồng bộ lên Hợp đồng PDF (`contractPdf.js`):**
+* **Đồng bộ lên template hợp đồng (`contractTemplateService.js`):**
   * Hợp đồng sẽ in rõ:  
     *Thời gian thực hiện: Từ **06:30** đến **10:30**, ngày **15/11/2026** (Buổi sáng).*
 
@@ -219,7 +219,7 @@ exact_end_time:   { type: String, default: "" }, // VD: "10:30"
 
 | Giai đoạn | Nội dung công việc | Đầu ra mong đợi |
 | :--- | :--- | :--- |
-| **Giai đoạn 1** | **Backend Schema & API**<br>• Bổ sung enum `EVENING`, `CUSTOM` và giờ cụ thể vào `Booking`.<br>• Viết API `GET /api/bookings/admin/timetable`.<br>• Cập nhật [contractPdf.js](backend/utils/contractPdf.js) in giờ chi tiết. | API trả dữ liệu thời khóa biểu chuẩn xác, PDF in đúng giờ cụ thể. |
+| **Giai đoạn 1** | **Backend Schema & API**<br>• Bổ sung enum `EVENING`, `CUSTOM` và giờ cụ thể vào `Booking`.<br>• Viết API `GET /api/bookings/admin/timetable`.<br>• Cập nhật [contractTemplateService.js](backend/services/contractTemplateService.js) in giờ chi tiết. | API trả dữ liệu thời khóa biểu chuẩn xác, PDF in đúng giờ cụ thể. |
 | **Giai đoạn 2** | **Nâng cấp Modal Chỉnh sửa & Tạo đơn**<br>• Bổ sung ô chọn giờ cụ thể (`TimePicker.RangePicker`).<br>• Tích hợp Live Availability Badge báo tình trạng ngày. | Modal sửa đơn có đầy đủ thông tin khách, giờ cụ thể và cảnh báo lịch. |
 | **Giai đoạn 3** | **Xây dựng Thời khóa biểu Tuần (Weekly Timetable)**<br>• Xây dựng giao diện 7 cột x 3 ca chụp.<br>• Hiển thị song song ngày Âm lịch & Dương lịch.<br>• Thẻ đơn sang trọng, có nút tạo đơn nhanh tại ô trống. | Admin có giao diện thời khóa biểu trực quan để tư vấn cho khách. |
 | **Giai đoạn 4** | **Kiểm thử & Tích hợp hoàn thiện**<br>• Tích hợp vào Tabs của `AdminOrders.jsx`.<br>• Kiểm thử luồng tư vấn, chốt giờ và xuất hợp đồng thực tế. | Tính năng vận hành mượt mà, sẵn sàng demo nghiệm thu KLTN. |

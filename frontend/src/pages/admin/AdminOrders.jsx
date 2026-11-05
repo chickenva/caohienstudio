@@ -40,7 +40,6 @@ import {
   CopyOutlined,
   FileTextOutlined,
   PlayCircleOutlined,
-  DownloadOutlined,
   QrcodeOutlined,
   CalendarOutlined,
   PlusOutlined,
@@ -181,32 +180,6 @@ export default function AdminOrders() {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [progressTarget, setProgressTarget] = useState(null);
 
-  // Modal gửi hợp đồng
-  const [sendContractModalOpen, setSendContractModalOpen] = useState(false);
-  const [sendContractTarget, setSendContractTarget] = useState(null);
-  const [sendingContract, setSendingContract] = useState(false);
-  const [contractResult, setContractResult] = useState(null); // { contract_link, qr_code, pdf_url }
-
-  // Modal chỉnh thông tin đơn
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [editForm] = Form.useForm();
-  const editDepositPercent = Form.useWatch("deposit_percent", editForm) || 30;
-  const [savingEdit, setSavingEdit] = useState(false);
-  const [editTotalAmount, setEditTotalAmount] = useState(0);
-  // Giá gói chính và addon đã chọn để auto-tính tổng
-  const [selectedMainService, setSelectedMainService] = useState(null);
-  const [selectedAddonIds, setSelectedAddonIds] = useState([]);
-
-  // States cho AutoComplete địa điểm và tính km phụ thu trong Modal sửa đơn
-  const editShootingType = Form.useWatch("shooting_type", editForm);
-  const [editLocationOptions, setEditLocationOptions] = useState([]);
-  const [editLocationSearching, setEditLocationSearching] = useState(false);
-  const [editLocationCalculating, setEditLocationCalculating] = useState(false);
-  const [editTravelDistanceKm, setEditTravelDistanceKm] = useState(null);
-  const [editTravelPricingSource, setEditTravelPricingSource] = useState("");
-  const editSearchTimeout = useRef(null);
-
   // Modal dời lịch (đơn CONFIRMED)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
@@ -221,11 +194,6 @@ export default function AdminOrders() {
   const [contractViewTarget, setContractViewTarget] = useState(null);
   const [contractViewData, setContractViewData] = useState(null);
   const [loadingContractView, setLoadingContractView] = useState(false);
-
-  // File PDF hợp đồng upload trong modal tạo hợp đồng
-  const [contractPdfUrl, setContractPdfUrl] = useState("");
-  const [contractPdfName, setContractPdfName] = useState("");
-  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // Modal Cài đặt QR Thanh toán Studio Mặc định
   const [studioQrModalOpen, setStudioQrModalOpen] = useState(false);
@@ -298,15 +266,6 @@ export default function AdminOrders() {
   // Mở modal chuyển đơn sang trạng thái đang thực hiện.
   const openProgressModal = (record) => { setProgressTarget(record); setProgressModalOpen(true); };
 
-  // Mở modal tạo/gửi hợp đồng cho khách.
-  const openSendContractModal = (record) => {
-    setSendContractTarget(record);
-    setContractResult(null);
-    setContractPdfUrl(record.contract_file_url || "");
-    setContractPdfName(record.contract_original_name || "");
-    setSendContractModalOpen(true);
-  };
-
   // Mở modal cài đặt QR Studio
   const openStudioQrModal = async () => {
     setStudioQrModalOpen(true);
@@ -320,29 +279,6 @@ export default function AdminOrders() {
       console.error("Lỗi lấy QR studio:", err);
     } finally {
       setLoadingStudioQr(false);
-    }
-  };
-
-  // Upload file PDF hợp đồng lên server
-  const handleUploadContractPdf = async (file) => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("pdf", file);
-    setUploadingPdf(true);
-    try {
-      const res = await axios.post(`${API_URL}/upload/pdf`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
-      setContractPdfUrl(res.data.url);
-      setContractPdfName(file.name || res.data.originalName);
-      message.success("Tải file PDF hợp đồng thành công!");
-    } catch (err) {
-      message.error(err.response?.data?.message || "Lỗi upload file PDF");
-    } finally {
-      setUploadingPdf(false);
     }
   };
 
@@ -488,252 +424,6 @@ export default function AdminOrders() {
     }
   };
 
-  // Đổ dữ liệu booking vào form để admin chỉnh trước khi gửi hợp đồng.
-  const openEditModal = async (record) => {
-    const serviceCatalog = await fetchServices();
-    setEditTarget(record);
-    setContractPdfUrl(record.contract_file_url || "");
-    setContractPdfName(record.contract_original_name || "");
-    const total = record.total_amount || 0;
-    const depositAmt = record.deposit_amount || Math.round(total * (record.deposit_percent || 30) / 100);
-
-    const mainSvcIds = record.original_service_ids?.length
-      ? record.original_service_ids.map(getServiceId).filter(Boolean)
-      : (record.service_id ? [record.service_id._id || record.service_id] : []);
-    // Old customer bookings stored secondary main packages in extra_service_ids too.
-    // Keep only actual addons in the edit control; original_service_ids remains the main-package source.
-    const allowedAddonIds = new Set(getAddonServicesForMain(serviceCatalog, mainSvcIds).map((service) => String(service._id)));
-    const catalogServiceIds = new Set(serviceCatalog.map((service) => String(service._id)));
-    const addonIds = getBookingAddons(record)
-      .map(getServiceId)
-      .filter((id) => id && (allowedAddonIds.has(id) || !catalogServiceIds.has(id)));
-
-    setSelectedMainService(mainSvcIds);
-    setSelectedAddonIds(addonIds);
-    setEditTotalAmount(total);
-    setEditTravelDistanceKm(record.travel_distance_km ?? null);
-    setEditTravelPricingSource(record.travel_pricing_source || "");
-    setEditLocationOptions([]);
-
-    editForm.setFieldsValue({
-      customer_full_name: record.customer_full_name || record.customer_id?.full_name || "",
-      customer_phone: record.customer_phone || record.customer_id?.phone || "",
-      customer_email: record.customer_email || record.customer_id?.email || "",
-      service_ids: mainSvcIds,
-      extra_service_ids: addonIds,
-      shoot_date: record.start_time ? dayjs(record.start_time) : null,
-      shooting_type: record.shooting_type,
-      shooting_session: record.shooting_session,
-      location: record.location,
-      note: record.note || "",
-      contract_note: record.contract_note || "",
-      total_amount: total,
-      travel_surcharge_amount: record.travel_surcharge_amount || 0,
-      deposit_percent: record.deposit_percent || 30,
-      deposit_amount: depositAmt,
-    });
-    setEditModalOpen(true);
-  };
-
-  // Tự tính tổng tiền từ giá dịch vụ đã chọn
-  // Tự tính tổng tiền từ gói chính và gói đi kèm đang chọn.
-  const calculateServiceSubtotal = useCallback((mainSvcIds, addonIds) => {
-    const mainPrice = servicesList
-      .filter(s => (mainSvcIds || []).map(String).includes(String(s._id)))
-      .reduce((sum, s) => sum + Number(s.base_price || 0), 0);
-    const addonPrice = servicesList
-      .filter(s => (addonIds || []).map(String).includes(String(s._id)))
-      .reduce((sum, s) => sum + Number(s.base_price || 0), 0);
-    return mainPrice + addonPrice;
-  }, [servicesList]);
-
-  const recalcTotalFromServices = useCallback((mainSvcIds, addonIds) => (
-    calculateServiceSubtotal(mainSvcIds, addonIds) + Number(editForm.getFieldValue("travel_surcharge_amount") || 0)
-  ), [calculateServiceSubtotal, editForm]);
-
-  // Khi đổi gói chính, cập nhật lại tổng tiền và tiền cọc.
-  const handleMainServiceChange = (svcIds) => {
-    setSelectedMainService(svcIds);
-    const allowedAddonIds = new Set(getAddonServicesForMain(servicesList, svcIds).map((service) => String(service._id)));
-    const retainedAddonIds = selectedAddonIds.filter((id) => allowedAddonIds.has(String(id)));
-    setSelectedAddonIds(retainedAddonIds);
-    editForm.setFieldsValue({ extra_service_ids: retainedAddonIds });
-    const total = recalcTotalFromServices(svcIds, retainedAddonIds);
-    const pct = editForm.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
-    editForm.setFieldsValue({
-      total_amount: total,
-      deposit_amount: Math.round((total * pct) / 100),
-    });
-  };
-
-  // Khi đổi gói đi kèm, cập nhật lại tổng tiền và tiền cọc.
-  const handleAddonServicesChange = (ids) => {
-    setSelectedAddonIds(ids);
-    const total = recalcTotalFromServices(selectedMainService, ids);
-    const pct = editForm.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
-    editForm.setFieldsValue({
-      total_amount: total,
-      deposit_amount: Math.round((total * pct) / 100),
-    });
-  };
-
-  // Khi admin sửa tổng tiền thủ công, tự tính lại tiền cọc.
-  const handleTotalAmountChange = (val) => {
-    setEditTotalAmount(val || 0);
-    const pct = editForm.getFieldValue("deposit_percent") || 30;
-    editForm.setFieldsValue({ deposit_amount: Math.round(((val || 0) * pct) / 100) });
-  };
-
-  const handleTravelSurchargeChange = (val) => {
-    const amount = Math.max(0, Number(val || 0));
-    const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
-    const pct = editForm.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
-    editForm.setFieldsValue({
-      travel_surcharge_amount: amount,
-      total_amount: total,
-      deposit_amount: Math.round((total * pct) / 100),
-    });
-  };
-
-  // Giữ logic tính cọc theo phần trăm nếu sau này mở chỉnh phần trăm.
-  const handleDepositPercentChange = (val) => {
-    const total = editTotalAmount || editForm.getFieldValue("total_amount") || 0;
-    editForm.setFieldsValue({ deposit_amount: Math.round((total * (val || 0)) / 100) });
-  };
-
-  // Đổi hình thức chụp trong modal Sửa đơn (STUDIO / OUTDOOR)
-  const handleShootingTypeChange = (type) => {
-    if (type === "STUDIO") {
-      editForm.setFieldsValue({
-        location: "Cao Hiển Studio",
-        travel_surcharge_amount: 0,
-      });
-      setEditTravelDistanceKm(0);
-      setEditTravelPricingSource("NOT_APPLICABLE");
-      handleTravelSurchargeChange(0);
-    } else {
-      if (editForm.getFieldValue("location") === "Cao Hiển Studio") {
-        editForm.setFieldsValue({ location: "" });
-      }
-      setEditTravelDistanceKm(null);
-      setEditTravelPricingSource("");
-    }
-  };
-
-  // Tìm kiếm địa chỉ qua Photon API khi admin gõ địa điểm chụp ngoại cảnh
-  const handleAdminAddressSearch = (searchText) => {
-    if (!searchText || searchText.trim().length < 2) {
-      setEditLocationOptions([]);
-      return;
-    }
-    if (editSearchTimeout.current) {
-      clearTimeout(editSearchTimeout.current);
-    }
-    editSearchTimeout.current = setTimeout(async () => {
-      setEditLocationSearching(true);
-      try {
-        const query = encodeURIComponent(searchText.trim());
-        const url = `https://photon.komoot.io/api/?q=${query}&limit=15&lang=default&bbox=102.14,8.56,109.46,23.39`;
-        const res = await axios.get(url);
-        if (res.data?.features) {
-          const suggestions = res.data.features
-            .filter((f) => f.properties?.countrycode === "VN")
-            .map((f, idx) => {
-              const p = f.properties;
-              const parts = [p.name, p.street, p.district, p.city || p.state, p.country].filter(Boolean);
-              const uniqueParts = [];
-              parts.forEach((item) => {
-                if (!uniqueParts.some((u) => u.toLowerCase().trim() === item.toLowerCase().trim())) {
-                  uniqueParts.push(item);
-                }
-              });
-              const label = uniqueParts.join(", ");
-              return {
-                value: label,
-                label: label,
-                key: `${label}-${idx}`,
-                coordinates: Array.isArray(f.geometry?.coordinates)
-                  ? { lon: Number(f.geometry.coordinates[0]), lat: Number(f.geometry.coordinates[1]) }
-                  : null,
-              };
-            })
-            .filter((item) => Boolean(item.coordinates));
-          setEditLocationOptions(suggestions);
-        }
-      } catch (err) {
-        console.error("Lỗi tìm kiếm địa chỉ Photon:", err);
-      } finally {
-        setEditLocationSearching(false);
-      }
-    }, 350);
-  };
-
-  // Tính số km và số tiền phụ thu tự động qua API OSRM
-  const calculateAdminTravel = async (coords, customText) => {
-    const locText = customText || editForm.getFieldValue("location");
-    if (!coords && (!locText || !locText.trim())) {
-      message.warning("Vui lòng nhập địa điểm chụp ngoại cảnh trước khi tính.");
-      return;
-    }
-
-    setEditLocationCalculating(true);
-    try {
-      let targetCoords = coords;
-      if (!targetCoords && locText) {
-        const query = encodeURIComponent(locText.trim());
-        const url = `https://photon.komoot.io/api/?q=${query}&limit=3&lang=default&bbox=102.14,8.56,109.46,23.39`;
-        const photonRes = await axios.get(url);
-        const first = photonRes.data?.features?.find((f) => f.geometry?.coordinates);
-        if (first) {
-          targetCoords = {
-            lon: Number(first.geometry.coordinates[0]),
-            lat: Number(first.geometry.coordinates[1]),
-          };
-        }
-      }
-
-      if (!targetCoords) {
-        message.warning("Không tìm thấy tọa độ đường bộ cho địa điểm này. Bạn có thể tự điền số tiền phụ thu.");
-        return;
-      }
-
-      const res = await axios.post(`${API_URL}/bookings/travel-estimate`, {
-        destination_coordinates: targetCoords,
-      });
-
-      const estimate = res.data;
-      if (estimate) {
-        setEditTravelDistanceKm(estimate.distanceKm);
-        setEditTravelPricingSource(estimate.source || "OSRM_ROUTE");
-
-        const newAmount = Number(estimate.surchargeAmount || 0);
-        const newStatus = estimate.requiresQuote ? "QUOTE_REQUIRED" : "ESTIMATED";
-
-        editForm.setFieldsValue({
-          travel_surcharge_amount: newAmount,
-        });
-
-        const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + newAmount;
-        const pct = editForm.getFieldValue("deposit_percent") || 30;
-        setEditTotalAmount(total);
-        editForm.setFieldsValue({
-          total_amount: total,
-          deposit_amount: Math.round((total * pct) / 100),
-        });
-
-        message.success(`Đã tính cự ly: ${estimate.distanceKm} km · Phụ thu tự động: ${estimate.surchargeText}`);
-      }
-    } catch (err) {
-      console.error("Lỗi tính phụ thu OSRM:", err);
-      message.error("Không thể kết nối dịch vụ tính tuyến. Bạn có thể tự điều chỉnh phụ thu thủ công.");
-    } finally {
-      setEditLocationCalculating(false);
-    }
-  };
-
   // Gọi API đổi trạng thái đơn theo transition backend cho phép.
   const executeUpdateStatus = async (bookingId, newStatus, onSuccess) => {
     setUpdatingId(bookingId);
@@ -806,44 +496,10 @@ export default function AdminOrders() {
         setDetailOpen(false);
       }
     } catch (err) {
-      if (err?.errorFields) return; // form validation error
+      if (err?.errorFields) return;
       message.error(err.response?.data?.message || "Không thể xác nhận nhận cọc");
     } finally {
       setConfirmingDeposit(false);
-    }
-  };
-
-  // Tạo PDF, QR/link hợp đồng và chuyển đơn sang CONTRACT_SENT.
-  const handleSendContract = async () => {
-    if (!sendContractTarget) return;
-    if (!contractPdfUrl && !sendContractTarget.contract_file_url) {
-      message.error("Vui lòng chọn upload file PDF hợp đồng trước khi bấm Tạo đơn!");
-      return;
-    }
-    setSendingContract(true);
-    try {
-      const res = await axios.post(
-        `${API_URL}/bookings/${sendContractTarget._id}/send-contract`,
-        {
-          contract_file_url: contractPdfUrl || sendContractTarget.contract_file_url,
-          contract_original_name: contractPdfName || sendContractTarget.contract_original_name,
-        },
-        { headers: { Authorization: `Bearer ${getToken()}` } },
-      );
-      setContractResult({
-        contract_link: res.data.contract_link,
-        qr_code: res.data.qr_code,
-        pdf_url: res.data.pdf_url,
-      });
-      message.success("Tạo đơn & hợp đồng thành công!");
-      fetchBookings();
-      if (selectedBooking?._id === sendContractTarget._id) {
-        setSelectedBooking(prev => ({ ...prev, status: "CONTRACT_SENT", contract_file_url: res.data.pdf_url }));
-      }
-    } catch (err) {
-      message.error(err.response?.data?.message || "Không thể tạo hợp đồng");
-    } finally {
-      setSendingContract(false);
     }
   };
 
@@ -873,73 +529,6 @@ export default function AdminOrders() {
       message.error(err.response?.data?.message || "Không thể cập nhật lịch");
     } finally {
       setRescheduling(false);
-    }
-  };
-  const handleSaveEdit = async () => {
-    try {
-      const values = await editForm.validateFields();
-      setSavingEdit(true);
-      const surchargeAmount = Number(values.travel_surcharge_amount || 0);
-      const surchargeStatus = (values.shooting_type === "STUDIO" || surchargeAmount === 0)
-        ? "NOT_APPLICABLE"
-        : "ESTIMATED";
-      // Chuyển dayjs sang định dạng YYYY-MM-DD và đính kèm thông tin file PDF hợp đồng
-      const payload = {
-        ...values,
-        customer_full_name: values.customer_full_name?.trim(),
-        customer_phone: values.customer_phone?.trim(),
-        customer_email: values.customer_email?.trim(),
-        travel_surcharge_amount: surchargeAmount,
-        travel_surcharge_status: surchargeStatus,
-        shoot_date: values.shoot_date ? values.shoot_date.format("YYYY-MM-DD") : undefined,
-        travel_distance_km: editTravelDistanceKm,
-        travel_pricing_source: editTravelPricingSource,
-        contract_file_url: contractPdfUrl,
-        contract_original_name: contractPdfName,
-      };
-      await axios.put(
-        `${API_URL}/bookings/${editTarget._id}/info`,
-        payload,
-        { headers: { Authorization: `Bearer ${getToken()}` } },
-      );
-
-      // Nếu đơn ở trạng thái REQUESTED: Tiến hành Tạo đơn và gửi Hợp đồng
-      if (editTarget.status === "REQUESTED") {
-        const finalPdfUrl = contractPdfUrl || editTarget.contract_file_url;
-        const finalPdfName = contractPdfName || editTarget.contract_original_name;
-        if (!finalPdfUrl) {
-          message.error("Vui lòng upload file PDF hợp đồng trước khi bấm Tạo đơn!");
-          setSavingEdit(false);
-          return;
-        }
-        const contractRes = await axios.post(
-          `${API_URL}/bookings/${editTarget._id}/send-contract`,
-          {
-            contract_file_url: finalPdfUrl,
-            contract_original_name: finalPdfName,
-          },
-          { headers: { Authorization: `Bearer ${getToken()}` } },
-        );
-        setContractResult({
-          contract_link: contractRes.data.contract_link,
-          qr_code: contractRes.data.qr_code,
-          pdf_url: contractRes.data.pdf_url,
-        });
-        setSendContractTarget(editTarget);
-        setSendContractModalOpen(true);
-        message.success("Tạo đơn hàng & khởi tạo hợp đồng thành công!");
-      } else {
-        message.success("Cập nhật thông tin đơn thành công!");
-      }
-
-      setEditModalOpen(false);
-      setEditTarget(null);
-      fetchBookings();
-    } catch (err) {
-      if (err?.errorFields) return;
-      message.error(err.response?.data?.message || "Không thể cập nhật thông tin đơn");
-    } finally {
-      setSavingEdit(false);
     }
   };
 
@@ -1018,8 +607,8 @@ export default function AdminOrders() {
       render: (_, record) => (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
           {record.status === "REQUESTED" && (
-            <Tooltip title="Chỉnh thông tin đơn & Upload hợp đồng">
-              <Button icon={<EditOutlined />} size="small" style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => openEditModal(record)}>Chỉnh sửa</Button>
+            <Tooltip title="Chỉnh thông tin đơn & Biên tập hợp đồng">
+              <Button icon={<EditOutlined />} size="small" style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => navigate(`/admin/orders/${record._id}`)}>Chỉnh sửa</Button>
             </Tooltip>
           )}
           {["CONTRACT_SENT", "WAITING_PAYMENT"].includes(record.status) && (
@@ -1070,32 +659,6 @@ export default function AdminOrders() {
   // Kiểm tra có filter đang bật để hiển thị số lượng kết quả.
   const hasActiveFilter = searchId || (dateRange && dateRange[0]) || statusFilter !== "ALL";
 
-  // Lọc addon services (loại trừ gói chính đã chọn)
-  // Loại gói chính khỏi danh sách addon để tránh chọn trùng.
-  const addonOptions = getAddonServicesForMain(servicesList, selectedMainService || [])
-    .map(s => ({
-      value: s._id,
-      label: `${s.name}${s.is_active === false ? " (Đã ẩn)" : ""} — ${Number(s.base_price || 0).toLocaleString("vi-VN")}đ`,
-    }));
-  const knownAddonOptionIds = new Set(addonOptions.map(option => String(option.value)));
-  const catalogServiceIds = new Set(servicesList.map(service => String(service._id)));
-  const mainServiceIds = getBookingMainServiceIds(editTarget);
-  const unresolvedAddonOptions = getBookingAddons(editTarget)
-    .map(service => ({
-      id: getServiceId(service),
-      name: typeof service === "object" ? service.name : "",
-      price: typeof service === "object" ? service.base_price : null,
-    }))
-    .filter(service => service.id && !mainServiceIds.has(service.id) && !catalogServiceIds.has(service.id) && !knownAddonOptionIds.has(service.id))
-    .map(service => ({
-      value: service.id,
-      label: service.name
-        ? `${service.name}${service.price != null ? ` — ${Number(service.price).toLocaleString("vi-VN")}đ` : ""} (Không còn trong danh mục)`
-        : "Gói đi kèm không còn trong danh mục",
-      disabled: true,
-    }));
-  addonOptions.push(...unresolvedAddonOptions);
-
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
@@ -1103,6 +666,9 @@ export default function AdminOrders() {
           <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>Quản Lý Đơn Đặt Lịch</Title>
         </div>
         <Space>
+          <Button icon={<FileTextOutlined />} onClick={() => navigate("/admin/contract-templates")} style={{ borderColor: "#BFA16A", color: "#8B7045", background: "#fff" }}>
+            Template hợp đồng
+          </Button>
           <Button icon={<QrcodeOutlined />} onClick={openStudioQrModal} style={{ borderColor: "#000", color: "#000", background: "#fff" }}>
             QR Thanh toán Studio
           </Button>
@@ -1191,7 +757,7 @@ export default function AdminOrders() {
               <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => { setDetailOpen(false); openCancelModal(selectedBooking); }}>
                 Hủy đơn
               </Button>,
-              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); navigate(`/admin/orders/${selectedBooking._id}`); }}>
                 Chỉnh sửa
               </Button>,
               <Button key="close" onClick={() => setDetailOpen(false)}>
@@ -1208,7 +774,7 @@ export default function AdminOrders() {
               <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
                 Hợp đồng
               </Button>,
-              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); navigate(`/admin/orders/${selectedBooking._id}`); }}>
                 Chỉnh sửa
               </Button>,
               <Button key="close" onClick={() => setDetailOpen(false)}>
@@ -1225,7 +791,7 @@ export default function AdminOrders() {
               <Button key="contract" icon={<QrcodeOutlined />} style={{ color: "#08979c", borderColor: "#08979c" }} onClick={() => { setDetailOpen(false); openContractViewModal(selectedBooking); }}>
                 Hợp đồng
               </Button>,
-              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); openEditModal(selectedBooking); }}>
+              <Button key="edit" icon={<EditOutlined />} style={{ borderColor: "#BFA16A", color: "#BFA16A" }} onClick={() => { setDetailOpen(false); navigate(`/admin/orders/${selectedBooking._id}`); }}>
                 Chỉnh sửa
               </Button>,
               <Button key="close" onClick={() => setDetailOpen(false)}>
@@ -1347,492 +913,6 @@ export default function AdminOrders() {
             )}
           </Descriptions>
         )}
-      </Modal>
-
-      {/* ===== MODAL GỬI HỢP ĐỒNG ===== */}
-      <Modal
-        open={sendContractModalOpen}
-        onCancel={() => { if (!sendingContract) { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); } }}
-        footer={null}
-        centered
-        width={560}
-        style={{ maxWidth: "95vw" }}
-        closable={!sendingContract}
-        maskClosable={!sendingContract}
-      >
-        <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", marginBottom: 10 }}>
-            {sendContractTarget?.status === "CONTRACT_SENT" ? "Gửi lại hợp đồng?" : "Tạo & Gửi hợp đồng"}
-          </div>
-
-          {!contractResult ? (
-            <>
-              <Paragraph style={{ color: "#595959", fontSize: 14, marginBottom: 16 }}>
-                Chọn file <strong>PDF hợp đồng</strong> đã đính kèm. Khi bấm <strong>"Tạo đơn"</strong>, đơn hàng chuyển sang <strong>HĐ Đã Gửi</strong> và tạo QR link trực tuyến (không gửi email).
-              </Paragraph>
-
-              <div style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 8, padding: "12px 16px", marginBottom: 16, textAlign: "left" }}>
-                <div style={{ marginBottom: 4 }}><Text type="secondary">Khách hàng: </Text><Text strong>{getBookingCustomerInfo(sendContractTarget).full_name}</Text></div>
-                <div style={{ marginBottom: 4 }}><Text type="secondary">Dịch vụ: </Text><Text strong>{sendContractTarget?.service_id?.name}</Text></div>
-                <div style={{ marginBottom: 4 }}>
-                  <Text type="secondary">Tiền cọc quy định: </Text>
-                  <Text strong style={{ color: "#BFA16A" }}>{(sendContractTarget?.deposit_amount || 0).toLocaleString("vi-VN")}đ</Text>
-                </div>
-                <div><Text type="secondary">Tổng hợp đồng: </Text><Text strong>{(sendContractTarget?.total_amount || 0).toLocaleString("vi-VN")}đ</Text></div>
-              </div>
-
-              {/* Ô upload file PDF hợp đồng */}
-              <div style={{ marginBottom: 20, textAlign: "left", background: "#f6ffed", border: "1px dashed #b7eb8f", padding: "14px 16px", borderRadius: 8 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, color: "#274e13" }}>
-                  📄 Upload File PDF Hợp Đồng
-                </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    id="pdf-contract-file-input"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleUploadContractPdf(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  <Button
-                    icon={<UploadOutlined />}
-                    loading={uploadingPdf}
-                    onClick={() => document.getElementById("pdf-contract-file-input")?.click()}
-                    style={{ color: "#000", borderColor: "#d9d9d9" }}
-                  >
-                    {contractPdfUrl ? "Đổi file PDF hợp đồng" : "Chọn file PDF từ máy"}
-                  </Button>
-                  {contractPdfName && (
-                    <Tag color="green" style={{ fontSize: 12, padding: "4px 8px" }}>
-                      ✓ {contractPdfName}
-                    </Tag>
-                  )}
-                  {(contractPdfUrl || contractPdfName) && (
-                    <Button
-                      type="text"
-                      danger
-                      onClick={() => {
-                        setContractPdfUrl("");
-                        setContractPdfName("");
-                      }}
-                    >
-                      Xóa file
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <Space>
-                <Button size="large" onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); }} disabled={sendingContract}>Hủy</Button>
-                <Button type="primary" size="large"
-                  loading={sendingContract} onClick={handleSendContract}
-                  style={{ background: "#BFA16A", borderColor: "#BFA16A", minWidth: 160 }}>
-                  Tạo đơn
-                </Button>
-              </Space>
-            </>
-          ) : (
-            <>
-              {/* QR CODE */}
-              {contractResult.qr_code && (
-                <div style={{ margin: "0 auto 16px", display: "inline-block", padding: 12, border: "2px solid #f0e6d3", borderRadius: 12 }}>
-                  <img src={contractResult.qr_code} alt="QR Hợp đồng" style={{ width: 180, height: 180, display: "block" }} />
-                  <div style={{ fontSize: 11, color: "#aaa", marginTop: 6, textAlign: "center" }}>
-                    <QrcodeOutlined style={{ marginRight: 4 }} />Quét QR để xem hợp đồng
-                  </div>
-                </div>
-              )}
-
-              {/* Trạng thái thành công */}
-              <div style={{ background: "#f6ffed", border: "1px solid #b7eb8f", borderRadius: 8, padding: "10px 16px", marginBottom: 16 }}>
-                <CheckCircleOutlined style={{ color: "#52c41a", marginRight: 8 }} />
-                <Text strong style={{ color: "#389e0d" }}>Đơn hàng & Hợp đồng đã được tạo thành công!</Text>
-              </div>
-
-              {/* Link hợp đồng */}
-              <div style={{ marginBottom: 16, textAlign: "left" }}>
-                <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>Link hợp đồng trực tuyến:</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Input value={contractResult.contract_link} readOnly style={{ borderRadius: 6, fontSize: 12 }} />
-                  <Tooltip title="Copy link">
-                    <Button icon={<CopyOutlined />} onClick={() => { navigator.clipboard.writeText(contractResult.contract_link); message.success("Đã copy link!"); }} />
-                  </Tooltip>
-                </div>
-              </div>
-
-              {/* Nút Đi đến trang hợp đồng */}
-              {(contractResult.contract_link || contractResult.pdf_url) && (
-                <div style={{ marginBottom: 16 }}>
-                  <a href={contractResult.contract_link || contractResult.pdf_url} target="_blank" rel="noreferrer">
-                    <Button style={{ width: "100%", height: 44, fontWeight: 600, background: "#fff", borderColor: "#BFA16A", color: "#BFA16A" }}>
-                      Đi đến trang hợp đồng
-                    </Button>
-                  </a>
-                </div>
-              )}
-
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-                <Button onClick={() => { setSendContractModalOpen(false); setSendContractTarget(null); setContractResult(null); }}>
-                  Đóng
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </Modal>
-
-      {/* ===== MODAL CHỈNH THÔNG TIN ĐƠN ===== */}
-      <Modal
-        title={
-          <span style={{ color: "#BFA16A" }}>
-            Chỉnh sửa thông tin đơn{" "}
-            {editTarget && <Text code style={{ fontSize: 13 }}>#{editTarget._id?.slice(-6).toUpperCase()}</Text>}
-          </span>
-        }
-        open={editModalOpen}
-        style={{ maxWidth: "95vw" }}
-        onCancel={() => { if (!savingEdit) { setEditModalOpen(false); setEditTarget(null); } }}
-        closable={!savingEdit}
-        maskClosable={!savingEdit}
-        footer={[
-          <Button key="cancel" onClick={() => { setEditModalOpen(false); setEditTarget(null); }} disabled={savingEdit}>Hủy</Button>,
-          <Button
-            key="save"
-            type="primary"
-            loading={savingEdit}
-            onClick={handleSaveEdit}
-            style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
-          >
-            {editTarget?.status === "REQUESTED" ? "Tạo đơn" : "Lưu thay đổi"}
-          </Button>,
-        ]}
-        width={720}
-      >
-        <Spin spinning={servicesLoading}>
-          <Form form={editForm} layout="vertical">
-
-            {/* THÔNG TIN KHÁCH HÀNG */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Thông tin khách hàng</Divider>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item
-                  label="Họ và tên khách hàng"
-                  name="customer_full_name"
-                  rules={[{ required: true, message: "Vui lòng nhập họ và tên khách hàng" }]}
-                >
-                  <Input
-                    prefix={<UserOutlined style={{ color: "#BFA16A" }} />}
-                    placeholder="Nguyễn Văn A"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  label="Số điện thoại"
-                  name="customer_phone"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập số điện thoại" },
-                    { pattern: /^[0-9+() -]{8,15}$/, message: "Số điện thoại không hợp lệ" }
-                  ]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined style={{ color: "#BFA16A" }} />}
-                    placeholder="0912 345 678"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  label="Email nhận hợp đồng"
-                  name="customer_email"
-                  rules={[{ type: "email", message: "Email không đúng định dạng" }]}
-                >
-                  <Input
-                    prefix={<MailOutlined style={{ color: "#BFA16A" }} />}
-                    placeholder="khachhang@gmail.com"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* DỊCH VỤ */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Dịch vụ</Divider>
-            <Form.Item label="Gói chụp chính" name="service_ids" rules={[{ required: true, message: "Vui lòng chọn gói chụp chính" }]}>
-              <Select
-                mode="multiple"
-                showSearch
-                optionFilterProp="label"
-                placeholder="Chọn gói chụp chính"
-                onChange={handleMainServiceChange}
-                options={servicesList.filter((service) => {
-                  const name = (service.name || "").toLocaleLowerCase("vi");
-                  const alreadySelected = (selectedMainService || []).map(String).includes(String(service._id));
-                  const isMainCandidate = service.category !== "PRINT" && service.allow_addon !== true &&
-                    !name.includes("gói lẻ lễ tối") && !name.includes("gói thêm flycam");
-                  return alreadySelected || isMainCandidate;
-                }).map(s => ({
-                  value: s._id,
-                  label: `${s.name} — ${Number(s.base_price || 0).toLocaleString("vi-VN")}đ`,
-                }))}
-                size="large"
-              />
-            </Form.Item>
-            <Form.Item label="Gói đi kèm (Addon)" name="extra_service_ids">
-              <Select
-                mode="multiple"
-                showSearch
-                optionFilterProp="label"
-                placeholder="Chọn các gói đi kèm (không bắt buộc)"
-                onChange={handleAddonServicesChange}
-                options={addonOptions}
-                size="large"
-              />
-            </Form.Item>
-
-            {/* THỜI GIAN */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Thời gian & Địa điểm</Divider>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item label="Ngày chụp" name="shoot_date" rules={[{ required: true, message: "Vui lòng chọn ngày chụp" }]}>
-                  <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} size="large" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item label="Hình thức" name="shooting_type" rules={[{ required: true, message: "Vui lòng chọn hình thức" }]}>
-                  <Select
-                    size="large"
-                    onChange={handleShootingTypeChange}
-                    options={[
-                      { value: "STUDIO", label: "Tại Studio" },
-                      { value: "OUTDOOR", label: "Ngoại cảnh" }
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item label="Buổi chụp" name="shooting_session" rules={[{ required: true, message: "Vui lòng chọn buổi chụp" }]}>
-                  <Select size="large" options={[
-                    { value: "MORNING", label: "Sáng (08:00 - 12:00)" },
-                    { value: "AFTERNOON", label: "Chiều (13:00 - 17:00)" },
-                    { value: "FULL_DAY", label: "Cả ngày (08:00 - 17:00)" }
-                  ]} />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Form.Item
-              label={
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                  <span>Địa điểm chụp</span>
-                  {editShootingType === "OUTDOOR" && (
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<CarOutlined />}
-                      loading={editLocationCalculating}
-                      onClick={() => calculateAdminTravel(null, editForm.getFieldValue("location"))}
-                      style={{ color: "#BFA16A", padding: 0, height: "auto", fontSize: 12, fontWeight: 500 }}
-                    >
-                      {editLocationCalculating ? "Đang tính..." : "Tính km & phụ thu tự động"}
-                    </Button>
-                  )}
-                </div>
-              }
-              name="location"
-              rules={[{ required: true, message: "Vui lòng nhập địa điểm" }]}
-            >
-              {editShootingType === "OUTDOOR" ? (
-                <AutoComplete
-                  options={editLocationOptions}
-                  onSearch={handleAdminAddressSearch}
-                  onSelect={(value, option) => {
-                    editForm.setFieldsValue({ location: value });
-                    if (option?.coordinates) {
-                      calculateAdminTravel(option.coordinates, value);
-                    }
-                  }}
-                  placeholder="Nhập địa chỉ hoặc chọn từ gợi ý (VD: Bến Ninh Kiều, Cần Thơ)..."
-                >
-                  <Input
-                    size="large"
-                    prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                    suffix={editLocationSearching ? <LoadingOutlined style={{ color: "#BFA16A" }} /> : null}
-                  />
-                </AutoComplete>
-              ) : (
-                <Input
-                  disabled
-                  placeholder="Cao Hiển Studio"
-                  size="large"
-                  prefix={<EnvironmentOutlined style={{ color: "#BFA16A" }} />}
-                />
-              )}
-            </Form.Item>
-
-            {editShootingType === "OUTDOOR" && editTravelDistanceKm !== null && (
-              <div
-                style={{
-                  marginBottom: 16,
-                  marginTop: -8,
-                  padding: "8px 14px",
-                  background: "rgba(191, 161, 106, 0.08)",
-                  border: "1px solid rgba(191, 161, 106, 0.25)",
-                  borderRadius: 8,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: 12,
-                }}
-              >
-                <span style={{ color: "#2F2F2F" }}>
-                  🚗 Tuyến đường: <strong style={{ color: "#BFA16A" }}>{editTravelDistanceKm} km</strong> một chiều (tính từ Trung tâm Bến Tre)
-                </span>
-                <Tag color="gold" style={{ margin: 0, fontWeight: 600 }}>
-                  {getBandForDistance(editTravelDistanceKm)?.tierName || "Theo cự ly"}
-                </Tag>
-              </div>
-            )}
-
-            {/* TÀI CHÍNH */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Tài chính</Divider>
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  label={
-                    <Space>
-                      <span>Phụ thu di chuyển</span>
-                      <Tooltip title="Hệ thống tự tính theo cự ly bộ hành một chiều. Nhân viên có thể tùy chỉnh lại số tiền nếu muốn.">
-                        <InfoCircleOutlined style={{ color: "#BFA16A", fontSize: 13 }} />
-                      </Tooltip>
-                    </Space>
-                  }
-                  name="travel_surcharge_amount"
-                  extra={
-                    editShootingType === "OUTDOOR" && editTravelDistanceKm !== null ? (
-                      <span style={{ fontSize: 11, color: "#888" }}>
-                        💡 Đã tự tính cho {editTravelDistanceKm} km. Bạn có thể thay đổi số tiền này nếu cần.
-                      </span>
-                    ) : editShootingType === "STUDIO" ? (
-                      <span style={{ fontSize: 11, color: "#888" }}>
-                        🏠 Chụp tại Studio: Không áp dụng phụ thu di chuyển (0đ)
-                      </span>
-                    ) : null
-                  }
-                >
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={0}
-                    step={100000}
-                    size="large"
-                    addonAfter="đ"
-                    disabled={editShootingType === "STUDIO"}
-                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
-                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
-                    onChange={handleTravelSurchargeChange}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="deposit_percent" hidden>
-              <InputNumber onChange={handleDepositPercentChange} />
-            </Form.Item>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item label="Tổng tiền" name="total_amount" rules={[{ required: true, message: "Vui lòng nhập tổng tiền" }]}>
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={0}
-                    step={100000}
-                    size="large"
-                    addonAfter="đ"
-                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
-                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
-                    onChange={handleTotalAmountChange}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label={`Tiền cọc (${editDepositPercent}%)`} name="deposit_amount">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={0}
-                    step={100000}
-                    size="large"
-                    addonAfter="đ"
-                    formatter={(v) => (v != null && v !== "" ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "")}
-                    parser={(v) => (v ? v.replace(/\D/g, "") : "")}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* HỢP ĐỒNG */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Hợp đồng & File PDF</Divider>
-            <div style={{ marginBottom: 16, background: "#f6ffed", border: "1px dashed #b7eb8f", padding: "14px 16px", borderRadius: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, color: "#274e13" }}>
-                📄 Upload File PDF Hợp Đồng
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  id="edit-pdf-contract-file-input"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handleUploadContractPdf(e.target.files[0]);
-                    }
-                  }}
-                />
-                <Button
-                  icon={<UploadOutlined />}
-                  loading={uploadingPdf}
-                  onClick={() => document.getElementById("edit-pdf-contract-file-input")?.click()}
-                  style={{ color: "#000", borderColor: "#d9d9d9" }}
-                >
-                  {contractPdfUrl ? "Đổi file PDF hợp đồng" : "Chọn file PDF từ máy"}
-                </Button>
-                {contractPdfName && (
-                  <Tag color="green" style={{ fontSize: 12, padding: "4px 8px" }}>
-                    ✓ {contractPdfName}
-                  </Tag>
-                )}
-                {(contractPdfUrl || contractPdfName) && (
-                  <Button
-                    type="text"
-                    danger
-                    onClick={() => {
-                      setContractPdfUrl("");
-                      setContractPdfName("");
-                    }}
-                  >
-                    Xóa file
-                  </Button>
-                )}
-              </div>
-              {contractPdfUrl && (
-                <div style={{ marginTop: 8 }}>
-                  <a href={contractPdfUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#096dd9" }}>
-                    Xem file PDF đã tải lên
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* GHI CHÚ */}
-            <Divider orientation="left" style={{ fontSize: 13, color: "#BFA16A", borderColor: "#f0e6d3" }}>Ghi chú</Divider>
-            <Form.Item label="Ghi chú đơn hàng" name="note">
-              <Input.TextArea rows={2} placeholder="Ghi chú từ khách hoặc studio" />
-            </Form.Item>
-          </Form>
-        </Spin>
       </Modal>
 
       {/* ===== MODAL HỦY ĐƠN ===== */}

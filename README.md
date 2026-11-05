@@ -17,7 +17,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
 | **Tuần 2: Đối sánh thị trường & Lịch biểu** | Khảo sát đối sánh 4 studio (Gạo Nâu, HThao Studio, Ảnh Tiệc Vĩnh Long, Cao Hiển). Cải tiến giao diện chọn lịch có hiển thị ngày lễ, ngày âm lịch và ngày studio tạm nghỉ. | Hoàn thành |
 | **Tuần 3: Định tuyến OSRM & Phụ thu cự ly** | Chuẩn hóa bảng phụ thu di chuyển 7 bậc cự ly (0–30 km miễn phí đến trên 250 km báo phí riêng). Tích hợp OSRM Road Distance API tính tuyến thực tế từ Studio Bến Tre. Lưu nháp `sessionStorage` cho luồng đăng ký/đăng nhập/khách vãng lai. | Hoàn thành |
 | **Mở rộng tính năng Studio** | Thêm phân hệ cho thuê thiết bị/máy ảnh (`CameraRental`), quản lý Banner quảng cáo, chế độ bảo trì `SiteLock`, phân quyền `Super Admin`, đồng bộ ảnh Cloudinary & Google Drive API. | Hoàn thành |
-| **Tự động hóa Hợp đồng & Mail** | Sinh hợp đồng PDF tự động (`PDFKit`) tích hợp mã QR tra cứu đơn; quy trình xác nhận cọc tiền mặt / chuyển khoản thủ công (thay thế VNPay/PayOS); gửi toàn bộ OTP và thông báo qua Resend REST API. | Hoàn thành |
+| **Tự động hóa Hợp đồng & Mail** | Biên tập và xuất hợp đồng PDF từ template DOCX/XLSX, tạo link/QR tra cứu đơn; quy trình xác nhận cọc tiền mặt / chuyển khoản thủ công; gửi OTP và thông báo qua Resend REST API. | Hoàn thành |
 
 ---
 
@@ -79,7 +79,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
 * **Xác thực & Bảo mật:** JSON Web Token (JWT), bcrypt / bcryptjs
 * **Định tuyến đường bộ:** OpenStreetMap / Project OSRM Routing API
 * **Trí tuệ nhân tạo:** Google Generative AI (Gemini Flash API `@google/generative-ai`)
-* **Xử lý tài liệu:** PDFKit (tạo file PDF hợp đồng studio), QRCode
+* **Xử lý tài liệu:** ExcelJS và Docxtemplater điền template XLSX/DOCX; LibreOffice xuất PDF; QRCode tạo mã tra cứu hợp đồng.
 * **Lưu trữ đám mây:** Cloudinary API (ảnh upload linh hoạt), Google Drive API (`googleapis`)
 * **Gửi Email:** Resend REST API qua HTTPS cho cả môi trường local và Render
 * **Tác vụ ngầm:** Node-cron (nhắc lịch hẹn và dọn dẹp dữ liệu)
@@ -191,6 +191,15 @@ STUDIO_ORIGIN_LON=106.3756
 * **Local:** đặt `RESEND_API_KEY`, `EMAIL_FROM`, `CONTACT_RECEIVER_EMAIL` và `ADMIN_EMAIL` trong `backend/.env`.
 * **Render:** mở dịch vụ backend → **Environment**, khai báo cùng các biến trên rồi redeploy backend.
 * `EMAIL_FROM` phải là địa chỉ thuộc domain đã xác minh trên Resend. `RESEND_API_KEY` là secret backend: không đặt trong `frontend/.env`, không thêm tiền tố `VITE_`, và không commit giá trị thật.
+
+### Biên tập và xuất hợp đồng
+
+* Ở trang quản lý đơn, admin chỉnh booking rồi bấm **Tạo đơn & tiếp tục hợp đồng**. Hệ thống lưu đơn và mở trang biên tập hợp đồng với dữ liệu đã điền sẵn.
+* Trang **Template hợp đồng** nằm cạnh nút **QR Thanh toán Studio**. Admin có thể tải lên DOCX hoặc XLSX; file được lưu trên Cloudinary, phiên bản hiện hành được ghi trong MongoDB.
+* DOCX dùng placeholder như `{customer_name}`. XLSX tự nhận diện nhãn phổ biến (họ tên, địa chỉ, điện thoại, ngày chụp, phụ thu, tổng tiền, cọc) và bảng dịch vụ; có thể dùng placeholder `{customer_name}` / `{{customer_name}}` khi bố cục không theo nhãn chuẩn. Template XLSX mặc định tiếp tục dùng ánh xạ ô đã cấu hình.
+* Nút **Tạo hợp đồng + link/QR** lưu các trường đã chỉnh, sinh PDF từ template đang hoạt động, lưu lên Cloudinary và chuyển booking sang `CONTRACT_SENT` qua luồng hiện hữu.
+* **Local Windows:** cài LibreOffice; backend tự dò `soffice.exe` hoặc dùng `LIBREOFFICE_PATH` trong `backend/.env`.
+* **Render:** chạy backend bằng Dockerfile ở thư mục gốc dự án. Image cài LibreOffice Calc/Writer và font tiếng Việt; biến môi trường hiện có tiếp tục khai báo trong Environment của dịch vụ.
 
 Tạo file `.env` tại thư mục `frontend/` dựa trên `frontend/.env.example`:
 

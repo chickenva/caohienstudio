@@ -1,8 +1,7 @@
 /**
  * uploadController.js
- * Xử lý tải ảnh & file PDF hợp đồng trực tiếp từ máy tính lên cloud.
+ * Xử lý tải ảnh trực tiếp từ máy tính lên cloud.
  * Ảnh được upload lên Cloudinary (vĩnh viễn) thay vì lưu trên disk Render (tạm thời).
- * File PDF hợp đồng cũng được upload lên Cloudinary để không bị mất khi server restart.
  */
 const cloudinary = require("../config/cloudinary");
 
@@ -50,44 +49,6 @@ exports.uploadSingleImage = async (req, res) => {
     console.error("Upload image error:", error);
     return res.status(500).json({
       message: "Lỗi khi tải ảnh lên server",
-      error: error.message,
-    });
-  }
-};
-
-/**
- * Upload 1 file PDF hợp đồng từ máy → Cloudinary
- */
-exports.uploadSinglePdf = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "Vui lòng chọn 1 file PDF hợp đồng hợp lệ để tải lên!" });
-    }
-
-    const result = await uploadToCloudinary(req.file.buffer, {
-      folder: "caohienstudio/contracts",
-      resource_type: "raw",
-    });
-
-    const fileUrl = result.secure_url;
-
-    let originalName = req.file.originalname;
-    try {
-      originalName = Buffer.from(req.file.originalname, "latin1").toString("utf8");
-    } catch (e) {
-      console.error("Filename decode error:", e);
-    }
-
-    return res.status(200).json({
-      message: "Tải file PDF hợp đồng lên thành công!",
-      url: fileUrl,
-      filename: result.public_id,
-      originalName: originalName,
-    });
-  } catch (error) {
-    console.error("Upload PDF error:", error);
-    return res.status(500).json({
-      message: "Lỗi khi tải file PDF hợp đồng lên server",
       error: error.message,
     });
   }

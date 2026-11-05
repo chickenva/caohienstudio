@@ -183,16 +183,13 @@ const bookingSchema = new mongoose.Schema(
     contract_note: { type: String, default: "" },
 
     // ==========================================
-    // FILE HỢP ĐỒNG UPLOAD (admin upload PDF ngoài hệ thống)
+    // PDF hợp đồng cuối cùng được sinh từ template và lưu trên Cloudinary.
     // ==========================================
 
-    // URL truy cập file PDF hợp đồng (hệ thống tự sinh hoặc admin upload)
+    // URL truy cập file PDF hợp đồng sinh từ template.
     contract_file_url: { type: String, default: null },
 
-    // Đường dẫn lưu file trên server (nếu upload lên local)
-    contract_file_path: { type: String, default: null },
-
-    // Tên file gốc khi admin upload (hiển thị cho UX)
+    // Tên file PDF được sinh từ template.
     contract_original_name: { type: String, default: null },
 
     // URL ảnh bill thanh toán cọc do admin upload khi xác nhận nhận cọc

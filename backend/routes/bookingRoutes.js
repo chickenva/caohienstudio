@@ -73,6 +73,21 @@ router.post(
 );
 
 // Admin gửi hợp đồng cho khách (chuyển sang CONTRACT_SENT, tạo contract_token)
+router.post(
+  "/:id/generate-contract-pdf",
+  verifyAdmin,
+  bookingController.generateContractPdfFromTemplate,
+);
+router.post(
+  "/:id/preview-contract-pdf",
+  verifyAdmin,
+  bookingController.previewContractPdfFromTemplate,
+);
+router.get(
+  "/admin/:id/contract-editor",
+  verifyAdmin,
+  bookingController.getBookingForContractEditor,
+);
 router.post("/:id/send-contract", verifyAdmin, bookingController.sendContract);
 
 // Admin xác nhận đã nhận cọc (tiền mặt/chuyển khoản) → chuyển WAITING_PAYMENT → CONFIRMED

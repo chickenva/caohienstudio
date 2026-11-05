@@ -23,7 +23,8 @@ const crypto = require("crypto");
 const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const mailService = require("../services/mailService");
-const { generateContractPdf, generateQrDataUrl } = require("../utils/contractPdf");
+const { generateQrDataUrl } = require("../utils/qrCode");
+const { generateBookingContractPdf, uploadBookingContractPdf } = require("../services/contractTemplateService");
 const { calculateTravelEstimate, STUDIO_ORIGIN } = require("../utils/travelPricing");
 
 // Trạng thái hợp lệ trong luồng mới
@@ -785,91 +786,6 @@ exports.cancelMyBooking = async (req, res) => {
 // HỢP ĐỒNG — CONTRACT
 // ==========================================
 
-// Admin gửi hợp đồng cho khách. Tạo contract_token, sinh PDF + QR, chuyển booking sang CONTRACT_SENT.
-exports.sendContract = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const booking = await Booking.findById(id)
-      .populate("customer_id", "full_name email phone")
-      .populate("original_service_ids", "name base_price").populate("service_id", "name base_price")
-      .populate("extra_service_ids", "name base_price")
-      .populate("customer_id", "full_name email phone");
-
-    if (!booking) {
-      return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
-    }
-
-    if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
-      return res.status(400).json({
-        message: `Không thể gửi hợp đồng cho đơn có trạng thái "${booking.status}". Chỉ có thể gửi khi đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT.`,
-      });
-    }
-
-    if (!booking.shooting_type || !booking.shooting_session) {
-      return res.status(400).json({
-        message: "Đơn chưa có hình thức chụp hoặc buổi chụp. Vui lòng cập nhật lịch theo ngày + buổi trước khi gửi hợp đồng.",
-      });
-    }
-
-    const shootDateStr = moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD");
-    const scheduleConflict = booking.shooting_type === "STUDIO"
-      ? await findStudioSessionConflict({
-        shootDateStr,
-        session: booking.shooting_session,
-        excludeBookingId: booking._id,
-      })
-      : await findOutdoorSessionConflict({
-        shootDateStr,
-        session: booking.shooting_session,
-        excludeBookingId: booking._id,
-      });
-
-    if (scheduleConflict) {
-      const conflictMessage = booking.shooting_type === "STUDIO"
-        ? "Studio đã có lịch trong buổi này. Vui lòng đổi ngày hoặc buổi chụp trước khi gửi hợp đồng."
-        : "Ekip ngoại cảnh đã có lịch trong buổi này. Vui lòng đổi ngày hoặc buổi chụp trước khi gửi hợp đồng.";
-      return sendConflictResponse(res, scheduleConflict, conflictMessage);
-    }
-    // Tạo token bảo mật ngẫu nhiên nếu chưa có
-    if (!booking.contract_token) {
-      booking.contract_token = crypto.randomBytes(32).toString("hex");
-    }
-
-    if (req.body?.contract_file_url) {
-      booking.contract_file_url = req.body.contract_file_url;
-    }
-
-    booking.contract_sent_at = new Date();
-    booking.status = "CONTRACT_SENT";
-    booking.hold_expires_at = moment().add(24, "hours").toDate();
-    await booking.save();
-
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
-
-    // Sinh QR code dẫn tới link xem hợp đồng
-    const qrCodeDataUrl = await generateQrDataUrl(contractLink);
-
-    // KHÔNG GỬI MAIL HỢP ĐỒNG Ở BƯỚC NÀY
-
-    return res.status(200).json({
-      message: "Đã tạo đơn & hợp đồng thành công",
-      contract_link: contractLink,
-      contract_token: booking.contract_token,
-      qr_code: qrCodeDataUrl,
-      pdf_url: booking.contract_file_url || null,
-      booking_id: booking._id,
-    });
-  } catch (error) {
-    console.error("Send contract error:", error);
-    return res.status(500).json({
-      message: "Lỗi tạo hợp đồng",
-      error: error.message,
-    });
-  }
-};
-
 // Public/Customer xem hợp đồng bằng token. Không cần đăng nhập.
 exports.getContractByToken = async (req, res) => {
   try {
@@ -1249,11 +1165,18 @@ exports.createBookingForAdmin = async (req, res) => {
         paid_at: new Date(),
       });
 
-      // Tạo PDF hợp đồng tự động cho đơn đã CONFIRMED
+      // Tạo PDF theo template đang hoạt động cho đơn đã CONFIRMED.
       try {
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-        const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${contractToken}`;
-        await generateContractPdf(booking, contractLink);
+        const contractBooking = await Booking.findById(booking._id)
+          .populate("customer_id", "full_name email phone")
+          .populate("original_service_ids", "name base_price")
+          .populate("service_id", "name base_price")
+          .populate("extra_service_ids", "name base_price");
+        const generated = await generateBookingContractPdf(contractBooking);
+        const uploaded = await uploadBookingContractPdf(generated.buffer, String(booking._id).slice(-8).toUpperCase());
+        booking.contract_file_url = uploaded.secure_url;
+        booking.contract_original_name = `Hop-dong-${String(booking._id).slice(-8).toUpperCase()}.pdf`;
+        await booking.save();
       } catch (pdfErr) {
         console.error("[createBookingForAdmin] Lỗi sinh PDF:", pdfErr.message);
       }
@@ -1306,8 +1229,6 @@ exports.updateBookingInfo = async (req, res) => {
       travel_destination_id,
       travel_destination_coordinates,
       contract_note,
-      contract_file_url,
-      contract_original_name,
       // Thông tin khách hàng
       customer_full_name,
       customer_phone,
@@ -1400,8 +1321,6 @@ exports.updateBookingInfo = async (req, res) => {
 
     if (note !== undefined) booking.note = note;
     if (contract_note !== undefined) booking.contract_note = contract_note;
-    if (contract_file_url !== undefined) booking.contract_file_url = contract_file_url;
-    if (contract_original_name !== undefined) booking.contract_original_name = contract_original_name;
 
     // Cập nhật thông tin khách hàng
     if (customer_full_name !== undefined) {
@@ -1863,11 +1782,10 @@ exports.adminConfirmDeposit = async (req, res) => {
 
     // Gửi email xác nhận đặt lịch chính thức cho khách
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
     const contractLink = booking.contract_token
       ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
       : null;
-    const pdfUrl = `${backendUrl}/public/contracts/contract_${booking._id}.pdf`;
+    const pdfUrl = booking.contract_file_url || null;
 
     await mailService.sendDepositConfirmedEmail(booking, getBookingCustomer(booking), {
       contractLink,
@@ -2019,19 +1937,25 @@ exports.rescheduleBooking = async (req, res) => {
     await booking.save();
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
     const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
 
     // Sinh lại QR code
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
 
-    // Sinh lại PDF hợp đồng (ghi đè file cũ)
+    // Sinh lại PDF từ template hiện hành để đồng nhất nội dung hợp đồng.
     let pdfUrl = null;
     try {
-      const contractData = booking.toObject();
-      contractData.customer_id = getBookingCustomer(booking);
-      const { fileName } = await generateContractPdf(contractData, contractLink);
-      pdfUrl = `${backendUrl}/public/contracts/${fileName}`;
+      const contractBooking = await Booking.findById(booking._id)
+        .populate("customer_id", "full_name email phone")
+        .populate("original_service_ids", "name base_price")
+        .populate("service_id", "name base_price")
+        .populate("extra_service_ids", "name base_price");
+      const generated = await generateBookingContractPdf(contractBooking);
+      const uploaded = await uploadBookingContractPdf(generated.buffer, String(booking._id).slice(-8).toUpperCase());
+      pdfUrl = uploaded.secure_url;
+      booking.contract_file_url = pdfUrl;
+      booking.contract_original_name = `Hop-dong-${String(booking._id).slice(-8).toUpperCase()}.pdf`;
+      await booking.save();
     } catch (pdfErr) {
       console.error("[rescheduleBooking] Lỗi sinh PDF:", pdfErr.message);
     }
@@ -2065,22 +1989,105 @@ exports.rescheduleBooking = async (req, res) => {
 };
 
 // ==========================================
-// ADMIN — TẠO / GỬI HỢP ĐỒNG (UPLOAD PDF)
+// ADMIN — XUẤT VÀ GỬI HỢP ĐỒNG TỪ TEMPLATE
 // ==========================================
 
 /**
+ * Admin tạo PDF từ template DOCX/XLSX đã điền bằng thông tin của booking.
+ * Chỉ lưu file vào booking; chưa đổi trạng thái đơn sang CONTRACT_SENT.
+ */
+exports.generateContractPdfFromTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id)
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name base_price");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
+    if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
+      return res.status(400).json({
+        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT. Đơn hiện tại: "${booking.status}".`,
+      });
+    }
+
+    const generated = await generateBookingContractPdf(booking, req.body || {});
+    const bookingCode = String(booking._id).slice(-8).toUpperCase();
+    const uploaded = await uploadBookingContractPdf(generated.buffer, bookingCode);
+    const fileName = `Hop-dong-${bookingCode}.pdf`;
+    booking.contract_file_url = uploaded.secure_url;
+    booking.contract_original_name = fileName;
+    await booking.save();
+
+    return res.status(200).json({
+      message: "Đã tạo PDF hợp đồng từ dữ liệu đơn đặt lịch.",
+      pdf_url: uploaded.secure_url,
+      contract_original_name: fileName,
+      booking_id: booking._id,
+    });
+  } catch (error) {
+    console.error("Generate contract PDF from template error:", error);
+    return res.status(error.statusCode || 500).json({
+      message: error.message || "Không thể tạo PDF hợp đồng",
+    });
+  }
+};
+
+exports.previewContractPdfFromTemplate = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name base_price");
+    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    if (!["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
+      return res.status(400).json({ message: "Đơn không ở trạng thái có thể xem trước hợp đồng." });
+    }
+    const generated = await generateBookingContractPdf(booking, req.body || {});
+    res.set("Content-Type", "application/pdf");
+    res.set("Content-Disposition", "inline; filename=contract-preview.pdf");
+    return res.send(generated.buffer);
+  } catch (error) {
+    console.error("Preview contract PDF error:", error);
+    return res.status(error.statusCode || 500).json({ message: error.message || "Không thể xem trước hợp đồng" });
+  }
+};
+
+exports.getBookingForContractEditor = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name base_price");
+    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    return res.json(booking);
+  } catch (error) {
+    return res.status(500).json({ message: "Không thể tải dữ liệu hợp đồng", error: error.message });
+  }
+};
+
+/**
  * Admin tạo đơn / gửi hợp đồng cho khách (REQUESTED / CONTRACT_SENT -> CONTRACT_SENT).
- * Nhận file PDF hợp đồng do Admin upload (contract_file_url).
+ * Nhận PDF vừa sinh từ template, sau đó tạo token và link/QR.
  * KHÔNG GỬI MAIL ở bước này! (Chỉ tạo token & link/QR hợp đồng trả về cho Admin).
  */
 exports.sendContract = async (req, res) => {
   try {
     const { id } = req.params;
-    const { contract_file_url, contract_original_name } = req.body;
+    const { contract_file_url, contract_original_name } = req.body || {};
 
     const booking = await Booking.findById(id).populate("customer_id");
     if (!booking) {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    }
+
+    if (!contract_file_url && !booking.contract_file_url) {
+      return res.status(400).json({ message: "Hãy tạo PDF từ template hợp đồng trước khi tạo link/QR." });
     }
 
     if (!booking.shooting_type || !booking.shooting_session) {

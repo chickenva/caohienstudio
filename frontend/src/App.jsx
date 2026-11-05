@@ -52,6 +52,8 @@ import AdminWebsiteImages from "./pages/admin/AdminWebsiteImages";
 import AdminBanners from "./pages/admin/AdminBanners";
 import AdminCameraRentals from "./pages/admin/AdminCameraRentals";
 import AdminHolidays from "./pages/admin/AdminHolidays";
+import AdminContractTemplates from "./pages/admin/AdminContractTemplates";
+import AdminOrderDetail from "./pages/admin/AdminOrderDetail";
 
 // Customer: Camera Rental
 import CameraRental from "./pages/customer/CameraRental";
@@ -114,7 +116,10 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
 
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders/:id" element={<AdminOrderDetail />} />
+          <Route path="orders/:id/contract" element={<AdminOrderDetail />} />
           <Route path="orders/create" element={<CreateOrder />} />
+          <Route path="contract-templates" element={<AdminContractTemplates />} />
 
           <Route path="galleries" element={<AdminGalleries />} />
           <Route path="galleries/create" element={<GalleryForm />} />

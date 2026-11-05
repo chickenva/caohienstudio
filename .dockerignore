@@ -1,0 +1,10 @@
+.git
+frontend
+**/node_modules
+backend/.env
+backend/.env.*
+backend/google-service-account.json
+backend/uploads
+backend/public/contracts
+backend/public/qrcodes
+**/*.log
