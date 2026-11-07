@@ -13,18 +13,24 @@
  *
  * LUỒNG LEGACY (backward-compat): PENDING → DEPOSITED → CONFIRMED → COMPLETED | CANCELED
  */
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
 const OTP = require("../models/OTP");
+const WebsiteImage = require("../models/WebsiteImage");
 
 const crypto = require("crypto");
 const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const mailService = require("../services/mailService");
 const { generateQrDataUrl } = require("../utils/qrCode");
-const { generateBookingContractPdf, uploadBookingContractPdf } = require("../services/contractTemplateService");
+const {
+  generateBookingContractPdf,
+  uploadBookingContractPdf,
+  resolveContractTemplateSelection,
+} = require("../services/contractTemplateService");
 const { calculateTravelEstimate, STUDIO_ORIGIN } = require("../utils/travelPricing");
 
 // Trạng thái hợp lệ trong luồng mới
@@ -818,7 +824,6 @@ exports.getContractByToken = async (req, res) => {
     delete bookingObj.contract_token;
 
     // Lấy QR thanh toán mặc định của Studio từ DB (do Admin upload trong Cài đặt)
-    const WebsiteImage = require("../models/WebsiteImage");
     const qrImage = await WebsiteImage.findOne({ page: "SETTINGS", key: "payment_qr" });
     const paymentQrUrl = qrImage?.imageUrl || process.env.PAYMENT_QR_URL || "";
 
@@ -837,6 +842,49 @@ exports.getContractByToken = async (req, res) => {
       message: "Lỗi lấy thông tin hợp đồng",
       error: error.message,
     });
+  }
+};
+
+// Public PDF delivery through the API ensures browsers receive an inline application/pdf response.
+exports.getContractPdfByToken = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { token, download } = req.query;
+    if (!token) return res.status(400).json({ message: "Thiếu token xác thực hợp đồng." });
+
+    if (!mongoose.isValidObjectId(bookingId)) {
+      return res.status(400).json({ message: "Mã đơn hàng không hợp lệ." });
+    }
+
+    const booking = await Booking.findOne({ _id: bookingId, contract_token: token })
+      .select("status contract_file_url contract_original_name")
+      .lean();
+    if (!booking) return res.status(404).json({ message: "Hợp đồng không tồn tại hoặc link đã hết hạn." });
+    if (booking.status === "CANCELED") return res.status(400).json({ message: "Đơn đặt lịch này đã bị hủy." });
+    if (!booking.contract_file_url) return res.status(404).json({ message: "Đơn chưa có file PDF hợp đồng." });
+
+    if (!String(booking.contract_file_url).startsWith("http")) {
+      return res.status(503).json({ message: "Địa chỉ file hợp đồng không hợp lệ." });
+    }
+
+    const fileUrl = new URL(booking.contract_file_url);
+    if (fileUrl.hostname !== "res.cloudinary.com") {
+      return res.status(503).json({ message: "Địa chỉ file hợp đồng không hợp lệ." });
+    }
+
+    const fileResponse = await fetch(fileUrl, { signal: AbortSignal.timeout(30000) });
+    if (!fileResponse.ok) return res.status(503).json({ message: "Không tải được file PDF hợp đồng." });
+
+    const fileName = String(booking.contract_original_name || "CaoHienStudio-hop-dong.pdf")
+      .replace(/[\r\n"]+/g, "_");
+    res.set("Content-Type", "application/pdf");
+    res.set("Content-Disposition", `${download === "1" ? "attachment" : "inline"}; filename="${fileName}"`);
+    res.set("Cache-Control", "private, no-store");
+    res.set("X-Content-Type-Options", "nosniff");
+    return res.send(Buffer.from(await fileResponse.arrayBuffer()));
+  } catch (error) {
+    console.error("Get contract PDF by token error:", error);
+    return res.status(500).json({ message: "Không thể tải file PDF hợp đồng." });
   }
 };
 
@@ -965,6 +1013,7 @@ exports.createBookingForAdmin = async (req, res) => {
       total_amount,
       paid_amount,
       status,
+      contract_type,
       start_time,
       end_time,
     } = req.body;
@@ -1126,6 +1175,7 @@ exports.createBookingForAdmin = async (req, res) => {
     const targetStatus = ["REQUESTED", "CONFIRMED"].includes(status) ? status : "REQUESTED";
     const isConfirmed = targetStatus === "CONFIRMED";
     const contractToken = isConfirmed ? crypto.randomBytes(32).toString("hex") : undefined;
+    const contractTemplateSelection = await resolveContractTemplateSelection(contract_type);
 
     const bookingPayload = {
       customer_id: customer._id,
@@ -1144,6 +1194,7 @@ exports.createBookingForAdmin = async (req, res) => {
       deposit_percent: depositPercent,
       deposit_amount: depositAmount,
       status: targetStatus,
+      ...contractTemplateSelection,
       ...(isConfirmed ? {
         contract_token: contractToken,
         contract_sent_at: new Date(),
@@ -1196,8 +1247,8 @@ exports.createBookingForAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error("Admin create booking error:", error);
-    return res.status(500).json({
-      message: "Lỗi tạo đơn đặt hộ",
+    return res.status(error.statusCode || 500).json({
+      message: error.statusCode ? error.message : "Lỗi tạo đơn đặt hộ",
       error: error.message,
     });
   }
@@ -1229,6 +1280,7 @@ exports.updateBookingInfo = async (req, res) => {
       travel_destination_id,
       travel_destination_coordinates,
       contract_note,
+      contract_type,
       // Thông tin khách hàng
       customer_full_name,
       customer_phone,
@@ -1248,6 +1300,15 @@ exports.updateBookingInfo = async (req, res) => {
       return res.status(400).json({
         message: `Không thể chỉnh sửa đơn ở trạng thái "${booking.status}".`,
       });
+    }
+
+    if (contract_type !== undefined) {
+      const requestedType = String(contract_type || "").trim().toLowerCase();
+      if (requestedType !== booking.contract_type || !booking.contract_template_id) {
+        const selection = await resolveContractTemplateSelection(requestedType);
+        booking.contract_type = selection.contract_type;
+        booking.contract_template_id = selection.contract_template_id;
+      }
     }
 
     // Cập nhật dịch vụ — tính lại tổng tiền nếu không có total_amount thủ công
@@ -1457,8 +1518,8 @@ exports.updateBookingInfo = async (req, res) => {
     });
   } catch (error) {
     console.error("Update booking info error:", error);
-    return res.status(500).json({
-      message: "Lỗi cập nhật thông tin đơn",
+    return res.status(error.statusCode || 500).json({
+      message: error.statusCode ? error.message : "Lỗi cập nhật thông tin đơn",
       error: error.message,
     });
   }

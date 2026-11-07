@@ -38,7 +38,6 @@ import {
   SendOutlined,
   EditOutlined,
   CopyOutlined,
-  FileTextOutlined,
   PlayCircleOutlined,
   QrcodeOutlined,
   CalendarOutlined,
@@ -666,9 +665,6 @@ export default function AdminOrders() {
           <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>Quản Lý Đơn Đặt Lịch</Title>
         </div>
         <Space>
-          <Button icon={<FileTextOutlined />} onClick={() => navigate("/admin/contract-templates")} style={{ borderColor: "#BFA16A", color: "#8B7045", background: "#fff" }}>
-            Template hợp đồng
-          </Button>
           <Button icon={<QrcodeOutlined />} onClick={openStudioQrModal} style={{ borderColor: "#000", color: "#000", background: "#fff" }}>
             QR Thanh toán Studio
           </Button>

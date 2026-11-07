@@ -182,6 +182,14 @@ const bookingSchema = new mongoose.Schema(
     // Điều khoản / ghi chú hợp đồng do admin soạn (thêm vào PDF)
     contract_note: { type: String, default: "" },
 
+    // Loại mẫu hợp đồng và mẫu đã chọn cho đơn này.
+    contract_type: { type: String, default: "", trim: true, lowercase: true },
+    contract_template_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ContractTemplate",
+      default: null,
+    },
+
     // ==========================================
     // PDF hợp đồng cuối cùng được sinh từ template và lưu trên Cloudinary.
     // ==========================================

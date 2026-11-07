@@ -110,6 +110,16 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
   * **Vòng lặp chỉnh sửa tức thì:** Bất cứ khi nào admin thêm/bớt gói, đổi địa chỉ, thay đổi tiền cọc hay điều khoản, chỉ cần bấm **"Cập nhật xem trước"**, hệ thống tự động lưu vào đơn và sinh ngay bản PDF mới bên dưới để kiểm tra trước khi chốt.
   * **Tạo hợp đồng + mã QR 1-click:** Nút bấm trực tiếp tại trang chi tiết để upload Cloudinary, tạo token, sinh mã QR tra cứu và chuyển trạng thái đơn sang `CONTRACT_SENT`.
 
+#### Tuần 7 — Quản Lý Nhiều Mẫu Hợp Đồng Theo Loại
+* **Quản lý mẫu hợp đồng (`/admin/contract-templates`):** Admin tải file DOCX/XLSX và đặt tên mẫu trong modal thêm/sửa; tên mẫu được dùng trực tiếp làm lựa chọn trên đơn. Danh sách cho tải file về hoặc xóa mẫu chưa được đơn hàng sử dụng. Thay file cập nhật mẫu hiện tại, không tạo phiên bản.
+* **Gắn mẫu vào đơn:** `Booking.contract_type` lưu mã nội bộ tương ứng với tên mẫu, `Booking.contract_template_id` tham chiếu mẫu đã chọn. Admin chọn mẫu khi tạo đơn đặt hộ và tại mục **5. Hợp đồng và Ghi chú** trong `AdminOrderDetail.jsx`.
+* **Xuất đúng template:** Preview và PDF lấy mẫu theo booking. PDF đã tạo được lưu riêng; nếu mẫu đang được đơn tham chiếu thì hệ thống chặn xóa để không làm hỏng luồng hợp đồng.
+* **Chuẩn hóa Clean Code & Cơ chế DNS Dự Phòng:**
+  * `server.js`: Bổ sung cơ chế fallback DNS (`MONGODB_DNS_SERVERS` mặc định `1.1.1.1, 8.8.8.8`) tự động khắc phục lỗi phân giải SRV tới MongoDB Atlas trên mạng nội bộ.
+  * Gỡ bỏ hoàn toàn schema cũ `Order.js`, dọn dẹp các dependencies không dùng (`@payos/node`, `bcrypt`, `redis`, `crypto`).
+  * Tối ưu `AdminOrderDetail.jsx`: Gỡ bỏ state re-render dư thừa `setEditTotalAmount`.
+  * Nâng cấp endpoint phân phối PDF `/api/bookings/contract/:id/pdf` có xác thực token và validate an toàn ObjectId / URL.
+
 ---
 
 ### 🚀 Giai đoạn 2: Hoàn thiện tính năng Studio & Mở rộng hệ thống
@@ -138,8 +148,8 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
 7. **Tự động hóa Hợp đồng Studio & Bỏ Cổng Thanh Toán VNPay/PayOS:**
    * Đã loại bỏ hoàn toàn cổng thanh toán phức tạp (VNPay, PayOS) để phù hợp với thực tế vận hành của studio ảnh cưới hỏi.
    * Thanh toán thực hiện bằng Tiền mặt tại studio HOẶC Chuyển khoản ngân hàng theo mã QR cố định.
-   * Admin lưu đơn trước, biên tập hợp đồng trên trang riêng (`/admin/orders/:id/contract`), sinh PDF từ template DOCX/XLSX đang hoạt động thông qua LibreOffice headless, sau đó hệ thống tạo link và QR tra cứu đơn `/contract-review/:bookingId`.
-   * Template hợp đồng được quản lý tại `/admin/contract-templates`, lưu file trên Cloudinary và metadata/phiên bản trong MongoDB (`ContractTemplate`). DOCX dùng `Docxtemplater` + `PizZip`; XLSX dùng `ExcelJS`; LibreOffice chuyển cả hai sang PDF. Template XLSX mặc định tiếp tục dùng ánh xạ ô tương thích.
+   * Admin chỉnh sửa đơn, chọn loại hợp đồng, xem trước và tạo hợp đồng trên trang hợp nhất `/admin/orders/:id`; hệ thống sinh PDF từ template DOCX/XLSX rồi tạo link và QR tra cứu `/contract-review/:bookingId`.
+   * Mẫu hợp đồng được quản lý riêng tại `/admin/contract-templates`, file lưu trên Cloudinary và metadata trong MongoDB (`ContractTemplate`). Booking lưu loại và ID mẫu. DOCX dùng `Docxtemplater` + `PizZip`; XLSX dùng `ExcelJS`; LibreOffice chuyển cả hai sang PDF. Template XLSX mặc định tiếp tục dùng ánh xạ ô tương thích.
    * Admin duyệt cọc thủ công qua API `/confirm-deposit`, hệ thống tự động cập nhật trạng thái và gửi email xác nhận kèm hợp đồng hoàn tất.
 
 ---
@@ -155,7 +165,7 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
 * **Các trang quản trị chính:**
   * `AdminOrders.jsx`: Quản lý danh sách đơn, lọc theo trạng thái, chốt cọc và phân công thợ.
   * `AdminOrderDetail.jsx`: Trang hợp nhất chi tiết đơn hàng & biên tập hợp đồng (chỉnh sửa thông số, xem trước PDF thời gian thực và sinh link/QR hợp đồng).
-  * `AdminContractTemplates.jsx`: Quản trị upload và kích hoạt template hợp đồng (.docx, .xlsx).
+  * `AdminContractTemplates.jsx`: Quản lý danh sách mẫu hợp đồng DOCX/XLSX, tải file, thêm/sửa trong modal và xóa mẫu chưa được đơn hàng sử dụng.
   * `AdminGalleries.jsx`, `AdminBanners.jsx`, `AdminCameraRentals.jsx`, `AdminHolidays.jsx`, `AdminWebsiteImages.jsx`, `AdminUsers.jsx`.
 
 ### 4.2 Backend Stack
@@ -189,7 +199,7 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
                  ├─► CANCELED (Hủy đơn)
                  ▼
      [Admin lưu đơn & biên tập hợp đồng
-      tại /admin/orders/:id/contract:
+      tại /admin/orders/:id:
       sinh PDF từ template DOCX/XLSX + QR code]
                  │
                  ▼

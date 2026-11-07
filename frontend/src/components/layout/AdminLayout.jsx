@@ -25,6 +25,7 @@ import {
   LockOutlined,
   UnlockOutlined,
   FileImageOutlined,
+  FileTextOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
 
@@ -152,6 +153,11 @@ const AdminLayout = () => {
         { key: "/admin/orders", label: "Danh sách đơn" },
         { key: "/admin/orders/create", label: "Tạo đơn đặt hộ" },
       ],
+    },
+    {
+      key: "/admin/contract-templates",
+      icon: <FileTextOutlined />,
+      label: "Mẫu hợp đồng",
     },
     {
       key: "/admin/galleries",

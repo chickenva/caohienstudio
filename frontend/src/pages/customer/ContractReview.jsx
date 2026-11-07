@@ -32,6 +32,7 @@ const ContractReview = () => {
   const { bookingId } = useParams();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const hasInvalidContractLink = !bookingId || !token;
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -39,13 +40,12 @@ const ContractReview = () => {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [paymentQrUrl, setPaymentQrUrl] = useState(null);
   const [error, setError] = useState(null);
+  const pdfViewUrl = pdfUrl && bookingId && token
+    ? `${API_URL}/bookings/contract/${bookingId}/pdf?token=${encodeURIComponent(token)}`
+    : null;
 
   useEffect(() => {
-    if (!bookingId || !token) {
-      setError("Link hợp đồng không hợp lệ hoặc đã hết hạn.");
-      setLoading(false);
-      return;
-    }
+    if (hasInvalidContractLink) return;
 
     const fetchContract = async () => {
       try {
@@ -66,9 +66,9 @@ const ContractReview = () => {
     };
 
     fetchContract();
-  }, [bookingId, token]);
+  }, [bookingId, token, hasInvalidContractLink]);
 
-  if (loading) {
+  if (loading && !hasInvalidContractLink) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#FAF7F2" }}>
         <div style={{ textAlign: "center" }}>
@@ -79,13 +79,16 @@ const ContractReview = () => {
     );
   }
 
-  if (error) {
+  if (error || hasInvalidContractLink) {
+    const errorMessage = hasInvalidContractLink
+      ? "Link hợp đồng không hợp lệ hoặc đã hết hạn."
+      : error;
     return (
       <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#FAF7F2", padding: "0 24px" }}>
         <div style={{ maxWidth: 500, textAlign: "center" }}>
           <WarningOutlined style={{ fontSize: 56, color: "#ff4d4f", marginBottom: 16 }} />
           <h2 style={{ fontSize: 22, color: "#2F2F2F", marginBottom: 12 }}>Không thể tải hợp đồng</h2>
-          <p style={{ color: "#888", lineHeight: 1.8, marginBottom: 24 }}>{error}</p>
+          <p style={{ color: "#888", lineHeight: 1.8, marginBottom: 24 }}>{errorMessage}</p>
           <Button onClick={() => navigate("/")} style={{ borderRadius: 8 }}>Về trang chủ</Button>
         </div>
       </div>
@@ -178,7 +181,7 @@ const ContractReview = () => {
             </div>
 
             {pdfUrl && (
-              <a href={pdfUrl} target="_blank" rel="noreferrer">
+              <a href={`${pdfViewUrl}&download=1`} target="_blank" rel="noreferrer">
                 <Button icon={<DownloadOutlined />} style={{ borderRadius: 6, fontWeight: 500 }}>
                   Tải file PDF hợp đồng
                 </Button>
@@ -197,19 +200,13 @@ const ContractReview = () => {
                 height: "620px",
                 background: "#f0f2f5"
               }}>
-                <object
-                  data={pdfUrl}
-                  type="application/pdf"
+                <iframe
+                  title="Hợp đồng PDF"
+                  src={pdfViewUrl}
                   width="100%"
                   height="100%"
-                >
-                  <div style={{ padding: 40, textAlign: "center" }}>
-                    <p>Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
-                    <a href={pdfUrl} target="_blank" rel="noreferrer">
-                      <Button type="primary" icon={<DownloadOutlined />}>Tải PDF hợp đồng</Button>
-                    </a>
-                  </div>
-                </object>
+                  style={{ border: 0, display: "block" }}
+                />
               </div>
             ) : (
               <Alert

@@ -3,7 +3,7 @@
  * Admin tạo đơn đặt lịch hộ khách hàng từ trang quản lý.
  * Đồng bộ flow với trang đặt lịch khách hàng: chọn gói dịch vụ chính + addon.
  */
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Form,
   Input,
@@ -52,6 +52,7 @@ const OrdersCreate = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const [allServices, setAllServices] = useState([]);
+  const [contractTypeOptions, setContractTypeOptions] = useState([]);
 
   const [selectedMainIds, setSelectedMainIds] = useState([]);
   const [selectedAddonIds, setSelectedAddonIds] = useState([]);
@@ -62,21 +63,34 @@ const OrdersCreate = () => {
 
   const getToken = () => localStorage.getItem("token");
 
-  useEffect(() => {
-    fetchOptions();
-  }, []);
-
-  const fetchOptions = async () => {
+  const fetchOptions = useCallback(async () => {
     try {
       const serviceRes = await axios.get(`${API_URL}/services`);
       const services = Array.isArray(serviceRes.data)
         ? serviceRes.data
         : serviceRes.data.services || [];
       setAllServices(services);
-    } catch (err) {
+    } catch {
       message.error("Không thể tải dịch vụ");
     }
-  };
+
+    try {
+      const templateRes = await axios.get(`${API_URL}/website/admin/contract-templates`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const options = templateRes.data?.options || [];
+      setContractTypeOptions(options);
+      if (options.length === 1) {
+        form.setFieldsValue({ contract_type: options[0].contract_type });
+      }
+    } catch (err) {
+      message.error(err.response?.data?.message || "Không thể tải danh sách loại hợp đồng");
+    }
+  }, [form]);
+
+  useEffect(() => {
+    Promise.resolve().then(fetchOptions);
+  }, [fetchOptions]);
 
   // === LỌC GÓI CHÍNH: loại PRINT, gói lẻ lễ tối, gói thêm flycam ===
   const getMainServicesToDisplay = () => {
@@ -267,6 +281,7 @@ const OrdersCreate = () => {
         note: values.note,
 
         total_amount: values.total_amount,
+        contract_type: values.contract_type,
         status: values.status || "REQUESTED",
         paid_amount: values.paid_amount,
         payment_method: "MANUAL",
@@ -689,6 +704,23 @@ const OrdersCreate = () => {
                     <Input
                       disabled={isStudio}
                       placeholder="VD: Cao Hiển Studio, Đà Lạt, TP.HCM..."
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24}>
+                  <Form.Item
+                    label="Mẫu hợp đồng"
+                    name="contract_type"
+                    rules={[{ required: true, message: "Vui lòng chọn loại hợp đồng" }]}
+                  >
+                    <Select
+                      size="large"
+                      placeholder="Chọn mẫu dùng cho đơn này"
+                      options={contractTypeOptions.map((option) => ({
+                        value: option.contract_type,
+                        label: `${option.display_name || option.original_name} · ${String(option.file_type || "xlsx").toUpperCase()}${option.is_fallback ? " · Mặc định" : ""}`,
+                      }))}
                     />
                   </Form.Item>
                 </Col>

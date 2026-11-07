@@ -17,6 +17,7 @@ router.post("/travel-estimate", bookingController.getTravelEstimate);
 
 // Public: Khách xem hợp đồng bằng token (không cần đăng nhập)
 // GET /api/bookings/contract/:bookingId?token=...
+router.get("/contract/:bookingId/pdf", bookingController.getContractPdfByToken);
 router.get("/contract/:bookingId", bookingController.getContractByToken);
 
 // ==========================================

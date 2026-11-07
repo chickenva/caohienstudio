@@ -51,7 +51,7 @@ import dayjs from "dayjs";
 import { getBandForDistance } from "../../utils/shootingLocations";
 import "./AdminOrderDetail.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -135,6 +135,7 @@ export default function AdminOrderDetail() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [servicesList, setServicesList] = useState([]);
+  const [contractTypeOptions, setContractTypeOptions] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
 
   // Form watchers & state
@@ -142,7 +143,6 @@ export default function AdminOrderDetail() {
   const editDepositPercent = Form.useWatch("deposit_percent", form) || 30;
   const [selectedMainService, setSelectedMainService] = useState([]);
   const [selectedAddonIds, setSelectedAddonIds] = useState([]);
-  const [editTotalAmount, setEditTotalAmount] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
 
   // Địa điểm & cự ly OSRM
@@ -182,11 +182,14 @@ export default function AdminOrderDetail() {
       setLoading(true);
       setServicesLoading(true);
       try {
-        const [servicesRes, bookingRes] = await Promise.all([
+        const [servicesRes, bookingRes, templatesRes] = await Promise.all([
           axios.get(`${API_URL}/services/admin/all`, {
             headers: { Authorization: `Bearer ${getToken()}` },
           }),
           axios.get(`${API_URL}/bookings/admin/${id}/contract-editor`, {
+            headers: { Authorization: `Bearer ${getToken()}` },
+          }),
+          axios.get(`${API_URL}/website/admin/contract-templates`, {
             headers: { Authorization: `Bearer ${getToken()}` },
           }),
         ]);
@@ -199,6 +202,8 @@ export default function AdminOrderDetail() {
         setServicesList(catalog);
 
         const data = bookingRes.data;
+        const templateOptions = templatesRes.data?.options || [];
+        setContractTypeOptions(templateOptions);
         setBooking(data);
 
         const total = data.total_amount || 0;
@@ -221,7 +226,6 @@ export default function AdminOrderDetail() {
 
         setSelectedMainService(mainSvcIds);
         setSelectedAddonIds(addonIds);
-        setEditTotalAmount(total);
         setEditTravelDistanceKm(data.travel_distance_km ?? null);
         setEditTravelPricingSource(data.travel_pricing_source || "");
 
@@ -241,6 +245,7 @@ export default function AdminOrderDetail() {
           deposit_amount: depositAmt,
           note: data.note || "",
           contract_note: data.contract_note || "",
+          contract_type: data.contract_type || (templateOptions.length === 1 ? templateOptions[0].contract_type : undefined),
         });
 
         setIsDirty(false);
@@ -312,7 +317,6 @@ export default function AdminOrderDetail() {
 
     const total = recalcTotalFromServices(svcIds, retainedAddonIds);
     const pct = form.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
     form.setFieldsValue({
       total_amount: total,
       deposit_amount: Math.round((total * pct) / 100),
@@ -324,7 +328,6 @@ export default function AdminOrderDetail() {
     setSelectedAddonIds(ids);
     const total = recalcTotalFromServices(selectedMainService, ids);
     const pct = form.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
     form.setFieldsValue({
       total_amount: total,
       deposit_amount: Math.round((total * pct) / 100),
@@ -333,7 +336,6 @@ export default function AdminOrderDetail() {
 
   const handleTotalAmountChange = (val) => {
     setIsDirty(true);
-    setEditTotalAmount(val || 0);
     const pct = form.getFieldValue("deposit_percent") || 30;
     form.setFieldsValue({ deposit_amount: Math.round(((val || 0) * pct) / 100) });
   };
@@ -343,7 +345,6 @@ export default function AdminOrderDetail() {
     const amount = Math.max(0, Number(val || 0));
     const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + amount;
     const pct = form.getFieldValue("deposit_percent") || 30;
-    setEditTotalAmount(total);
     form.setFieldsValue({
       travel_surcharge_amount: amount,
       total_amount: total,
@@ -460,7 +461,6 @@ export default function AdminOrderDetail() {
 
         const total = calculateServiceSubtotal(selectedMainService, selectedAddonIds) + newAmount;
         const pct = form.getFieldValue("deposit_percent") || 30;
-        setEditTotalAmount(total);
         form.setFieldsValue({
           total_amount: total,
           deposit_amount: Math.round((total * pct) / 100),
@@ -605,7 +605,7 @@ export default function AdminOrderDetail() {
         contract_file_url: sendRes.data.pdf_url,
       }));
       setContractSuccessModalOpen(true);
-      message.success("Tạo hợp đồng và mã QR thành công!");
+      message.success("Tạo đơn hàng thành công!");
     } catch (err) {
       console.error("Lỗi tạo hợp đồng:", err);
       message.error(err.response?.data?.message || "Không thể tạo hợp đồng.");
@@ -967,8 +967,22 @@ export default function AdminOrderDetail() {
 
               {/* GHI CHÚ */}
               <Divider orientation="left" className="form-divider">
-                5. Ghi chú & Điều khoản
+                5. Hợp đồng và Ghi chú
               </Divider>
+              <Form.Item
+                label="Mẫu hợp đồng"
+                name="contract_type"
+                rules={[{ required: true, message: "Vui lòng chọn loại hợp đồng." }]}
+              >
+                <Select
+                  size="large"
+                  placeholder="Chọn mẫu dùng để tạo PDF"
+                  options={contractTypeOptions.map((option) => ({
+                    value: option.contract_type,
+                    label: `${option.display_name || option.original_name} · ${String(option.file_type || "xlsx").toUpperCase()}${option.is_fallback ? " · Mặc định" : ""}`,
+                  }))}
+                />
+              </Form.Item>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Ghi chú đơn hàng (nội bộ / yêu cầu khách)" name="note">
@@ -1000,7 +1014,7 @@ export default function AdminOrderDetail() {
                 <Button
                   size="large"
                   type="primary"
-                  icon={<FileDoneOutlined />}
+                  icon={<SaveOutlined />}
                   onClick={handleCreateContract}
                   loading={creatingContract}
                   className="preview-btn"
@@ -1069,7 +1083,7 @@ export default function AdminOrderDetail() {
           </Card>
         </div>
 
-        {/* Modal Thông báo Tạo Hợp đồng thành công */}
+        {/* Modal xác nhận tạo đơn thành công */}
         <Modal
           open={contractSuccessModalOpen}
           onCancel={() => setContractSuccessModalOpen(false)}
@@ -1092,10 +1106,10 @@ export default function AdminOrderDetail() {
           <div style={{ textAlign: "center", padding: "16px 8px 8px" }}>
             <CheckCircleOutlined style={{ fontSize: 52, color: "#52c41a", marginBottom: 12 }} />
             <Title level={4} style={{ marginBottom: 6 }}>
-              Hợp đồng đã được tạo thành công!
+              Tạo đơn hàng thành công!
             </Title>
             <Text type="secondary" style={{ display: "block", marginBottom: 20 }}>
-              Đơn đặt lịch đã chuyển sang trạng thái <strong>Đã gửi hợp đồng (Chờ cọc)</strong>.
+              Đơn đã được lưu, hợp đồng và mã QR đã tạo. Trạng thái hiện tại: <strong>Đã gửi hợp đồng (Chờ cọc)</strong>.
             </Text>
 
             {contractResult?.qr_code && (
@@ -1103,7 +1117,7 @@ export default function AdminOrderDetail() {
                 <img
                   src={contractResult.qr_code}
                   alt="QR Hợp đồng"
-                  style={{ width: 180, height: 180, display: "block" }}
+                  style={{ width: 180, height: 180, display: "block", objectFit: "contain", margin: "0 auto" }}
                 />
                 <div style={{ fontSize: 12, color: "#8c8c8c", marginTop: 8 }}>
                   Quét QR để xem và tra cứu hợp đồng trực tuyến

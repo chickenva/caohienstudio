@@ -39,8 +39,11 @@ router.delete("/admin/images/:id", verifyAdmin, websiteController.deleteImage);
 
 // Cài đặt QR Thanh toán Studio mặc định — Admin
 router.post("/admin/payment-qr", verifyAdmin, websiteController.savePaymentQr);
-router.get("/admin/contract-template", verifyAdmin, contractTemplateController.getActiveTemplate);
-router.post("/admin/contract-template", verifyAdmin, handleTemplateUpload, contractTemplateController.uploadTemplate);
+router.get("/admin/contract-templates", verifyAdmin, contractTemplateController.listTemplates);
+router.get("/admin/contract-templates/:id/download", verifyAdmin, contractTemplateController.downloadTemplate);
+router.post("/admin/contract-templates", verifyAdmin, handleTemplateUpload, contractTemplateController.uploadTemplate);
+router.patch("/admin/contract-templates/:id", verifyAdmin, handleTemplateUpload, contractTemplateController.updateTemplate);
+router.delete("/admin/contract-templates/:id", verifyAdmin, contractTemplateController.deleteTemplate);
 
 // Khóa website — chỉ Super Admin (kiểm tra isSuperAdmin trong controller)
 router.post("/admin/site-lock", verifyAdmin, websiteController.toggleSiteLock);

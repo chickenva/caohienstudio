@@ -51,6 +51,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
   * Phân công ekip thợ chụp nội bộ (staff) hoặc thợ đối tác ngoài (freelancer).
   * Xác nhận đã nhận tiền cọc (tiền mặt trực tiếp tại studio hoặc chuyển khoản ngân hàng qua mã QR) và tự động kích hoạt gửi hợp đồng chính thức cho khách.
   * Tạo đơn hộ cho khách gọi điện hoặc đến trực tiếp studio.
+* **Quản lý mẫu hợp đồng:** Tại mục riêng **Mẫu hợp đồng** trong menu Admin, tải lên file DOCX/XLSX và đặt tên mẫu. Có thể sửa tên, thay file trong một modal, tải file đã lưu hoặc xóa mẫu không còn được đơn hàng sử dụng. Tên mẫu được dùng trực tiếp làm lựa chọn khi tạo đơn. Thay file cập nhật mẫu hiện tại; hợp đồng PDF đã tạo vẫn được lưu riêng.
 * **Quản lý Dịch vụ & Gói chụp:** Thêm, sửa, xóa các gói chụp chính và gói phụ, thiết lập giá gốc, mô tả chi tiết và hình ảnh đại diện.
 * **Quản lý Bộ sưu tập & Hình ảnh:** Tải ảnh lên Cloudinary và đồng bộ Google Drive API, quản lý thư viện ảnh hiển thị trên toàn trang web.
 * **Quản lý Thiết bị cho thuê:** Danh mục máy ảnh, giá thuê theo ngày, thông số kỹ thuật và trạng thái khả dụng.
@@ -194,10 +195,10 @@ STUDIO_ORIGIN_LON=106.3756
 
 ### Biên tập và xuất hợp đồng
 
-* Ở trang quản lý đơn, admin chỉnh booking rồi bấm **Tạo đơn & tiếp tục hợp đồng**. Hệ thống lưu đơn và mở trang biên tập hợp đồng với dữ liệu đã điền sẵn.
-* Trang **Template hợp đồng** nằm cạnh nút **QR Thanh toán Studio**. Admin có thể tải lên DOCX hoặc XLSX; file được lưu trên Cloudinary, phiên bản hiện hành được ghi trong MongoDB.
+* Admin tạo đơn đặt hộ tại **Tạo đơn đặt hộ**, chọn loại hợp đồng, sau đó mở chi tiết đơn để chỉnh sửa và xem trước hợp đồng. Với đơn khách tự đặt hoặc đơn cũ, admin chọn loại ở mục **5. Hợp đồng và Ghi chú** trong `AdminOrderDetail.jsx`.
+* Trang **Quản lý mẫu hợp đồng** nằm tại mục **Mẫu hợp đồng** riêng trong menu Admin. Admin thêm/sửa mẫu bằng một modal, tải file hiện tại về, hoặc thay file trực tiếp. Tên mẫu là nhãn lựa chọn trên đơn. Khi xóa, hệ thống từ chối nếu mẫu còn được đơn hàng tham chiếu.
 * DOCX dùng placeholder như `{customer_name}`. XLSX tự nhận diện nhãn phổ biến (họ tên, địa chỉ, điện thoại, ngày chụp, phụ thu, tổng tiền, cọc) và bảng dịch vụ; có thể dùng placeholder `{customer_name}` / `{{customer_name}}` khi bố cục không theo nhãn chuẩn. Template XLSX mặc định tiếp tục dùng ánh xạ ô đã cấu hình.
-* Nút **Tạo hợp đồng + link/QR** lưu các trường đã chỉnh, sinh PDF từ template đang hoạt động, lưu lên Cloudinary và chuyển booking sang `CONTRACT_SENT` qua luồng hiện hữu.
+* Booking lưu loại hợp đồng và ID mẫu được chọn. Nút **Tạo hợp đồng + link/QR** lưu các trường đã chỉnh, sinh PDF từ mẫu của đơn, lưu lên Cloudinary và chuyển booking sang `CONTRACT_SENT` qua luồng hiện hữu.
 * **Local Windows:** cài LibreOffice; backend tự dò `soffice.exe` hoặc dùng `LIBREOFFICE_PATH` trong `backend/.env`.
 * **Render:** chạy backend bằng Dockerfile ở thư mục gốc dự án. Image cài LibreOffice Calc/Writer và font tiếng Việt; biến môi trường hiện có tiếp tục khai báo trong Environment của dịch vụ.
 

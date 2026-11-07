@@ -15,6 +15,7 @@ const { pathToFileURL } = require("url");
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_TEMPLATE_PATH = path.join(__dirname, "..", "templates", "contract-template.xlsx");
+const DEFAULT_CONTRACT_TYPE = "hop-dong-chung";
 const ITEM_START_ROW = 17;
 const ITEM_ROW_COUNT = 5;
 const SESSION_LABELS = { MORNING: "Buổi sáng", AFTERNOON: "Buổi chiều", FULL_DAY: "Cả ngày" };
@@ -342,20 +343,91 @@ const renderDocx = async (buffer, data, tempDir) => {
   }
 };
 
-const getActiveTemplate = async () => {
-  const active = await ContractTemplate.findOne({ key: "active" }).lean();
-  if (active?.file_url) {
-    const templateUrl = new URL(active.file_url);
+const ensureLegacyTemplateType = async () => {
+  const legacyTemplates = await ContractTemplate.find({
+    $or: [
+      { contract_type: { $exists: false } },
+      { is_active: { $exists: false } },
+      { display_name: { $exists: false } },
+    ],
+  });
+  for (const template of legacyTemplates) {
+    template.contract_type = template.contract_type || DEFAULT_CONTRACT_TYPE;
+    template.contract_type_name = template.contract_type_name || "Hợp đồng chung";
+    template.display_name = template.display_name || template.original_name || "Hợp đồng chung";
+    if (template.is_active === undefined || template.is_active === null) template.is_active = true;
+    await template.save();
+  }
+};
+
+const resolveContractTemplateSelection = async (requestedType) => {
+  await ensureLegacyTemplateType();
+  const activeTemplates = await ContractTemplate.find({ is_active: true }).lean();
+  const contractType = String(requestedType || "").trim().toLowerCase();
+
+  if (contractType) {
+    const template = activeTemplates.find((item) => item.contract_type === contractType);
+    if (template) {
+      return { contract_type: template.contract_type, contract_template_id: template._id };
+    }
+    if (contractType === DEFAULT_CONTRACT_TYPE && activeTemplates.length === 0) {
+      return { contract_type: DEFAULT_CONTRACT_TYPE, contract_template_id: null };
+    }
+    throw makeError("Loại hợp đồng đã chọn không có template đang sử dụng. Vui lòng chọn lại.");
+  }
+
+  const generalTemplate = activeTemplates.find((item) => item.contract_type === DEFAULT_CONTRACT_TYPE);
+  if (generalTemplate) {
+    return { contract_type: generalTemplate.contract_type, contract_template_id: generalTemplate._id };
+  }
+  if (activeTemplates.length === 1) {
+    return { contract_type: activeTemplates[0].contract_type, contract_template_id: activeTemplates[0]._id };
+  }
+  if (activeTemplates.length > 1) {
+    throw makeError("Vui lòng chọn loại hợp đồng trước khi lưu hoặc tạo hợp đồng.");
+  }
+  return { contract_type: DEFAULT_CONTRACT_TYPE, contract_template_id: null };
+};
+
+const getTemplateForBooking = async (booking) => {
+  await ensureLegacyTemplateType();
+  let selected = null;
+
+  const selectedTemplateId = booking.contract_template_id?._id || booking.contract_template_id;
+  if (selectedTemplateId) {
+    selected = await ContractTemplate.findById(selectedTemplateId).lean();
+  }
+  if (!selected && booking.contract_type) {
+    selected = await ContractTemplate.findOne({
+      contract_type: String(booking.contract_type).trim().toLowerCase(),
+      is_active: true,
+    }).lean();
+  }
+  if (!selected && !booking.contract_type) {
+    const activeTemplates = await ContractTemplate.find({ is_active: true }).lean();
+    selected = activeTemplates.find((item) => item.contract_type === DEFAULT_CONTRACT_TYPE)
+      || (activeTemplates.length === 1 ? activeTemplates[0] : null);
+    if (!selected && activeTemplates.length > 1) {
+      throw makeError("Đơn chưa chọn loại hợp đồng. Chọn loại hợp đồng ở mục “Hợp đồng và Ghi chú” rồi thử lại.");
+    }
+  }
+
+  if (selected?.file_url) {
+    const templateUrl = new URL(selected.file_url);
     if (templateUrl.hostname !== "res.cloudinary.com") throw makeError("URL template đang dùng không hợp lệ.", 503);
     const response = await fetch(templateUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw makeError("Không tải được template hợp đồng đang dùng.", 503);
     return {
       buffer: Buffer.from(await response.arrayBuffer()),
-      type: active.file_type,
-      name: active.original_name,
+      type: selected.file_type,
+      name: selected.original_name,
       legacy: false,
-      fieldMapping: active.field_mapping || {},
+      fieldMapping: selected.field_mapping || {},
     };
+  }
+
+  if (booking.contract_type && booking.contract_type !== DEFAULT_CONTRACT_TYPE) {
+    throw makeError("Không tìm thấy template đã chọn cho loại hợp đồng của đơn.");
   }
   if (!fs.existsSync(DEFAULT_TEMPLATE_PATH)) throw makeError("Chưa cấu hình template hợp đồng DOCX hoặc XLSX.", 500);
   return { buffer: await fsp.readFile(DEFAULT_TEMPLATE_PATH), type: "xlsx", name: "contract-template.xlsx", legacy: true };
@@ -389,7 +461,7 @@ const convertToPdf = async (documentPath, tempDir) => {
 const generateBookingContractPdf = async (booking, overrides = {}) => {
   const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "caohien-contract-"));
   try {
-    const template = await getActiveTemplate();
+    const template = await getTemplateForBooking(booking);
     const data = buildContractData(booking, overrides);
     const documentPath = template.type === "docx"
       ? await renderDocx(template.buffer, data, tempDir)
@@ -449,4 +521,10 @@ const validateTemplateBuffer = async (buffer, type) => {
   }
 };
 
-module.exports = { generateBookingContractPdf, uploadBookingContractPdf, validateTemplateBuffer };
+module.exports = {
+  generateBookingContractPdf,
+  uploadBookingContractPdf,
+  validateTemplateBuffer,
+  ensureLegacyTemplateType,
+  resolveContractTemplateSelection,
+};
