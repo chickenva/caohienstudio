@@ -120,6 +120,12 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
   * Tối ưu `AdminOrderDetail.jsx`: Gỡ bỏ state re-render dư thừa `setEditTotalAmount`.
   * Nâng cấp endpoint phân phối PDF `/api/bookings/contract/:id/pdf` có xác thực token và validate an toàn ObjectId / URL.
 
+#### Tuần 8 — Thời Khóa Biểu Lịch Chụp & Đồng Bộ Gợi Ý Với Lịch Khách Hàng
+* **Trang Thời khóa biểu riêng (`/admin/timetable` - `AdminTimetable.jsx`):** mục menu độc lập nằm trên "Đơn đặt lịch"; lưới 7 ngày kèm Âm lịch, ngày lễ/nghỉ, trạng thái 3 ca (Sáng/Chiều/Tối), thanh timeline trong ngày, cảnh báo lấn ca/trùng giờ, gợi ý cộng giờ di chuyển ngoại cảnh và chỉnh giờ từng đơn (`PUT /api/bookings/:id/schedule`).
+* **Widget Thời khóa biểu (`TimetableWidget.jsx`):** panel nổi bật/tắt được tại `AdminOrderDetail.jsx` và `CreateOrder.jsx` (chế độ gọn + mở rộng, nhớ trạng thái trong localStorage); bấm ca trống để điền nhanh ngày/ca vào form đơn.
+* **Đồng bộ mềm với trang Đặt lịch khách (`Booking.jsx`):** khách vẫn chọn ngày tự do (trừ ngày Studio nghỉ); ô lịch có nhãn "Đã có X ca"; cột phải tách 2 card riêng — "Lịch Studio" (3 ca + timeline + khung giờ đã có, ẩn danh khách) và "Thời tiết". Dữ liệu lấy từ `GET /api/bookings/public-schedule`.
+* Hợp đồng PDF chỉ in giờ tùy chỉnh khi bật `use_custom_time_on_contract`; giờ kéo dài do đi lại chỉ ảnh hưởng thời khóa biểu nội bộ.
+
 ---
 
 ### 🚀 Giai đoạn 2: Hoàn thiện tính năng Studio & Mở rộng hệ thống
@@ -203,11 +209,7 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
       sinh PDF từ template DOCX/XLSX + QR code]
                  │
                  ▼
-          CONTRACT_SENT (Đã lập hợp đồng)
-                 │
-                 ├─► CANCELED (Hủy đơn)
-                 ▼
-         WAITING_PAYMENT (Chờ thanh toán cọc)
+         WAITING_PAYMENT (Đã gửi HĐ / Chờ cọc)
                  │
                  ├─► CANCELED (Hủy đơn)
                  ▼
@@ -223,6 +225,8 @@ Cao Hiển Studio là một studio nhiếp ảnh chuyên nghiệp tại **Bến 
                  ▼
              COMPLETED (Đã bàn giao sản phẩm & tất toán)
 ```
+
+`CONTRACT_SENT` được giữ trong schema và giao diện để đọc dữ liệu cũ; trạng thái này được tính chung với `WAITING_PAYMENT`.
 
 ---
 

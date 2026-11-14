@@ -27,6 +27,7 @@ import {
   FileImageOutlined,
   FileTextOutlined,
   CalendarOutlined,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://caohienstudio-api.onrender.com/api");
@@ -146,6 +147,11 @@ const AdminLayout = () => {
       label: "Tổng quan",
     },
     {
+      key: "/admin/timetable",
+      icon: <ScheduleOutlined />,
+      label: "Thời khóa biểu",
+    },
+    {
       key: "/admin/orders",
       icon: <ShoppingCartOutlined />,
       label: "Đơn đặt lịch",
@@ -222,17 +228,16 @@ const AdminLayout = () => {
 
   const selectedKeys = useMemo(() => {
     const path = location.pathname;
-
     const flattenItems = menuItems.flatMap((item) =>
       item.children ? [item, ...item.children] : [item],
     );
 
     const matched = flattenItems
-      .filter((item) => path === item.key || path.startsWith(`${item.key}/`))
+      .filter((item) => !item.key.includes("?") && (path === item.key || path.startsWith(`${item.key}/`)))
       .sort((a, b) => b.key.length - a.key.length)[0];
 
     return matched ? [matched.key] : [path];
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const currentOpenKeys = useMemo(() => {
     const path = location.pathname;

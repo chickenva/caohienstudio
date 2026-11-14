@@ -46,7 +46,7 @@ Hệ thống ứng dụng web chuyên nghiệp phục vụ hoạt động vận 
 * **Bảng điều khiển (Dashboard):** Thống kê trực quan doanh thu, số lượng đơn theo tháng, tỷ lệ chuyển đổi và đơn hàng cần xử lý qua biểu đồ Recharts.
 * **Quản lý Đơn đặt lịch (Bookings Management):**
   * Theo dõi vòng đời đơn theo state machine:  
-    `REQUESTED` ➔ `CONTRACT_SENT` ➔ `WAITING_PAYMENT` ➔ `CONFIRMED` ➔ `IN_PROGRESS` ➔ `COMPLETED` (hoặc `CANCELED`).
+    `REQUESTED` ➔ `WAITING_PAYMENT` ➔ `CONFIRMED` ➔ `IN_PROGRESS` ➔ `COMPLETED` (hoặc `CANCELED`). `CONTRACT_SENT` được giữ làm alias để đọc các đơn cũ.
   * Điều chỉnh dịch vụ, cộng trừ phụ thu di chuyển đường bộ, chiết khấu hoặc ghi chú bổ sung.
   * Phân công ekip thợ chụp nội bộ (staff) hoặc thợ đối tác ngoài (freelancer).
   * Xác nhận đã nhận tiền cọc (tiền mặt trực tiếp tại studio hoặc chuyển khoản ngân hàng qua mã QR) và tự động kích hoạt gửi hợp đồng chính thức cho khách.

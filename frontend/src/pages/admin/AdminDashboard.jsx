@@ -43,8 +43,8 @@ const API_URL =
 
 const statusConfig = {
   REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
-  CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
-  WAITING_PAYMENT: { color: "gold", text: "Chờ đặt cọc" },
+  CONTRACT_SENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+  WAITING_PAYMENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
   PENDING: { color: "gold", text: "Chờ thanh toán" },
   DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
   CONFIRMED: { color: "blue", text: "Đã xác nhận" },
@@ -284,12 +284,12 @@ const AdminDashboard = () => {
         </Col>
 
         <Col xs={12} sm={8} lg={4.8} style={{ flex: 1 }}>
-          <Card bordered={false} style={{ ...cardStyle, borderLeft: "4px solid #722ed1" }} loading={loading}>
+          <Card bordered={false} style={{ ...cardStyle, borderLeft: "4px solid #BFA16A" }} loading={loading}>
             <Statistic
-              title="Chờ hợp đồng / Cọc"
-              value={(cards.contractSentBookings || 0) + (cards.waitingPaymentBookings || 0)}
-              prefix={<FileTextOutlined style={{ color: "#722ed1" }} />}
-              valueStyle={{ color: "#722ed1", fontWeight: 700 }}
+              title="Đã gửi HĐ / Chờ cọc"
+              value={cards.waitingPaymentBookings || 0}
+              prefix={<FileTextOutlined style={{ color: "#BFA16A" }} />}
+              valueStyle={{ color: "#8B7045", fontWeight: 700 }}
             />
           </Card>
         </Col>

@@ -12,6 +12,8 @@ import {
   Input,
   InputNumber,
   DatePicker,
+  TimePicker,
+  Switch,
   Select,
   AutoComplete,
   Button,
@@ -44,11 +46,14 @@ import {
   InfoCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleFilled,
+  CalendarOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import { getBandForDistance } from "../../utils/shootingLocations";
+import TimetableWidget, { useTimetableWidgetState } from "../../components/admin/TimetableWidget";
 import "./AdminOrderDetail.css";
 
 const { Title, Text } = Typography;
@@ -62,7 +67,25 @@ const getToken = () => localStorage.getItem("token");
 const SESSION_LABELS = {
   MORNING: "Buổi sáng (08:00 - 12:00)",
   AFTERNOON: "Buổi chiều (13:00 - 17:00)",
+  EVENING: "Buổi tối (17:30 - 21:30)",
   FULL_DAY: "Cả ngày (08:00 - 17:00)",
+  CUSTOM: "Khung giờ tùy chỉnh",
+};
+
+const SESSION_SHORT_NAMES = {
+  MORNING: "Buổi sáng",
+  AFTERNOON: "Buổi chiều",
+  EVENING: "Buổi tối",
+  FULL_DAY: "Cả ngày",
+  CUSTOM: "Khung giờ",
+};
+
+const SESSION_DEFAULT_HOURS = {
+  MORNING: { start: "08:00", end: "12:00" },
+  AFTERNOON: { start: "13:00", end: "17:00" },
+  EVENING: { start: "17:30", end: "21:30" },
+  FULL_DAY: { start: "08:00", end: "17:00" },
+  CUSTOM: { start: "08:00", end: "12:00" },
 };
 
 const statusConfig = {
@@ -161,6 +184,7 @@ export default function AdminOrderDetail() {
   const [contractResult, setContractResult] = useState(null);
   const [contractSuccessModalOpen, setContractSuccessModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [timetableModalOpen, setTimetableModalOpen] = useTimetableWidgetState();
 
   // Cảnh báo người dùng khi đóng tab/reload trình duyệt nếu có thay đổi chưa lưu
   useEffect(() => {
@@ -173,6 +197,72 @@ export default function AdminOrderDetail() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
+
+  const buildCurrentOverrides = useCallback(() => {
+    const values = form.getFieldsValue();
+    const sessionKey = values.shooting_session || "MORNING";
+    const startStr = values.custom_start_time ? values.custom_start_time.format("HH:mm") : null;
+    const endStr = values.custom_end_time ? values.custom_end_time.format("HH:mm") : null;
+
+    let sessionDisplay = SESSION_LABELS[sessionKey] || sessionKey;
+    if ((values.use_custom_time_on_contract || sessionKey === "CUSTOM") && startStr && endStr) {
+      const shortName = SESSION_SHORT_NAMES[sessionKey];
+      sessionDisplay =
+        shortName && sessionKey !== "CUSTOM"
+          ? `${shortName} (${startStr} - ${endStr})`
+          : `Khung giờ: ${startStr} - ${endStr}`;
+    }
+
+    return {
+      customer_name: values.customer_full_name?.trim(),
+      customer_phone: values.customer_phone?.trim(),
+      customer_email: values.customer_email?.trim(),
+      shoot_date: values.shoot_date ? values.shoot_date.format("DD/MM/YYYY") : "",
+      shooting_session: sessionDisplay,
+      location: values.location?.trim(),
+      contract_note: values.contract_note ?? "",
+    };
+  }, [form]);
+
+  const fetchPreviewBlob = useCallback(
+    async (overrides = {}, { silent = false } = {}) => {
+      setPreviewing(true);
+      try {
+        const res = await axios.post(`${API_URL}/bookings/${id}/preview-contract-pdf`, overrides, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+          responseType: "blob",
+        });
+        const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+        const nextUrl = URL.createObjectURL(pdfBlob);
+        setPreviewUrl((prev) => {
+          if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+          return nextUrl;
+        });
+        return true;
+      } catch (err) {
+        if (!silent) {
+          console.error("Lỗi xem trước PDF:", err);
+          let errMsg = "Không thể tạo bản xem trước hợp đồng.";
+          if (err.response?.data instanceof Blob) {
+            try {
+              const txt = await err.response.data.text();
+              const parsed = JSON.parse(txt);
+              if (parsed.message) errMsg = parsed.message;
+            } catch {
+              // fallback
+            }
+          } else if (err.response?.data?.message) {
+            errMsg = err.response.data.message;
+          }
+          message.error(errMsg);
+        }
+        return false;
+      } finally {
+        setPreviewing(false);
+      }
+    },
+    [id]
+  );
 
   // Tải dữ liệu ban đầu (danh mục dịch vụ & thông tin đơn hàng)
   useEffect(() => {
@@ -229,15 +319,34 @@ export default function AdminOrderDetail() {
         setEditTravelDistanceKm(data.travel_distance_km ?? null);
         setEditTravelPricingSource(data.travel_pricing_source || "");
 
+        const customerName = data.customer_full_name || data.customer_id?.full_name || "";
+        const customerPhone = data.customer_phone || data.customer_id?.phone || "";
+        const customerEmail = data.customer_email || data.customer_id?.email || "";
+        const resolvedContractType =
+          data.contract_type || (templateOptions.length === 1 ? templateOptions[0].contract_type : undefined);
+
+        const startMoment = data.start_time ? dayjs(data.start_time) : null;
+        const endMomentRaw = data.end_time ? dayjs(data.end_time) : null;
+        const defaultHours = SESSION_DEFAULT_HOURS[data.shooting_session || "MORNING"] || SESSION_DEFAULT_HOURS.MORNING;
+        const startHHmm = startMoment ? startMoment.format("HH:mm") : defaultHours.start;
+        const endHHmm =
+          endMomentRaw && startMoment && endMomentRaw.valueOf() > startMoment.valueOf()
+            ? endMomentRaw.format("HH:mm")
+            : defaultHours.end;
+
         form.setFieldsValue({
-          customer_full_name: data.customer_full_name || data.customer_id?.full_name || "",
-          customer_phone: data.customer_phone || data.customer_id?.phone || "",
-          customer_email: data.customer_email || data.customer_id?.email || "",
+          customer_full_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
           service_ids: mainSvcIds,
           extra_service_ids: addonIds,
-          shoot_date: data.start_time ? dayjs(data.start_time) : null,
+          shoot_date: startMoment,
           shooting_type: data.shooting_type || "STUDIO",
           shooting_session: data.shooting_session || "MORNING",
+          custom_start_time: dayjs(startHHmm, "HH:mm"),
+          custom_end_time: dayjs(endHHmm, "HH:mm"),
+          schedule_note: data.schedule_note || "",
+          use_custom_time_on_contract: Boolean(data.use_custom_time_on_contract),
           location: data.location || (data.shooting_type === "STUDIO" ? "Cao Hiển Studio" : ""),
           travel_surcharge_amount: data.travel_surcharge_amount || 0,
           deposit_percent: depositPct,
@@ -245,13 +354,22 @@ export default function AdminOrderDetail() {
           deposit_amount: depositAmt,
           note: data.note || "",
           contract_note: data.contract_note || "",
-          contract_type: data.contract_type || (templateOptions.length === 1 ? templateOptions[0].contract_type : undefined),
+          contract_type: resolvedContractType,
         });
 
         setIsDirty(false);
 
-        if (data.contract_file_url) {
-          setPreviewUrl(data.contract_file_url);
+        const canRenderInitialPreview =
+          Boolean(data.contract_file_url || data.contract_token) ||
+          (mainSvcIds.length > 0 &&
+            Boolean(customerName.trim()) &&
+            Boolean(customerPhone.trim()) &&
+            Boolean(data.start_time) &&
+            data.travel_surcharge_status !== "QUOTE_REQUIRED" &&
+            Boolean(resolvedContractType || templateOptions.length <= 1));
+
+        if (canRenderInitialPreview) {
+          fetchPreviewBlob({}, { silent: true });
         }
       } catch (err) {
         if (cancelled) return;
@@ -271,7 +389,7 @@ export default function AdminOrderDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, form, navigate]);
+  }, [id, form, navigate, fetchPreviewBlob]);
 
   useEffect(() => {
     return () => {
@@ -494,8 +612,13 @@ export default function AdminOrderDetail() {
         travel_surcharge_amount: surchargeAmount,
         travel_surcharge_status: surchargeStatus,
         shoot_date: values.shoot_date ? values.shoot_date.format("YYYY-MM-DD") : undefined,
+        custom_start_time: values.custom_start_time ? values.custom_start_time.format("HH:mm") : undefined,
+        custom_end_time: values.custom_end_time ? values.custom_end_time.format("HH:mm") : undefined,
+        schedule_note: values.schedule_note?.trim() || "",
+        use_custom_time_on_contract: Boolean(values.use_custom_time_on_contract),
         travel_distance_km: editTravelDistanceKm,
         travel_pricing_source: editTravelPricingSource,
+        skip_contract_sync: true,
       };
 
       const res = await axios.put(`${API_URL}/bookings/${id}/info`, payload, {
@@ -505,7 +628,8 @@ export default function AdminOrderDetail() {
       setBooking(res.data?.booking || res.data);
       setIsDirty(false);
       if (!silent) {
-        message.success("Cập nhật thông tin thành công!");
+        await fetchPreviewBlob(buildCurrentOverrides(), { silent: true });
+        message.success("Cập nhật thông tin và đồng bộ hợp đồng thành công!");
       }
       return true;
     } catch (err) {
@@ -526,53 +650,12 @@ export default function AdminOrderDetail() {
     const saved = await saveBookingInfo(true);
     if (!saved) return;
 
-    setPreviewing(true);
-    try {
-      const values = form.getFieldsValue();
-      const overrides = {
-        customer_name: values.customer_full_name?.trim(),
-        customer_phone: values.customer_phone?.trim(),
-        customer_email: values.customer_email?.trim(),
-        shoot_date: values.shoot_date ? values.shoot_date.format("DD/MM/YYYY") : "",
-        shooting_session: SESSION_LABELS[values.shooting_session] || values.shooting_session,
-        location: values.location?.trim(),
-        contract_note: values.contract_note || "",
-      };
-
-      const res = await axios.post(`${API_URL}/bookings/${id}/preview-contract-pdf`, overrides, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-        responseType: "blob",
-      });
-
-      const nextUrl = URL.createObjectURL(res.data);
-      setPreviewUrl((prev) => {
-        if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
-        return nextUrl;
-      });
-
+    const ok = await fetchPreviewBlob(buildCurrentOverrides(), { silent: false });
+    if (ok) {
       message.success("Đã cập nhật bản xem trước hợp đồng!");
-
-      // Tự cuộn nhẹ đến khu vực preview nếu người dùng bấm từ trên
       if (previewSectionRef.current) {
         previewSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    } catch (err) {
-      console.error("Lỗi xem trước PDF:", err);
-      let errMsg = "Không thể tạo bản xem trước hợp đồng.";
-      if (err.response?.data instanceof Blob) {
-        try {
-          const txt = await err.response.data.text();
-          const parsed = JSON.parse(txt);
-          if (parsed.message) errMsg = parsed.message;
-        } catch {
-          // fallback
-        }
-      } else if (err.response?.data?.message) {
-        errMsg = err.response.data.message;
-      }
-      message.error(errMsg);
-    } finally {
-      setPreviewing(false);
     }
   };
 
@@ -583,29 +666,57 @@ export default function AdminOrderDetail() {
 
     setCreatingContract(true);
     try {
+      const overrides = buildCurrentOverrides();
       const genRes = await axios.post(
         `${API_URL}/bookings/${id}/generate-contract-pdf`,
-        {},
+        overrides,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
 
       const sendRes = await axios.post(
         `${API_URL}/bookings/${id}/send-contract`,
         {
-          contract_file_url: genRes.data.pdf_url,
+          contract_file_url: genRes.data.contract_file_url || genRes.data.pdf_url,
           contract_original_name: genRes.data.contract_original_name,
         },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
 
-      setContractResult(sendRes.data);
+      const contractToken = sendRes.data?.booking?.contract_token;
+      const resolvedPdfApiUrl = contractToken
+        ? `${API_URL}/bookings/contract/${id}/pdf?token=${encodeURIComponent(contractToken)}&v=${Date.now()}`
+        : sendRes.data.pdf_url;
+
+      setContractResult({
+        ...sendRes.data,
+        pdf_url: resolvedPdfApiUrl,
+      });
       setBooking((prev) => ({
         ...prev,
-        status: "CONTRACT_SENT",
-        contract_file_url: sendRes.data.pdf_url,
+        ...(sendRes.data.booking || {}),
+        status: sendRes.data.booking?.status || (prev?.status === "CONFIRMED" ? "CONFIRMED" : "WAITING_PAYMENT"),
+        contract_file_url: sendRes.data.booking?.contract_file_url || genRes.data.contract_file_url,
+        contract_token: contractToken || prev?.contract_token,
       }));
+
+      // Đồng bộ ngay khung Xem trước PDF ở dưới trang với đúng file hợp đồng vừa tạo
+      if (contractToken) {
+        try {
+          const pdfBlobRes = await axios.get(resolvedPdfApiUrl, { responseType: "blob" });
+          const nextUrl = URL.createObjectURL(new Blob([pdfBlobRes.data], { type: "application/pdf" }));
+          setPreviewUrl((prev) => {
+            if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return nextUrl;
+          });
+        } catch {
+          await fetchPreviewBlob(overrides, { silent: true });
+        }
+      } else {
+        await fetchPreviewBlob(overrides, { silent: true });
+      }
+
       setContractSuccessModalOpen(true);
-      message.success("Tạo đơn hàng thành công!");
+      message.success("Đơn đã được lưu, hợp đồng và mã QR đã được tạo.");
     } catch (err) {
       console.error("Lỗi tạo hợp đồng:", err);
       message.error(err.response?.data?.message || "Không thể tạo hợp đồng.");
@@ -667,6 +778,13 @@ export default function AdminOrderDetail() {
                   </Tag>
                 )}
               </div>
+              <Button
+                icon={<CalendarOutlined />}
+                style={{ borderColor: "#BFA16A", color: "#8B7045", fontWeight: 600 }}
+                onClick={() => setTimetableModalOpen((prev) => !prev)}
+              >
+                {timetableModalOpen ? "Tắt widget Thời khóa biểu" : "Bật widget Thời khóa biểu"}
+              </Button>
             </div>
           }
         >
@@ -779,10 +897,21 @@ export default function AdminOrderDetail() {
 
               {/* THỜI GIAN & ĐỊA ĐIỂM */}
               <Divider orientation="left" className="form-divider">
-                3. Thời gian & Địa điểm chụp
+                <Space size={12}>
+                  <span>3. Thời gian & Địa điểm chụp</span>
+                  <Button
+                    size="small"
+                    type="dashed"
+                    icon={<CalendarOutlined />}
+                    style={{ borderColor: "#BFA16A", color: "#8B7045", fontSize: 12 }}
+                    onClick={() => setTimetableModalOpen(true)}
+                  >
+                    Tra cứu Thời khóa biểu rảnh/bận
+                  </Button>
+                </Space>
               </Divider>
               <Row gutter={16}>
-                <Col xs={24} md={8}>
+                <Col xs={24} md={6}>
                   <Form.Item
                     label="Ngày chụp"
                     name="shoot_date"
@@ -791,7 +920,7 @@ export default function AdminOrderDetail() {
                     <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} size="large" />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={8}>
+                <Col xs={24} md={6}>
                   <Form.Item
                     label="Hình thức chụp"
                     name="shooting_type"
@@ -807,7 +936,7 @@ export default function AdminOrderDetail() {
                     />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={8}>
+                <Col xs={24} md={6}>
                   <Form.Item
                     label="Buổi chụp"
                     name="shooting_session"
@@ -815,13 +944,97 @@ export default function AdminOrderDetail() {
                   >
                     <Select
                       size="large"
+                      onChange={(newSession) => {
+                        const def = SESSION_DEFAULT_HOURS[newSession] || SESSION_DEFAULT_HOURS.MORNING;
+                        form.setFieldsValue({
+                          custom_start_time: dayjs(def.start, "HH:mm"),
+                          custom_end_time: dayjs(def.end, "HH:mm"),
+                        });
+                        setIsDirty(true);
+                      }}
                       options={[
                         { value: "MORNING", label: "Sáng (08:00 - 12:00)" },
                         { value: "AFTERNOON", label: "Chiều (13:00 - 17:00)" },
+                        { value: "EVENING", label: "Tối (17:30 - 21:30)" },
                         { value: "FULL_DAY", label: "Cả ngày (08:00 - 17:00)" },
+                        { value: "CUSTOM", label: "Khung giờ tùy chỉnh" },
                       ]}
                     />
                   </Form.Item>
+                </Col>
+                <Col xs={24} md={6}>
+                  <Form.Item
+                    label={
+                      <Space size={4}>
+                        <span>Giờ Thời khóa biểu (Bắt đầu – Kết thúc)</span>
+                        <Tooltip title="Có thể chỉnh giờ kết thúc dự kiến dài hơn (VD: cộng thêm thời gian đi lại ngoại cảnh TP.HCM) để quản lý trên Thời khóa biểu">
+                          <InfoCircleOutlined style={{ color: "#BFA16A", fontSize: 12 }} />
+                        </Tooltip>
+                      </Space>
+                    }
+                  >
+                    <Space.Compact style={{ width: "100%" }}>
+                      <Form.Item name="custom_start_time" noStyle>
+                        <TimePicker
+                          format="HH:mm"
+                          minuteStep={15}
+                          size="large"
+                          placeholder="Bắt đầu"
+                          style={{ width: "50%" }}
+                          needConfirm={false}
+                        />
+                      </Form.Item>
+                      <Form.Item name="custom_end_time" noStyle>
+                        <TimePicker
+                          format="HH:mm"
+                          minuteStep={15}
+                          size="large"
+                          placeholder="Kết thúc"
+                          style={{ width: "50%" }}
+                          needConfirm={false}
+                        />
+                      </Form.Item>
+                    </Space.Compact>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16} align="middle" style={{ marginBottom: 8 }}>
+                <Col xs={24} md={14}>
+                  <Form.Item
+                    label="Ghi chú điều phối trên Thời khóa biểu (VD: cộng giờ di chuyển ngoại cảnh)"
+                    name="schedule_note"
+                    style={{ marginBottom: 8 }}
+                  >
+                    <Input
+                      placeholder="VD: Bao gồm 3 tiếng di chuyển Bến Tre ↔ TP.HCM..."
+                      prefix={<ClockCircleOutlined style={{ color: "#BFA16A" }} />}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={10}>
+                  <div
+                    style={{
+                      background: "#FAF7F2",
+                      border: "1px solid #E8DED2",
+                      borderRadius: 8,
+                      padding: "8px 12px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ fontSize: 12.5, color: "#444" }}>
+                      In giờ tùy chỉnh lên Hợp đồng PDF{" "}
+                      <span style={{ color: "#888", fontSize: 11 }}>
+                        (Tắt nếu chỉ cộng giờ đi lại nội bộ)
+                      </span>
+                    </span>
+                    <Form.Item name="use_custom_time_on_contract" valuePropName="checked" noStyle>
+                      <Switch size="small" />
+                    </Form.Item>
+                  </div>
                 </Col>
               </Row>
 
@@ -1019,7 +1232,7 @@ export default function AdminOrderDetail() {
                   loading={creatingContract}
                   className="preview-btn"
                 >
-                  Tạo đơn
+                  Tạo đơn & Gửi hợp đồng
                 </Button>
               </div>
             </Form>
@@ -1092,24 +1305,35 @@ export default function AdminOrderDetail() {
               Ở lại trang này
             </Button>,
             <Button
+              key="timetable"
+              icon={<CalendarOutlined />}
+              style={{ borderColor: "#BFA16A", color: "#8B7045" }}
+              onClick={() => {
+                setContractSuccessModalOpen(false);
+                setTimetableModalOpen(true);
+              }}
+            >
+              Mở widget Thời khóa biểu chỉnh giờ
+            </Button>,
+            <Button
               key="back"
               type="primary"
-              onClick={() => navigate("/admin/orders")}
+              onClick={() => navigate("/admin/timetable")}
               style={{ background: "#BFA16A", borderColor: "#BFA16A" }}
             >
-              Về danh sách đơn
+              Về Thời khóa biểu
             </Button>,
           ]}
           centered
-          width={540}
+          width={560}
         >
           <div style={{ textAlign: "center", padding: "16px 8px 8px" }}>
             <CheckCircleOutlined style={{ fontSize: 52, color: "#52c41a", marginBottom: 12 }} />
             <Title level={4} style={{ marginBottom: 6 }}>
-              Tạo đơn hàng thành công!
+              Tạo đơn & Gửi hợp đồng thành công!
             </Title>
             <Text type="secondary" style={{ display: "block", marginBottom: 20 }}>
-              Đơn đã được lưu, hợp đồng và mã QR đã tạo. Trạng thái hiện tại: <strong>Đã gửi hợp đồng (Chờ cọc)</strong>.
+              Đơn đã được lưu, hợp đồng và mã QR đã được tạo. Trạng thái hiện tại: <strong>Đã gửi HĐ / Chờ cọc</strong>.
             </Text>
 
             {contractResult?.qr_code && (
@@ -1160,6 +1384,49 @@ export default function AdminOrderDetail() {
             </Space>
           </div>
         </Modal>
+
+        {/* Widget Thời khóa biểu nổi: bật/tắt khi đang sửa đơn, không che form */}
+        <TimetableWidget
+          open={timetableModalOpen}
+          onOpenChange={setTimetableModalOpen}
+          initialDate={form.getFieldValue("shoot_date")}
+          highlightBookingId={id}
+          onSelectSlot={({ date, session }) => {
+            const defaults = {
+              MORNING: ["08:00", "12:00"],
+              AFTERNOON: ["13:00", "17:00"],
+              EVENING: ["17:30", "21:30"],
+              FULL_DAY: ["08:00", "17:00"],
+            }[session];
+            const values = { shoot_date: dayjs(date) };
+            if (session && defaults) {
+              values.shooting_session = session;
+              values.custom_start_time = dayjs(defaults[0], "HH:mm");
+              values.custom_end_time = dayjs(defaults[1], "HH:mm");
+            }
+            form.setFieldsValue(values);
+            setIsDirty(true);
+            message.success(
+              `Đã chọn ${dayjs(date).format("DD/MM/YYYY")}${session ? ` · ${session === "MORNING" ? "Ca sáng" : session === "AFTERNOON" ? "Ca chiều" : "Ca tối"}` : ""} — nhớ bấm Lưu đơn`
+            );
+          }}
+          onScheduleUpdated={(updatedBooking) => {
+            if (updatedBooking && String(updatedBooking._id) === String(id)) {
+              setBooking(updatedBooking);
+              const sMoment = updatedBooking.start_time ? dayjs(updatedBooking.start_time) : null;
+              const eMoment = updatedBooking.end_time ? dayjs(updatedBooking.end_time) : null;
+              form.setFieldsValue({
+                shoot_date: sMoment,
+                shooting_session: updatedBooking.shooting_session || "MORNING",
+                custom_start_time: sMoment ? dayjs(sMoment.format("HH:mm"), "HH:mm") : undefined,
+                custom_end_time: eMoment ? dayjs(eMoment.format("HH:mm"), "HH:mm") : undefined,
+                schedule_note: updatedBooking.schedule_note || "",
+                use_custom_time_on_contract: Boolean(updatedBooking.use_custom_time_on_contract),
+              });
+              fetchPreviewBlob(buildCurrentOverrides(), { silent: true });
+            }
+          }}
+        />
 
         {/* Modal Xác nhận rời trang khi có thay đổi chưa lưu */}
         <Modal

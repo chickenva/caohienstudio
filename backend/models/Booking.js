@@ -71,16 +71,25 @@ const bookingSchema = new mongoose.Schema(
     // Buổi chụp có thể để trống cho đến khi studio tư vấn và chốt với khách.
     shooting_session: {
       type:    String,
-      enum:    ["MORNING", "AFTERNOON", "FULL_DAY"],
+      enum:    ["MORNING", "AFTERNOON", "EVENING", "FULL_DAY", "CUSTOM"],
       default: null,
     },
 
     // ==========================================
-    // THỜI GIAN
+    // THỜI GIAN & THỜI KHÓA BIỂU
     // ==========================================
 
     start_time: { type: Date, required: true },
     end_time:   { type: Date, required: true },
+
+    // Đánh dấu admin đã tùy chỉnh khung giờ dự kiến trên Thời khóa biểu (VD: cộng thêm giờ di chuyển ngoại cảnh)
+    is_custom_schedule_time: { type: Boolean, default: false },
+
+    // Ghi chú điều phối trên Thời khóa biểu (VD: "Tính thêm 3h di chuyển Bến Tre - TP.HCM")
+    schedule_note: { type: String, default: "", trim: true },
+
+    // Tùy chọn in khung giờ tùy chỉnh (start_time - end_time) lên Hợp đồng PDF hay giữ nhãn buổi chuẩn
+    use_custom_time_on_contract: { type: Boolean, default: false },
 
     location: {
       type:     String,
@@ -133,8 +142,8 @@ const bookingSchema = new mongoose.Schema(
 
     // Trạng thái đơn — luồng chính:
     //   REQUESTED       → Khách gửi yêu cầu đặt lịch, chờ studio xử lý
-    //   CONTRACT_SENT   → Admin gửi hợp đồng cho khách, đơn được giữ tạm 24h
-    //   WAITING_PAYMENT → Khách xác nhận hợp đồng, chờ admin ghi nhận đã nhận cọc
+    //   WAITING_PAYMENT → Admin gửi hợp đồng; đơn được giữ tạm 24h, chờ cọc
+    //   CONTRACT_SENT   → Alias legacy của WAITING_PAYMENT, giữ để đọc dữ liệu cũ
     //   CONFIRMED       → Admin xác nhận đã nhận cọc (tiền mặt/CK), lịch giữ chính thức
     //   IN_PROGRESS     → Admin bấm khi buổi chụp bắt đầu
     //   COMPLETED       → Hoàn thành toàn bộ
@@ -159,7 +168,7 @@ const bookingSchema = new mongoose.Schema(
     // Thời điểm hết hạn đơn (dùng cho legacy PENDING)
     expires_at: { type: Date, default: null },
 
-    // Hạn giữ tạm 24h kể từ khi admin gửi hợp đồng (CONTRACT_SENT/WAITING_PAYMENT)
+    // Hạn giữ tạm 24h kể từ khi admin gửi hợp đồng (WAITING_PAYMENT/CONTRACT_SENT legacy)
     // Sau thời điểm này, nếu chưa xác nhận cọc, admin xử lý thủ công
     hold_expires_at: { type: Date, default: null },
 

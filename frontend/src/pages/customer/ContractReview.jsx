@@ -26,6 +26,16 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://l
 const PRIMARY_COLOR = "#BFA16A";
 const PAYMENT_QR_URL = import.meta.env.VITE_PAYMENT_QR_URL || null;
 
+const statusConfig = {
+  REQUESTED: { color: "orange", text: "Yêu cầu mới" },
+  CONTRACT_SENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+  WAITING_PAYMENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+  CONFIRMED: { color: "green", text: "Đã xác nhận" },
+  IN_PROGRESS: { color: "blue", text: "Đang thực hiện" },
+  COMPLETED: { color: "green", text: "Hoàn thành" },
+  CANCELED: { color: "red", text: "Đã hủy" },
+};
+
 const formatCurrency = (val) => `${Number(val || 0).toLocaleString("vi-VN")}đ`;
 
 const ContractReview = () => {
@@ -40,8 +50,9 @@ const ContractReview = () => {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [paymentQrUrl, setPaymentQrUrl] = useState(null);
   const [error, setError] = useState(null);
-  const pdfViewUrl = pdfUrl && bookingId && token
-    ? `${API_URL}/bookings/contract/${bookingId}/pdf?token=${encodeURIComponent(token)}`
+  const versionParam = booking?.updatedAt ? `&v=${new Date(booking.updatedAt).getTime()}` : "";
+  const pdfViewUrl = (pdfUrl || booking) && bookingId && token
+    ? `${API_URL}/bookings/contract/${bookingId}/pdf?token=${encodeURIComponent(token)}${versionParam}`
     : null;
 
   useEffect(() => {
@@ -100,6 +111,7 @@ const ContractReview = () => {
   const totalAmount = booking.total_amount || 0;
   const depositAmount = booking.deposit_amount || Math.round(totalAmount * (booking.deposit_percent || 30) / 100);
   const isAlreadyConfirmed = ["CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status);
+  const currentStatus = statusConfig[booking.status] || { color: "default", text: booking.status || "Không rõ" };
   const bookingCode = String(booking._id).slice(-8).toUpperCase();
   const qrImageSrc = paymentQrUrl || PAYMENT_QR_URL;
 
@@ -172,15 +184,11 @@ const ContractReview = () => {
                 <Tag color="gold" style={{ borderRadius: 4 }}>
                   Mã đơn: #{bookingCode}
                 </Tag>
-                {isAlreadyConfirmed ? (
-                  <Tag color="green" style={{ borderRadius: 4, marginLeft: 6 }}>Lịch đã xác nhận</Tag>
-                ) : (
-                  <Tag color="orange" style={{ borderRadius: 4, marginLeft: 6 }}>Chờ đặt cọc</Tag>
-                )}
+                <Tag color={currentStatus.color} style={{ borderRadius: 4, marginLeft: 6 }}>{currentStatus.text}</Tag>
               </div>
             </div>
 
-            {pdfUrl && (
+            {pdfViewUrl && (
               <a href={`${pdfViewUrl}&download=1`} target="_blank" rel="noreferrer">
                 <Button icon={<DownloadOutlined />} style={{ borderRadius: 6, fontWeight: 500 }}>
                   Tải file PDF hợp đồng
@@ -191,7 +199,7 @@ const ContractReview = () => {
 
           <div style={{ padding: "32px 32px" }}>
             {/* Embed PDF hợp đồng */}
-            {pdfUrl ? (
+            {pdfViewUrl ? (
               <div style={{
                 border: "1px solid #e0e0e0",
                 borderRadius: 8,

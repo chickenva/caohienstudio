@@ -20,8 +20,8 @@ const formatCurrency = (amount) => {
 const getStatusText = (status) => {
   const statusMap = {
     REQUESTED: "Đã gửi yêu cầu",
-    CONTRACT_SENT: "Đã gửi hợp đồng",
-    WAITING_PAYMENT: "Chờ đặt cọc",
+    CONTRACT_SENT: "Đã gửi HĐ / Chờ cọc",
+    WAITING_PAYMENT: "Đã gửi HĐ / Chờ cọc",
     PENDING: "Chờ thanh toán",
     DEPOSITED: "Đã đặt cọc",
     CONFIRMED: "Đã xác nhận",

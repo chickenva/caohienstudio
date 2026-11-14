@@ -23,6 +23,8 @@ import {
   Tooltip,
   Checkbox,
   Divider,
+  Modal,
+  Switch,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -31,10 +33,13 @@ import {
   UserOutlined,
   InfoCircleOutlined,
   DeleteOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
+import TimetableWidget, { useTimetableWidgetState } from "../../components/admin/TimetableWidget";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -44,9 +49,11 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://l
 const OrdersCreate = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
   const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const [timetableModalOpen, setTimetableModalOpen] = useTimetableWidgetState();
 
   const [customerResults, setCustomerResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -62,6 +69,15 @@ const OrdersCreate = () => {
   const [paidAmount, setPaidAmount] = useState(0);
 
   const getToken = () => localStorage.getItem("token");
+
+  useEffect(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam && dayjs(dateParam, "YYYY-MM-DD", true).isValid()) {
+      form.setFieldsValue({
+        shoot_date: dayjs(dateParam, "YYYY-MM-DD"),
+      });
+    }
+  }, [searchParams, form]);
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -251,7 +267,7 @@ const OrdersCreate = () => {
   };
 
   // === SUBMIT ===
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, redirectAfter = "detail") => {
     if (selectedMainIds.length === 0) {
       message.warning("Vui lòng chọn ít nhất 1 gói dịch vụ chính");
       return;
@@ -277,6 +293,10 @@ const OrdersCreate = () => {
         shoot_date: shootDateFormatted,
         shooting_type: isStudio ? "STUDIO" : "OUTDOOR",
         shooting_session: values.shooting_session,
+        custom_start_time: values.custom_start_time || undefined,
+        custom_end_time: values.custom_end_time || undefined,
+        schedule_note: values.schedule_note || undefined,
+        use_custom_time_on_contract: Boolean(values.use_custom_time_on_contract),
         location: values.location,
         note: values.note,
 
@@ -287,14 +307,21 @@ const OrdersCreate = () => {
         payment_method: "MANUAL",
       };
 
-      await axios.post(`${API_URL}/bookings/admin/create`, payload, {
+      const res = await axios.post(`${API_URL}/bookings/admin/create`, payload, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
         },
       });
 
-      message.success("Tạo đơn đặt hộ thành công");
-      navigate("/admin/orders");
+      const createdId = res.data?.booking?._id;
+      message.success("Tạo đơn đặt hộ thành công & đã thêm vào Thời khóa biểu!");
+      if (redirectAfter === "timetable") {
+        navigate("/admin/timetable");
+      } else if (createdId) {
+        navigate(`/admin/orders/${createdId}`);
+      } else {
+        navigate("/admin/orders");
+      }
     } catch (err) {
       if (err.response?.data?.code === "HAS_PENDING_BOOKING") {
         message.error(
@@ -613,7 +640,20 @@ const OrdersCreate = () => {
             </Card>
 
             {/* === Card 3: THÔNG TIN LỊCH CHỤP === */}
-            <Card title="3. Thông tin lịch chụp" style={{ marginBottom: 20, borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+            <Card
+              title="3. Thông tin lịch chụp"
+              extra={
+                <Button
+                  size="small"
+                  icon={<CalendarOutlined />}
+                  onClick={() => setTimetableModalOpen((prev) => !prev)}
+                  style={{ borderColor: "#BFA16A", color: "#8c6d2c", background: "#FAF7F2", fontWeight: 500 }}
+                >
+                  {timetableModalOpen ? "Tắt widget Thời khóa biểu" : "Bật widget Thời khóa biểu"}
+                </Button>
+              }
+              style={{ marginBottom: 20, borderRadius: 12, border: "1px solid #efebe4", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}
+            >
               <Row gutter={16}>
                 {/* Ngày chụp */}
                 <Col xs={24} md={8}>
@@ -674,6 +714,20 @@ const OrdersCreate = () => {
                     <Select
                       size="large"
                       placeholder="Chọn buổi..."
+                      onChange={(val) => {
+                        const defaultTimes = {
+                          MORNING: ["08:00", "12:00"],
+                          AFTERNOON: ["13:00", "17:00"],
+                          EVENING: ["17:30", "21:30"],
+                          FULL_DAY: ["08:00", "17:00"],
+                        }[val];
+                        if (defaultTimes) {
+                          form.setFieldsValue({
+                            custom_start_time: defaultTimes[0],
+                            custom_end_time: defaultTimes[1],
+                          });
+                        }
+                      }}
                       options={[
                         { value: "MORNING", label: "Sáng (08:00 – 12:00)" },
                         {
@@ -681,12 +735,60 @@ const OrdersCreate = () => {
                           label: "Chiều (13:00 – 17:00)",
                         },
                         {
+                          value: "EVENING",
+                          label: "Tối (17:30 – 21:30)",
+                        },
+                        {
                           value: "FULL_DAY",
                           label: "Cả ngày (08:00 – 17:00)",
+                        },
+                        {
+                          value: "CUSTOM",
+                          label: "⏱ Tùy chỉnh khung giờ riêng",
                         },
                       ]}
                     />
                   </Form.Item>
+                </Col>
+
+                {/* Tùy chỉnh giờ trên Thời khóa biểu (dành cho đơn đi xa hoặc giờ riêng) */}
+                <Col xs={24}>
+                  <div
+                    style={{
+                      background: "#FAF7F2",
+                      border: "1px dashed #e2d8c9",
+                      borderRadius: 8,
+                      padding: "12px 14px",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#5c4a1e" }}>
+                        <ClockCircleOutlined style={{ color: "#BFA16A", marginRight: 6 }} />
+                        Khung giờ trên Thời khóa biểu (Có thể chỉnh ngay hoặc chỉnh sau khi tạo đơn)
+                      </span>
+                      <Form.Item name="use_custom_time_on_contract" valuePropName="checked" style={{ marginBottom: 0 }}>
+                        <Switch size="small" checkedChildren="In giờ tùy chỉnh lên HĐ" unCheckedChildren="Giữ tên ca chuẩn trên HĐ" />
+                      </Form.Item>
+                    </div>
+                    <Row gutter={12}>
+                      <Col xs={12} md={6}>
+                        <Form.Item label="Giờ bắt đầu" name="custom_start_time" style={{ marginBottom: 0 }}>
+                          <Input type="time" size="middle" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Form.Item label="Giờ kết thúc dự kiến" name="custom_end_time" style={{ marginBottom: 0 }}>
+                          <Input type="time" size="middle" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item label="Ghi chú lịch trình / thời gian đi lại" name="schedule_note" style={{ marginBottom: 0 }}>
+                          <Input placeholder="VD: Chụp ngoại cảnh TP.HCM +3h di chuyển về studio" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </div>
                 </Col>
 
                 {/* Địa điểm */}
@@ -892,8 +994,24 @@ const OrdersCreate = () => {
           </Col>
         </Row>
 
-        <Space style={{ marginTop: 24 }}>
+        <Space style={{ marginTop: 24, flexWrap: "wrap" }}>
           <Button onClick={() => navigate("/admin/orders")}>Hủy</Button>
+
+          <Button
+            icon={<CalendarOutlined />}
+            loading={loading}
+            onClick={async () => {
+              try {
+                const values = await form.validateFields();
+                await handleSubmit(values, "timetable");
+              } catch {
+                // Form validation error
+              }
+            }}
+            style={{ borderColor: "#BFA16A", color: "#8c6d2c", background: "#FAF7F2", fontWeight: 600 }}
+          >
+            Tạo đơn & Mở Thời khóa biểu
+          </Button>
 
           <Button
             type="primary"
@@ -902,10 +1020,33 @@ const OrdersCreate = () => {
             loading={loading}
             style={{ backgroundColor: "#BFA16A", borderColor: "#BFA16A" }}
           >
-            Tạo đơn đặt hộ
+            Tạo đơn & Tiếp tục hợp đồng
           </Button>
         </Space>
       </Form>
+
+      {/* Widget Thời khóa biểu nổi: tra cứu ca trống khi đang nhập đơn */}
+      <TimetableWidget
+        open={timetableModalOpen}
+        onOpenChange={setTimetableModalOpen}
+        initialDate={form.getFieldValue("shoot_date")?.format("YYYY-MM-DD")}
+        onSelectSlot={({ date, session }) => {
+          const defaults = {
+            MORNING: ["08:00", "12:00"],
+            AFTERNOON: ["13:00", "17:00"],
+            EVENING: ["17:30", "21:30"],
+            FULL_DAY: ["08:00", "17:00"],
+          }[session];
+          const values = { shoot_date: dayjs(date) };
+          if (session && defaults) {
+            values.shooting_session = session;
+            values.custom_start_time = defaults[0];
+            values.custom_end_time = defaults[1];
+          }
+          form.setFieldsValue(values);
+          message.success(`Đã áp dụng ngày ${dayjs(date).format("DD/MM/YYYY")} từ Thời khóa biểu!`);
+        }}
+      />
     </div>
   );
 };

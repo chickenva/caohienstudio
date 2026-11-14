@@ -87,8 +87,8 @@ const getDisplayPaymentStatus = (booking) => {
 const renderOrderStatus = (status) => {
   const map = {
     REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
-    CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
-    WAITING_PAYMENT: { color: "gold", text: "Chờ đặt cọc" },
+    CONTRACT_SENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+    WAITING_PAYMENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
     PENDING: { color: "gold", text: "Chờ thanh toán" },
     DEPOSITED: { color: "cyan", text: "Đã đặt cọc" },
     CONFIRMED: { color: "blue", text: "Đã xác nhận" },
@@ -261,7 +261,7 @@ const BookingDetail = () => {
   }, [booking]);
 
   const canPay = isPayableBooking(booking);
-  const canCancelBooking = ["REQUESTED", "CONTRACT_SENT", "PENDING"].includes(booking?.status);
+  const canCancelBooking = ["REQUESTED", "WAITING_PAYMENT", "CONTRACT_SENT", "PENDING"].includes(booking?.status);
   const isPendingExpired = isExpiredPendingBooking(booking);
   const displayOrderStatus = getDisplayOrderStatus(booking);
   const displayPaymentStatus = getDisplayPaymentStatus(booking);
@@ -438,14 +438,10 @@ const BookingDetail = () => {
             }}
           >
             <Alert
-              type={booking.status === "WAITING_PAYMENT" ? "info" : "warning"}
+              type="info"
               showIcon
-              message={booking.status === "WAITING_PAYMENT" ? "Đơn hàng đang chờ thanh toán cọc" : "Studio đã gửi hợp đồng đặt lịch"}
-              description={
-                booking.status === "WAITING_PAYMENT"
-                  ? "Bạn đã xác nhận hợp đồng. Vui lòng thanh toán tiền cọc bằng tiền mặt tại studio hoặc chuyển khoản qua QR. Studio sẽ kiểm tra và xác nhận đơn của bạn."
-                  : "Vui lòng xem và xác nhận hợp đồng để tiến hành thanh toán cọc giữ lịch."
-              }
+              message="Đã gửi hợp đồng, đang chờ thanh toán cọc"
+              description="Vui lòng xem hợp đồng và thanh toán tiền cọc bằng tiền mặt tại studio hoặc chuyển khoản qua QR. Studio sẽ kiểm tra và xác nhận đơn của bạn."
               style={{ marginBottom: 18 }}
             />
 
@@ -464,7 +460,7 @@ const BookingDetail = () => {
                       padding: "0 32px",
                     }}
                   >
-                    {booking.status === "WAITING_PAYMENT" ? "XEM HƯỚNG DẪN THANH TOÁN & HỢP ĐỒNG" : "XEM & XÁC NHẬN HỢP ĐỒNG"}
+                    XEM HƯỚNG DẪN THANH TOÁN & HỢP ĐỒNG
                   </Button>
                 )}
 

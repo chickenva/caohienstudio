@@ -38,6 +38,7 @@ import MyBookings from "./pages/customer/MyBookings";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminTimetable from "./pages/admin/AdminTimetable";
 import AdminGalleries from "./pages/admin/AdminGalleries";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminCustomers from "./pages/admin/AdminCustomers";
@@ -115,6 +116,7 @@ function App() {
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="dashboard" element={<AdminDashboard />} />
 
+          <Route path="timetable" element={<AdminTimetable />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="orders/:id" element={<AdminOrderDetail />} />
           <Route path="orders/:id/contract" element={<AdminOrderDetail />} />

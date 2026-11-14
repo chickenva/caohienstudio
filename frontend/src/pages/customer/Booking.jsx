@@ -259,6 +259,8 @@ const Booking = () => {
 
   // States lưu danh sách ngày lễ và ngày nghỉ studio từ backend
   const [holidays, setHolidays] = useState([]);
+  // States lưu lịch bận ẩn danh (Hybrid Smart Sync từ Thời khóa biểu Admin)
+  const [publicScheduleDays, setPublicScheduleDays] = useState({});
 
   useEffect(() => {
     const fetchHolidays = async () => {
@@ -273,6 +275,57 @@ const Booking = () => {
     };
     fetchHolidays();
   }, []);
+
+  // Fetch lịch hoạt động ẩn danh của Studio theo tháng hiển thị
+  useEffect(() => {
+    let active = true;
+    const fetchPublicSchedule = async () => {
+      try {
+        const monthKey = currentCalendarMonth.format("YYYY-MM");
+        const res = await axios.get(`${API_URL}/bookings/public-schedule`, {
+          params: { month: monthKey },
+        });
+        if (active) {
+          setPublicScheduleDays(res.data?.days || {});
+        }
+      } catch (err) {
+        console.error("Lỗi lấy lịch hoạt động studio:", err);
+      }
+    };
+    fetchPublicSchedule();
+    return () => {
+      active = false;
+    };
+  }, [currentCalendarMonth]);
+
+  // Trạng thái từng ca (Sáng / Chiều / Tối) của một ngày theo lịch ẩn danh của Studio
+  const getCustomerSessionStatuses = (daySchedule) => {
+    const slots = daySchedule?.slots || [];
+    const toMins = (str) => {
+      if (!str || !str.includes(":")) return 0;
+      const [h, m] = str.split(":").map(Number);
+      return h * 60 + m;
+    };
+    const toLabel = (mins) =>
+      `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+    const sessions = [
+      { key: "MORNING", label: "Sáng", start: 8 * 60, end: 12 * 60, range: "08:00 – 12:00" },
+      { key: "AFTERNOON", label: "Chiều", start: 13 * 60, end: 17 * 60, range: "13:00 – 17:00" },
+      { key: "EVENING", label: "Tối", start: 17 * 60 + 30, end: 21 * 60 + 30, range: "17:30 – 21:30" },
+    ];
+    return sessions.map((session) => {
+      const blockers = slots.filter(
+        (sl) => toMins(sl.startTime) < session.end && toMins(sl.endTime) > session.start
+      );
+      if (blockers.length === 0) return { ...session, state: "free" };
+      const maxEnd = Math.max(...blockers.map((sl) => toMins(sl.endTime)));
+      const minStart = Math.min(...blockers.map((sl) => toMins(sl.startTime)));
+      if (minStart <= session.start + 30 && maxEnd <= session.end - 90) {
+        return { ...session, state: "partial", freeAfter: toLabel(maxEnd) };
+      }
+      return { ...session, state: "busy" };
+    });
+  };
 
   /**
    * Helper tra cứu ngày đặc biệt: Ngày lễ quốc gia, Ngày nghỉ/sự kiện studio, và Âm lịch
@@ -1060,6 +1113,10 @@ const Booking = () => {
                             const details = weather ? getWeatherDetails(weather.code) : null;
                             const special = getSpecialDayInfo(cell.date);
                             const isSpecialClosed = special?.isClosed;
+                            const daySchedule = publicScheduleDays[dateStr];
+                            const hasScheduleSlots = Boolean(
+                              daySchedule && daySchedule.totalSlots > 0 && !isPast && !isSpecialClosed
+                            );
 
                             const specialClass = isSpecialClosed
                               ? " cal-cell-closed"
@@ -1163,6 +1220,19 @@ const Booking = () => {
                                       {special.isClosed ? "🔒 Nghỉ" : special.isNational ? "🇻🇳 Lễ" : "📸 Studio"}
                                     </div>
                                   )}
+
+                                  {hasScheduleSlots && !special?.isClosed && (
+                                    <div
+                                      className={`cal-cell-schedule-badge${
+                                        daySchedule.isNearlyFull ? " cal-cell-schedule-busy" : ""
+                                      }`}
+                                      title={`Studio đã có ${daySchedule.totalSlots} ca chụp trong ngày (${daySchedule.slots
+                                        .map((sl) => `${sl.startTime}–${sl.endTime}`)
+                                        .join(", ")}). Bạn vẫn có thể chọn ngày này để đặt vào khung giờ trống hoặc để Studio tư vấn!`}
+                                    >
+                                      Đã có {daySchedule.totalSlots} ca
+                                    </div>
+                                  )}
                                 </div>
 
                                 {weather && details && (
@@ -1195,6 +1265,10 @@ const Booking = () => {
                           <strong style={{ color: "#722ed1" }}>Lịch Studio / Nghỉ</strong>
                         </span>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#d48806", display: "inline-block" }}></span>
+                          <strong style={{ color: "#ad6800" }}>Đã có ca chụp (Vẫn chọn được giờ trống)</strong>
+                        </span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                           <strong style={{ color: "#bfa16a" }}>15/8</strong>
                           <span>Mùng 1 / Rằm ÂL</span>
                         </span>
@@ -1222,85 +1296,83 @@ const Booking = () => {
                               ⚠️ Vui lòng chọn ngày kết thúc trên lịch
                             </div>
                           )}
-                          <div className="glass-panel" style={{ padding: 24, flex: 1, borderRadius: 8 }}>
-                            <h4 className="font-serif-luxury" style={{ margin: "0 0 16px 0", fontSize: 17, color: "#2F2F2F", borderBottom: "1px dashed #E8DED2", paddingBottom: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                              <CloudOutlined style={{ color: "#BFA16A" }} />
-                              {isRangeMode ? (
-                                <span>
-                                  Thời tiết ngày bắt đầu: {rangeStartDate?.format("DD/MM/YYYY")}
-                                </span>
-                              ) : (
-                                <span>
-                                  Thời tiết ngày {selectedDate?.format("DD/MM/YYYY")}
-                                </span>
-                              )}
-                              {selectedWeather?.isHistorical && (
-                                <span style={{ fontSize: 10, color: "#BFA16A", background: "rgba(191,161,106,0.08)", padding: "2px 8px", borderRadius: 4, marginLeft: "auto", fontWeight: 500, letterSpacing: "0.5px" }}>
-                                  Dữ liệu lịch sử {selectedWeather.historicalYear}
-                                </span>
-                              )}
-                            </h4>
+                          {(() => {
+                            const activeSpecial = getSpecialDayInfo(activeDate);
+                            const activeDaySchedule = selectedDateStr ? publicScheduleDays[selectedDateStr] : null;
+                            const hasSlots = Boolean(activeDaySchedule && activeDaySchedule.totalSlots > 0);
+                            const sessionStatuses = getCustomerSessionStatuses(activeDaySchedule);
+                            const WEEKDAY_FULL = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+                            const tlPct = (m) => Math.min(100, Math.max(0, ((m - 420) / (1320 - 420)) * 100));
+                            const toMin = (str) => {
+                              if (!str || !str.includes(":")) return 0;
+                              const [h, m] = str.split(":").map(Number);
+                              return h * 60 + m;
+                            };
+                            const stateStyle = {
+                              free: { bg: "#f6ffed", border: "#b7eb8f", color: "#389e0d" },
+                              partial: { bg: "#fff7e6", border: "#ffd591", color: "#d46b08" },
+                              busy: { bg: "#fff1f0", border: "#ffccc7", color: "#cf1322" },
+                            };
 
-                            {(() => {
-                              const activeSpecial = getSpecialDayInfo(activeDate);
-                              return (
-                                <>
+                            return (
+                              <>
+                                {/* ===== CARD 1: TÌNH TRẠNG LỊCH STUDIO ===== */}
+                                <div className="glass-panel" style={{ padding: 22, borderRadius: 8 }}>
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", borderBottom: "1px dashed #E8DED2", paddingBottom: 10, marginBottom: 14 }}>
+                                    <h4 className="font-serif-luxury" style={{ margin: 0, fontSize: 17, color: "#2F2F2F", display: "flex", alignItems: "center", gap: 8 }}>
+                                      <CalendarOutlined style={{ color: "#BFA16A" }} />
+                                      Lịch Studio
+                                    </h4>
+                                    {activeSpecial?.isClosed ? (
+                                      <Tag color="red" style={{ margin: 0 }}>Studio nghỉ</Tag>
+                                    ) : hasSlots ? (
+                                      <Tag color="gold" style={{ margin: 0 }}>Đã có {activeDaySchedule.totalSlots} ca trong ngày</Tag>
+                                    ) : (
+                                      <Tag color="green" style={{ margin: 0 }}>Còn trống cả ngày</Tag>
+                                    )}
+                                  </div>
+
+                                  <div style={{ fontSize: 13, color: "#555", marginBottom: 14, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                    <strong style={{ color: "#2F2F2F" }}>
+                                      {WEEKDAY_FULL[activeDate.day()]}, {activeDate.format("DD/MM/YYYY")}
+                                    </strong>
+                                    {isRangeMode && <span style={{ fontSize: 11, color: "#999" }}>(ngày bắt đầu)</span>}
+                                    {activeSpecial?.lunar && (
+                                      <span style={{ fontSize: 12, color: "#888" }}>
+                                        🌙 {activeSpecial.lunar.fullLabel}
+                                        {activeSpecial.lunar.holidayName && (
+                                          <Tag color="gold" style={{ margin: "0 0 0 6px", fontSize: 11 }}>{activeSpecial.lunar.holidayName}</Tag>
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
+
                                   {activeSpecial?.holiday && (
                                     <div
                                       style={{
-                                        marginBottom: 16,
+                                        marginBottom: 14,
                                         padding: "10px 14px",
                                         borderRadius: 6,
-                                        background: activeSpecial.isNational
-                                          ? "rgba(207, 19, 34, 0.06)"
-                                          : "rgba(114, 46, 209, 0.06)",
-                                        border: `1px solid ${
-                                          activeSpecial.isNational ? "#ffa39e" : "#d3adf7"
-                                        }`,
+                                        background: activeSpecial.isNational ? "rgba(207, 19, 34, 0.06)" : "rgba(114, 46, 209, 0.06)",
+                                        border: `1px solid ${activeSpecial.isNational ? "#ffa39e" : "#d3adf7"}`,
                                         display: "flex",
                                         alignItems: "flex-start",
                                         gap: 10,
                                       }}
                                     >
-                                      <span style={{ fontSize: 20 }}>
-                                        {activeSpecial.isNational ? "🇻🇳" : "📸"}
-                                      </span>
+                                      <span style={{ fontSize: 20 }}>{activeSpecial.isNational ? "🇻🇳" : "📸"}</span>
                                       <div style={{ flex: 1 }}>
-                                        <div
-                                          style={{
-                                            fontWeight: 600,
-                                            color: activeSpecial.isNational ? "#cf1322" : "#722ed1",
-                                            fontSize: 13.5,
-                                          }}
-                                        >
+                                        <div style={{ fontWeight: 600, color: activeSpecial.isNational ? "#cf1322" : "#722ed1", fontSize: 13.5 }}>
                                           {activeSpecial.name}
                                         </div>
                                         {activeSpecial.holiday.description && (
-                                          <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
-                                            {activeSpecial.holiday.description}
-                                          </div>
+                                          <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{activeSpecial.holiday.description}</div>
                                         )}
                                         {activeSpecial.surchargeNote && (
-                                          <div
-                                            style={{
-                                              fontSize: 12,
-                                              color: "#fa8c16",
-                                              fontWeight: 500,
-                                              marginTop: 4,
-                                            }}
-                                          >
-                                            ⚡ {activeSpecial.surchargeNote}
-                                          </div>
+                                          <div style={{ fontSize: 12, color: "#fa8c16", fontWeight: 500, marginTop: 4 }}>⚡ {activeSpecial.surchargeNote}</div>
                                         )}
                                         {activeSpecial.isClosed && (
-                                          <div
-                                            style={{
-                                              fontSize: 12,
-                                              color: "#cf1322",
-                                              fontWeight: 600,
-                                              marginTop: 4,
-                                            }}
-                                          >
+                                          <div style={{ fontSize: 12, color: "#cf1322", fontWeight: 600, marginTop: 4 }}>
                                             🔒 Studio tạm nghỉ nhận lịch vào ngày này.
                                           </div>
                                         )}
@@ -1308,32 +1380,103 @@ const Booking = () => {
                                     </div>
                                   )}
 
-                                  {activeSpecial?.lunar && (
-                                    <div
-                                      style={{
-                                        fontSize: 12.5,
-                                        color: "#666",
-                                        marginBottom: 14,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        flexWrap: "wrap",
-                                      }}
-                                    >
-                                      <span>🌙 Âm lịch:</span>
-                                      <strong style={{ color: "#BFA16A" }}>
-                                        {activeSpecial.lunar.fullLabel}
-                                      </strong>
-                                      {activeSpecial.lunar.holidayName && (
-                                        <Tag color="gold" style={{ margin: 0, fontSize: 11 }}>
-                                          {activeSpecial.lunar.holidayName}
-                                        </Tag>
+                                  {!activeSpecial?.isClosed && (
+                                    <>
+                                      {/* 3 ca trong ngày */}
+                                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+                                        {sessionStatuses.map((s) => {
+                                          const st = stateStyle[s.state];
+                                          return (
+                                            <div key={s.key} style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 8, padding: "8px 6px", textAlign: "center" }}>
+                                              <div style={{ fontSize: 12.5, fontWeight: 700, color: st.color }}>{s.label}</div>
+                                              <div style={{ fontSize: 10.5, color: "#888", margin: "1px 0 3px" }}>{s.range}</div>
+                                              <div style={{ fontSize: 11, fontWeight: 600, color: st.color }}>
+                                                {s.state === "free" ? "Còn trống" : s.state === "partial" ? `Trống từ ${s.freeAfter}` : "Đã có lịch"}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Thanh timeline trong ngày */}
+                                      <div style={{ marginBottom: hasSlots ? 12 : 8 }}>
+                                        <div style={{ position: "relative", height: 12, background: "#f3efe7", borderRadius: 6, overflow: "hidden" }}>
+                                          {(activeDaySchedule?.slots || []).map((slot, sIdx) => (
+                                            <div
+                                              key={sIdx}
+                                              title={`${slot.startTime} – ${slot.endTime}`}
+                                              style={{
+                                                position: "absolute",
+                                                top: 1,
+                                                bottom: 1,
+                                                left: `${tlPct(toMin(slot.startTime))}%`,
+                                                width: `${Math.max(tlPct(toMin(slot.endTime)) - tlPct(toMin(slot.startTime)), 2)}%`,
+                                                borderRadius: 4,
+                                                background: slot.shootingType === "OUTDOOR" ? "#fa8c16" : "#BFA16A",
+                                                opacity: 0.9,
+                                              }}
+                                            />
+                                          ))}
+                                        </div>
+                                        <div style={{ position: "relative", height: 14, fontSize: 10, color: "#aaa", marginTop: 2 }}>
+                                          {[8, 12, 17, 21].map((h) => (
+                                            <span key={h} style={{ position: "absolute", left: `${tlPct(h * 60)}%`, transform: "translateX(-50%)" }}>{h}h</span>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {hasSlots && (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
+                                          {activeDaySchedule.slots.map((slot, sIdx) => (
+                                            <div
+                                              key={sIdx}
+                                              style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                                background: "#fff",
+                                                border: "1px solid #f0e6d2",
+                                                borderRadius: 6,
+                                                padding: "5px 10px",
+                                                fontSize: 12,
+                                              }}
+                                            >
+                                              <strong style={{ color: "#2F2F2F" }}>🕒 {slot.startTime} – {slot.endTime}</strong>
+                                              <span style={{ color: "#8c6d2c", fontWeight: 500 }}>
+                                                {slot.shootingType === "OUTDOOR" ? "🌿 Ngoại cảnh" : "🏠 Tại Studio"}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
                                       )}
-                                    </div>
+
+                                      <div style={{ fontSize: 12, color: "#666", lineHeight: 1.6, background: "rgba(191, 161, 106, 0.06)", borderLeft: "3px solid #BFA16A", padding: "8px 12px" }}>
+                                        {hasSlots
+                                          ? "💡 Bạn vẫn có thể chọn ngày này. Sau khi gửi yêu cầu, Cao Hiển Studio sẽ liên hệ tư vấn và chốt khung giờ trống phù hợp nhất (hoặc gợi ý ngày khác nếu cần)."
+                                          : "✅ Tất cả các khung giờ trong ngày đang trống — thời điểm thuận lợi để đặt lịch."}
+                                      </div>
+                                    </>
                                   )}
-                                </>
-                              );
-                            })()}
+                                </div>
+                              </>
+                            );
+                          })()}
+
+                          {/* ===== CARD 2: THỜI TIẾT ===== */}
+                          <div className="glass-panel" style={{ padding: 22, borderRadius: 8 }}>
+                            <h4 className="font-serif-luxury" style={{ margin: "0 0 16px 0", fontSize: 17, color: "#2F2F2F", borderBottom: "1px dashed #E8DED2", paddingBottom: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <CloudOutlined style={{ color: "#BFA16A" }} />
+                              {isRangeMode ? (
+                                <span>Thời tiết ngày bắt đầu: {rangeStartDate?.format("DD/MM/YYYY")}</span>
+                              ) : (
+                                <span>Thời tiết ngày {selectedDate?.format("DD/MM/YYYY")}</span>
+                              )}
+                              {selectedWeather?.isHistorical && (
+                                <span style={{ fontSize: 10, color: "#BFA16A", background: "rgba(191,161,106,0.08)", padding: "2px 8px", borderRadius: 4, marginLeft: "auto", fontWeight: 500, letterSpacing: "0.5px" }}>
+                                  Dữ liệu lịch sử {selectedWeather.historicalYear}
+                                </span>
+                              )}
+                            </h4>
 
                             {selectedWeather && selectedWeatherDetails ? (
                               <div>
@@ -1869,6 +2012,27 @@ const Booking = () => {
               white-space: nowrap;
               text-overflow: ellipsis;
               box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .cal-cell-schedule-badge {
+              font-size: 8px;
+              padding: 1px 4px;
+              border-radius: 3px;
+              color: #8c6d2c;
+              background: #fffbe6;
+              border: 1px solid #ffe58f;
+              font-weight: 600;
+              line-height: 1.2;
+              margin-top: 2px;
+              text-align: center;
+              max-width: 95%;
+              overflow: hidden;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+            }
+            .cal-cell-schedule-busy {
+              color: #ad4e00;
+              background: #fff2e8;
+              border-color: #ffbb96;
             }
 
             /* Time Slot Buttons */

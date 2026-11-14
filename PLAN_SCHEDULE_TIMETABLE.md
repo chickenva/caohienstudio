@@ -1,4 +1,4 @@
-# KẾ HOẠCH THIẾT KẾ LOGIC GIỜ CHỤP & THỜI KHÓA BIỂU QUẢN LÝ LỊCH STUDIO
+# KẾ HOẠCH THIẾT KẾ THỜI KHÓA BIỂU QUẢN LÝ LỊCH CHỤP & ĐỒNG BỘ LỊCH ĐẶT KHÁCH HÀNG
 ## Cao Hiển Studio — Hệ Thống Đặt Lịch & Quản Lý Studio Chụp Ảnh
 
 * **Cơ sở đào tạo:** Trường Đại học Sư phạm Kỹ thuật TP. Hồ Chí Minh (HCMUTE) — Khoa CNTT, Bộ môn CNPM.
@@ -9,221 +9,156 @@
 
 ---
 
-## 1. Đặt Vấn Đề & Khảo Sát Nghiệp Vụ Thực Tế
+## 1. Phân Tích Bài Toán & Tư Vấn Chiến Lược Đồng Bộ Lịch (Trọng Tâm KLTN)
 
-### 1.1. Bối cảnh đặc thù ngành ảnh cưới hỏi & ngoại cảnh Miền Tây
-Cao Hiển Studio hoạt động chủ lực tại Bến Tre và các tỉnh Tây Nam Bộ. Quy trình tổ chức cưới hỏi vùng Đồng bằng Sông Cửu Long có tính phong tục và giờ giấc rất nghiêm ngặt:
-1. **Lễ Xuất giá / Rước dâu / Lễ gia tiên sáng sớm (06:00 – 09:30):** Nhà trai qua nhà gái rước dâu đúng giờ hoàng đạo (thường rất sớm để kịp giờ làm lễ gia tiên và di chuyển qua phà/cầu).
-2. **Tiệc cưới buổi trưa (10:30 – 13:30):** Đón khách và làm lễ tại nhà hàng hoặc tư gia.
-3. **Tiệc cưới / Đêm nhạc buổi tối (17:30 – 21:30):** Khung giờ tiệc đãi bạn bè, đối tác phổ biến tại các trung tâm tiệc cưới.
-4. **Lễ Nhóm họ / Xuất giá đêm trước (18:00 – 21:00):** Nghi thức họ hàng quây quần trước ngày rước dâu.
-5. **Chụp ngoại cảnh nghệ thuật (Bến Tre, Cần Thơ, Vũng Tàu, Đà Lạt):** Đón ánh sáng bình minh (`05:00 – 08:30`) hoặc săn hoàng hôn (`15:30 – 18:30`).
-
-### 1.2. Điểm nghẽn (Pain Points) của hệ thống hiện tại
-* **Chỉ hỗ trợ 3 buổi cứng nhắc:** Hệ thống hiện chỉ có 3 buổi: Sáng (08:00 - 12:00), Chiều (13:00 - 17:00), Cả ngày (08:00 - 17:00). Thiếu hoàn toàn ca **Buổi Tối** và không có ô chọn **Giờ bấm máy cụ thể** (ví dụ: 06:30 sáng).
-* **Hợp đồng PDF in sai giờ thực tế:** Do hệ thống tự gán `08:00` hoặc `13:00`, hợp đồng in ra không thể hiện đúng giờ thợ phải có mặt tại nhà khách.
-* **Khó khăn khi tư vấn khách gọi điện:** Khách hỏi: *"Chủ nhật tuần này studio còn rảnh thợ chụp sáng không?"*. Nhân viên phải mở bảng Table 100 đơn dò từng dòng ngày tháng, rất dễ nhầm lẫn hoặc bỏ lỡ ca trống.
-* **Nguy cơ trùng lịch (Conflict):** Chưa có công cụ cảnh báo trực quan khi một phòng chụp tại Studio bị đặt trùng giờ hoặc thiếu thợ chụp.
+### 1.1. Bối cảnh nghiệp vụ thực tế tại Cao Hiển Studio
+1. **Đặc thù thời gian tác nghiệp biến động (Case Study: Chụp ngoại cảnh xa):**
+   * Khi khách đặt hoặc Admin tạo đơn chụp ngoại cảnh tại TP.HCM (cách Bến Tre ~85–90 km), gói dịch vụ ghi nhận là **Buổi sáng (`08:00 – 12:00`)**.
+   * Tuy nhiên, trên thực tế vận hành, ekip phải xuất phát từ Bến Tre lúc `05:30` sáng và sau khi chụp xong lúc `12:00` phải di chuyển về lại Bến Tre đến `14:30 – 15:00` mới sẵn sàng cho ca tiếp theo.
+   * Do đó, **Thời khóa biểu (Timetable)** bắt buộc phải cho phép Admin **tùy chỉnh lại thời gian bắt đầu / kết thúc dự kiến của từng đơn trên lịch** (ví dụ: kéo dài từ `08:00 – 12:00` thành `06:00 – 15:00`) để phản ánh đúng thời gian bận thực tế của ekip mà không làm sai lệch nội dung buổi chụp cam kết trên hợp đồng của khách.
+2. **Nhu cầu vừa nhìn Thời khóa biểu vừa tư vấn chốt lịch:**
+   * Khi khách gọi điện/nhắn Zalo hoặc vừa gửi yêu cầu đặt lịch (`REQUESTED`), Admin cần mở Thời khóa biểu tuần để nhìn ngay: *"Ngày đó khung giờ nào đã vướng lịch đi tỉnh, khung giờ nào còn trống"* để tư vấn và chốt giờ chính xác với khách.
 
 ---
 
-## 2. Chuẩn Hóa Logic Về "Giờ Chụp Cho Khách"
+### 1.2. Giải Quyết Điểm Phân Vân: Có Nên Đồng Bộ Thời Khóa Biểu Với Lịch Đặt Của Khách Hàng Không?
 
-Hệ thống sẽ chuyển dịch từ mô hình *"Buổi chụp cứng nhắc"* sang mô hình **"2 Tầng Thời Gian: Buổi Chụp Tổng Quan + Khung Giờ Bấm Máy Cụ Thể"**.
+Đây là câu hỏi thiết kế hệ thống (System Design Trade-off) rất hay và chắc chắn Hội đồng chấm KLTN sẽ hỏi khi phản biện. Dưới đây là bảng đối sánh 3 phương án:
 
-```
-[Chọn Ngày Chụp] ──► [Chọn Buổi Chụp] ──► [Tự động gợi ý] ──► [Admin/Khách chỉnh Giờ cụ thể]
-                                      (VD: Sáng)               (VD: 06:30 - 10:30)
-```
-
-### 2.1. Phân loại Buổi chụp mở rộng (`shooting_session`)
-Bổ sung các ca chụp phản ánh đúng 100% ca chụp thực tế:
-
-| Mã Buổi (`enum`) | Tên hiển thị | Khung giờ gợi ý mặc định | Mục đích sử dụng thực tế |
+| Tiêu chí đánh giá | Phương án A: Chặn cứng ngày bận (Hard Block) | Phương án B: Không đồng bộ, chọn tự do 100% (No Sync) | Phương án C (ĐỀ XUẤT): Đồng bộ Cảnh báo mềm & Hiển thị khung giờ bận (Hybrid Smart Sync) |
 | :--- | :--- | :--- | :--- |
-| `MORNING` | **Sáng** | `08:00 – 12:00` *(tùy chỉnh từ 05:30)* | Lễ gia tiên, rước dâu sáng sớm, chụp studio sáng. |
-| `AFTERNOON` | **Chiều** | `13:00 – 17:00` | Tiệc trưa muộn, ngoại cảnh hoàng hôn, tiệc chiều. |
-| `EVENING` | **Tối** *(Mới)* | `17:30 – 21:30` | Lễ nhóm họ đêm trước, tiệc cưới nhà hàng tối. |
-| `FULL_DAY` | **Cả ngày** | `08:00 – 17:00` *(hoặc trọn gói cưới)* | Lễ sáng + Tiệc trưa, hoặc đi ngoại cảnh xa cả ngày. |
-| `CUSTOM` | **Linh hoạt** *(Mới)* | Cho phép chọn tự do | Các ca chụp phóng sự ngắn, chụp sự kiện theo giờ. |
+| **Cách hoạt động** | Ngày nào có đơn trên Thời khóa biểu thì khóa (disable) không cho khách click chọn trên trang `/booking`. | Lịch của khách không liên kết với Thời khóa biểu. Khách chọn ngày nào cũng được, Admin gọi báo bận sau. | **Vẫn cho khách chọn mọi ngày** (trừ ngày Studio đóng cửa nghỉ lễ), nhưng **đồng bộ hiển thị trạng thái lịch & khung giờ đã có đơn** ngay khi khách bấm vào ngày đó. |
+| **Góc độ Kinh doanh Studio** | ❌ **Rất bất lợi:**<br>1. Đơn mới chỉ bận buổi sáng (`08:00 – 14:00`), buổi chiều/tối vẫn rảnh nhưng khách bị chặn cả ngày.<br>2. Ngày tốt (Rằm, cuối tuần) studio có thể thuê thêm Freelancer (`external_staff`) để nhận 2–3 show cùng lúc. Chặn cứng sẽ làm mất doanh thu.<br>3. Đơn chưa cọc (`REQUESTED`) nếu khách hủy thì mất luôn khách thứ 2. | ⚠️ **Trung bình:**<br>Giữ được phễu thu thập khách hàng (Lead Capture), nhưng khách chọn ngày đang rất kín lịch mà không biết trước dễ bị hụt hẫng khi studio gọi điện báo đổi ngày. | ✅ **Tối ưu nhất:**<br>1. Không đánh rơi bất kỳ khách hàng nào (100% Lead Capture).<br>2. Khách thấy trước *"Ngày 15/11 đã có ca 08:00 - 15:00, còn trống ca Chiều/Tối"* nên chủ động tâm lý, khi Admin gọi tư vấn chốt giờ hoặc đổi ngày sẽ rất thuận lợi. |
+| **Góc độ Bảo vệ KLTN (Hội đồng chấm)** | ⚠️ Dễ bị bắt bẻ: *"Nếu ngày đó mới có 1 đơn chụp 2 tiếng buổi sáng, tại sao hệ thống lại khóa cả ngày không cho khách khác đặt buổi chiều?"* | ❌ Dễ bị trừ điểm kỹ thuật: *"Tại sao Admin chỉnh giờ trên Thời khóa biểu mà bên trang Đặt lịch của khách không có sự liên thông dữ liệu nào?"* | 🌟 **Điểm cộng tuyệt đối:**<br>Chứng minh được **tính liên thông dữ liệu Realtime** giữa Thời khóa biểu Admin (kể cả sau khi Admin chỉnh giờ kết thúc dự kiến do đi xa) với giao diện Khách hàng, đồng thời giải thích thuyết phục bài toán nghiệp vụ linh hoạt của Studio. |
 
-### 2.2. Khung giờ chụp cụ thể (`exact_start_time` & `exact_end_time`)
-* **Giao diện chọn giờ:** Sử dụng component `TimePicker.RangePicker` (Ant Design):
-  * Định dạng: `HH:mm`.
-  * Bước nhảy: 15 phút hoặc 30 phút.
-* **Cơ chế gợi ý tự động (Smart Default):**
-  * Khi chọn Buổi `Sáng` ➔ Tự động điền `08:00 – 12:00`.
-  * Khi chọn Buổi `Chiều` ➔ Tự động điền `13:00 – 17:00`.
-  * Khi chọn Buổi `Tối` ➔ Tự động điền `17:30 – 21:30`.
-  * Khi chọn Buổi `Cả ngày` ➔ Tự động điền `08:00 – 17:00`.
-  * Admin hoặc khách có thể chỉnh sửa lại giờ bất kỳ (ví dụ: `06:30 – 10:30`).
-* **Đồng bộ vào Backend:**
-  * `start_time = Ngày chụp + Giờ bắt đầu` (lưu chuẩn ISO UTC+7).
-  * `end_time = Ngày chụp + Giờ kết thúc` (lưu chuẩn ISO UTC+7).
-* **Đồng bộ lên template hợp đồng (`contractTemplateService.js`):**
-  * Hợp đồng sẽ in rõ:  
-    *Thời gian thực hiện: Từ **06:30** đến **10:30**, ngày **15/11/2026** (Buổi sáng).*
+#### 💡 KẾT LUẬN TƯ VẤN: Chọn **Phương Án C (Hybrid Smart Sync — Đồng bộ hiển thị khung giờ bận nhưng KHÔNG chặn cứng khách chọn ngày)**, kết hợp cơ chế:
+1. **Trên trang Đặt lịch của khách ([Booking.jsx](frontend/src/pages/customer/Booking.jsx)):**
+   * Ô ngày trên lịch tháng có thêm chấm/badge trạng thái nhỏ tinh tế:
+     * **Trống hoàn toàn:** Hiển thị bình thường.
+     * **Đã có lịch một phần (Có đơn trong Thời khóa biểu):** Hiển thị chấm tròn màu Vàng Gold `#BFA16A` (hoặc nhãn nhỏ `Có lịch`). **Khách vẫn click chọn ngày đó thoải mái!**
+   * Ngay khi khách click vào ngày đã có lịch, ở khung thông tin bên phải (cùng chỗ với Dự báo thời tiết), hệ thống hiển thị **Thẻ Trạng Thái Lịch Studio trong ngày** (đồng bộ trực tiếp từ Thời khóa biểu sau khi Admin đã chỉnh giờ):
+     > 📅 **Tình trạng lịch ngày 15/11/2026:**
+     > * **07:30 – 15:00:** Đã có lịch tác nghiệp *(Ngoại cảnh)*.
+     > * **Khung giờ khác:** Đang còn trống.
+     > * 💬 *Bạn vẫn có thể gửi yêu cầu đặt lịch vào ngày này. Studio sẽ liên hệ tư vấn khung giờ trống hoặc sắp xếp ekip phù hợp nhất cho bạn!*
+2. **Quyền kiểm soát của Admin:**
+   * Nếu một ngày thực sự quá tải (hết sạch cả thợ chính lẫn freelancer), Admin có thể bật nút **"Báo kín lịch ngày này"** hoặc tạo ngày nghỉ trong `Holiday` (`is_closed: true`) để chặn nhận đơn mới vào ngày đó.
 
 ---
 
-## 3. Mô Hình Quản Lý Lịch Rảnh Studio (Studio Availability & Capacity)
+## 2. Thiết Kế Cơ Chế "Giờ Thời Khóa Biểu" vs. "Giờ Hợp Đồng"
 
-Để nhân viên studio có thể tư vấn cho khách nhanh chóng và chính xác, hệ thống cần quản lý năng lực phục vụ theo 2 nhóm tài nguyên chính:
-
-### 3.1. Phân định năng lực phục vụ (Resource Capacity)
-1. **Tại Studio (`STUDIO`):**
-   * Giới hạn: **1 ca chụp tại một thời điểm** (trừ khi studio mở rộng phòng chụp thứ 2).
-   * Quy tắc bận: Nếu trong cùng một ngày, khung giờ `[start_time, end_time]` có một đơn Studio khác đang ở trạng thái hiệu lực (`REQUESTED`, `CONTRACT_SENT`, `WAITING_PAYMENT`, `CONFIRMED`, `IN_PROGRESS`) thì khung giờ đó bị **BẬN**.
-2. **Ngoại cảnh / Tiệc cưới (`OUTDOOR`):**
-   * Phụ thuộc vào **số lượng ekip thợ** (Photographer + Videographer).
-   * Giai đoạn 1: Giới hạn tối đa **2 ekip ngoại cảnh song song** trong cùng một buổi.
-   * Giai đoạn 2: Cho phép gán trực tiếp thợ chụp (`assigned_staff_ids`), thợ nào đã có lịch thì không thể gán vào đơn khác cùng giờ.
-
-### 3.2. Trợ lý kiểm tra lịch rảnh trực tiếp trong Modal (Live Availability Checker)
-Khi Admin mở Modal Chỉnh sửa thông tin đơn hoặc Tạo đơn hộ và chọn Ngày chụp:
-* Hệ thống tự động quét các đơn trong ngày đó và hiển thị **Hộp tóm tắt tình trạng ngày (Mini Availability Badge)** ngay dưới ô Ngày chụp:
-  * 🟢 **Ca Sáng:** Còn trống (Chưa có lịch).
-  * 🟡 **Ca Chiều:** Đã có 1 ca Studio (*#A1B2C3 · 14:00 - 16:30 · Chân dung nghệ thuật*).
-  * 🟢 **Ca Tối:** Còn trống.
-* Nếu Admin chọn giờ bị trùng đè lên ca đã có:
-  * Hiển thị cảnh báo viền đỏ thời gian thực:  
-    *⚠️ Cảnh báo: Khung giờ 14:00 - 16:00 đã có đơn #A1B2C3 đã chốt cọc. Bạn có muốn đổi giờ khác không?*
-
----
-
-## 4. Thiết Kế Thời Khóa Biểu Studio (Interactive Studio Timetable)
-
-> **CÓ NÊN LÀM THỜI KHÓA BIỂU KHÔNG?**  
-> **Khẳng định: RẤT NÊN VÀ BẮT BUỘC!** Đây là "bộ não" điều phối toàn bộ hoạt động tác nghiệp của Studio, mang lại trải nghiệm WOW cho giảng viên chấm KLTN và giá trị ứng dụng thực tiễn cao cho Cao Hiển Studio.
-
-### 4.1. Vị trí đặt Thời khóa biểu
-* Trong trang Quản lý đơn hàng ([AdminOrders.jsx](frontend/src/pages/admin/AdminOrders.jsx)), bổ sung thanh chuyển đổi góc trên:
-  * **Tab 1: Danh sách đơn hàng (Bảng Table phẳng)** — Dùng để tìm kiếm, lọc tiền, xuất báo cáo.
-  * **Tab 2: Thời khóa biểu lịch chụp (Weekly / Monthly Calendar)** — Dùng để theo dõi lịch tác nghiệp, tư vấn khách và xếp lịch nhanh.
-* Bổ sung mục truy cập trực tiếp trên sidebar menu: `Đơn đặt lịch -> Lịch chụp Studio`.
-
----
-
-### 4.2. Giao diện Thời khóa biểu Tuần (Weekly Timetable View) — Trực quan nhất
-Đây là giao diện mô phỏng một **Thời khóa biểu chuyên nghiệp**, chia theo 7 ngày trong tuần:
+Để giải quyết đúng bài toán bạn nêu (*"Đơn chụp ngoại cảnh TP.HCM chọn buổi sáng nhưng thời gian đi lại nhiều hơn, sau khi thêm đơn Admin vào thời khóa biểu chỉnh thời gian kết thúc dự kiến"*), hệ thống cần phân tách thông minh **2 lớp thời gian** trên cùng một đơn hàng (`Booking`):
 
 ```
-┌───────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐
-│   CA CHỤP     │  THỨ 2 (10)  │  THỨ 3 (11)  │  THỨ 4 (12)  │  THỨ 5 (13)  │  THỨ 6 (14)  │  THỨ 7 (15)  │  CHỦ NHẬT(16)│
-│               │ (01/10 Âm)   │ (02/10 Âm)   │ (03/10 Âm)   │ (04/10 Âm)   │ (05/10 Âm)   │ (06/10 Âm)   │ (07/10 Âm)   │
-├───────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│               │ 🟢 CÒN TRỐNG │ 🟦 ĐƠN #A1B2 │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟨 ĐƠN #C3D4 │ 🟥 ĐƠN #E5F6 │ 🟥 ĐƠN #G7H8 │
-│  CA SÁNG      │ [ + Xếp ca ] │ 08:30-11:30  │ [ + Xếp ca ] │ [ + Xếp ca ] │ 09:00-11:00  │ 06:30-10:30  │ 07:00-11:30  │
-│ 07:30 - 12:00 │              │ Studio       │              │              │ Ngoại cảnh   │ Phóng sự cưới│ Cưới truyền  │
-│               │              │ Anh Tuấn     │              │              │ Chị Lan      │ Thảo & Minh  │ thống        │
-├───────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│               │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟦 ĐƠN #K9L0 │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟨 ĐƠN #M1N2 │ 🟢 CÒN TRỐNG │
-│  CA CHIỀU     │ [ + Xếp ca ] │ [ + Xếp ca ] │ 14:00-16:30  │ [ + Xếp ca ] │ [ + Xếp ca ] │ 13:30-16:00  │ [ + Xếp ca ] │
-│ 13:00 - 17:30 │              │              │ Studio       │              │              │ Ngoại cảnh   │              │
-├───────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│               │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟢 CÒN TRỐNG │ 🟥 ĐƠN #P3Q4 │ 🟨 ĐƠN #R5S6 │
-│  CA TỐI       │ [ + Xếp ca ] │ [ + Xếp ca ] │ [ + Xếp ca ] │ [ + Xếp ca ] │ [ + Xếp ca ] │ 18:00-21:30  │ 18:30-21:00  │
-│ 17:30 - 21:30 │              │              │              │              │              │ Tiệc tối     │ Nhóm họ      │
-└───────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           ĐƠN ĐẶT LỊCH (BOOKING)                           │
+├─────────────────────────────────────┬──────────────────────────────────────┤
+│ 1. GIỜ CHỤP CAM KẾT (HỢP ĐỒNG)      │ 2. GIỜ CHIẾM DỤNG THỜI KHÓA BIỂU     │
+│ • shooting_session: "MORNING"       │ • start_time: 2026-11-15 06:30       │
+│ • contract_time_label:              │ • end_time:   2026-11-15 15:00       │
+│   "Buổi sáng (08:00 - 12:00)"       │ • schedule_note:                     │
+│ • Dùng để in lên Hợp đồng PDF       │   "Tính thêm 3h di chuyển TPHCM"     │
+│   gửi cho khách hàng.               │ • Dùng để vẽ khối bận trên Thời khóa │
+│                                     │   biểu Admin & báo khung bận ở trang │
+│                                     │   Đặt lịch khách hàng.               │
+└─────────────────────────────────────┴──────────────────────────────────────┘
 ```
 
-#### Các thành phần chi tiết của ô lịch:
-1. **Tiêu đề cột ngày:**
-   * Thứ trong tuần + Ngày dương lịch (VD: *Thứ 7, 15/11*).
-   * **Ngày âm lịch** (VD: *06/10 Âm lịch*) — Tích hợp thư viện [lunarSolar.js](frontend/src/utils/lunarSolar.js). Người Miền Tây xem ngày cưới rất chuộng ngày hoàng đạo âm lịch.
-   * Nếu là ngày hôm nay: Nổi bật viền vàng Gold `#BFA16A`.
-2. **Khi ô CÒN TRỐNG (Available):**
-   * Nền xanh nhạt thanh lịch (`#F6FFED`), viền đứt nét (`border: 1px dashed #B7EB8F`).
-   * Nút bấm `+ Xếp lịch nhanh`: Bấm vào mở ngay modal Tạo đơn với ngày và buổi đã được chọn sẵn.
-3. **Khi ô ĐÃ CÓ ĐƠN (Booked):**
-   * Thẻ Card Studio Luxury bo góc bo mềm:
-     * Header thẻ: Mã đơn (`#A1B2C3`) + Giờ bấm máy cụ thể (`06:30 - 10:30`).
-     * Body thẻ: Tên khách hàng + SĐT liên hệ.
-     * Tên gói dịch vụ (VD: *Phóng sự cưới 2 máy*).
-     * Tag hình thức: `🏠 Studio` (Màu xanh cyan) hoặc `🚗 Ngoại cảnh` (Màu cam/gold).
-     * Tag trạng thái: `CONFIRMED` (Xanh lá), `WAITING_PAYMENT` (Vàng), `IN_PROGRESS` (Xanh dương).
-   * Thao tác: Bấm vào thẻ để mở Drawer xem chi tiết đơn hoặc nút "Chỉnh sửa đơn".
-4. **Khi là NGÀY NGHỈ STUDIO (Studio Holiday / Off-day):**
-   * Toàn bộ cột hoặc ca đó được phủ sọc mờ xám đỏ (`#FFF2F0`), hiển thị badge `Studio Nghỉ: [Tên ngày lễ/nghỉ]`.
-   * Vô hiệu hóa nút xếp lịch để tránh xung đột lịch đóng cửa studio.
+### Quy tắc đồng bộ tự động & tùy chỉnh:
+1. **Khi đơn hàng mới được tạo (Khách đặt hoặc Admin tạo đơn):**
+   * Đơn hàng tự động xuất hiện ngay trên Thời khóa biểu tại ngày `start_time`.
+   * Nếu chưa chọn giờ cụ thể, hệ thống tự gán khung giờ mặc định theo buổi:
+     * **Chưa chốt buổi (Khách mới gửi yêu cầu):** Mặc định hiển thị ở hàng **"Chờ xếp ca / Tư vấn"** hoặc khung `08:00 – 12:00` (trạng thái `REQUESTED` màu cam nhạt để Admin biết cần gọi điện chốt giờ).
+     * **Buổi sáng (`MORNING`):** `08:00 – 12:00`.
+     * **Buổi chiều (`AFTERNOON`):** `13:00 – 17:00`.
+     * **Buổi tối (`EVENING`):** `17:30 – 21:30`.
+     * **Cả ngày (`FULL_DAY`):** `08:00 – 17:00`.
+   * **Gợi ý thông minh theo cự ly OSRM:** Nếu là đơn `OUTDOOR` có `travel_distance_km > 30` (ví dụ đi TP.HCM 85 km), trên Thời khóa biểu sẽ hiện gợi ý nhỏ: *"💡 Đơn ngoại cảnh cách 85 km (~2h di chuyển/chiều). Bạn có muốn cộng thêm giờ di chuyển vào thời gian kết thúc dự kiến?"*.
+2. **Khi Admin vào Thời khóa biểu để tùy chỉnh thời gian:**
+   * Admin bấm trực tiếp vào thẻ đơn trên Thời khóa biểu ➔ Mở nhanh Modal/Drawer **"Điều chỉnh Thời gian trên Thời khóa biểu"**:
+     * Chọn **Ca chụp (`shooting_session`)**: Sáng / Chiều / Tối / Cả ngày.
+     * Chỉnh **Giờ bắt đầu (`start_time`)** và **Giờ kết thúc dự kiến (`end_time`)** bằng `TimePicker` (VD: chỉnh giờ kết thúc từ `12:00` thành `15:30`).
+     * Nhập **Ghi chú điều phối (`schedule_note`)**: VD *"Tính cả thời gian đi về TP.HCM"*.
+     * **Tùy chọn đồng bộ Hợp đồng (`sync_to_contract_time`):**
+       * Nếu chỉ là cộng thêm giờ di chuyển nội bộ của ekip ➔ Giữ nguyên nhãn buổi chụp trên hợp đồng PDF là *"Buổi sáng (08:00 - 12:00)"*.
+       * Nếu là Admin vừa gọi điện chốt đổi giờ chụp với khách (VD: khách xin chụp từ `09:00 – 13:00`) ➔ Bật công tắc *"Hiển thị khung giờ cụ thể này trên Hợp đồng PDF"*, hệ thống sẽ tự động in đúng `09:00 - 13:00` lên hợp đồng và tự động cập nhật lại file PDF hợp đồng!
 
 ---
 
-### 4.3. Giao diện Lịch Tháng (Monthly Heatmap View)
-* Cung cấp cái nhìn bao quát 30–31 ngày trong tháng.
-* Mỗi ô ngày hiển thị mật độ bận theo 4 mức độ:
-  * 🟢 **Xanh lá (Rảnh):** Trống hoàn toàn cả 3 ca ➔ Ngày lý tưởng để mời khách đặt.
-  * 🟡 **Vàng (Còn chỗ):** Đã nhận 1 hoặc 2 ca ➔ Vẫn có thể nhận thêm ca còn lại.
-  * 🔴 **Đỏ (Kín lịch):** Đã kín cả 3 ca hoặc hết thợ tác nghiệp.
-  * ⛔ **Xám/Đỏ nhạt (Ngày nghỉ):** Studio tạm đóng cửa (Lễ Tết, du lịch nội bộ...).
+## 3. Thiết Kế Giao Diện Thời Khóa Biểu Tuần (Admin Weekly Timetable)
+
+### 3.1. Vị trí đặt để tiện dụng nhất cho Admin
+1. **Trang Quản lý Đơn hàng ([AdminOrders.jsx](frontend/src/pages/admin/AdminOrders.jsx)):**
+   * Đặt thanh chuyển đổi chế độ xem (`Segmented` / `Tabs`) ngay đầu trang:
+     * 📋 **Danh sách đơn hàng** (Bảng quản lý chi tiết).
+     * 📅 **Thời khóa biểu lịch chụp** (Lịch tuần trực quan theo khung giờ).
+2. **Nút "Xem Thời khóa biểu" ngay trong trang Chi tiết đơn ([AdminOrderDetail.jsx](frontend/src/pages/admin/AdminOrderDetail.jsx)) & Tạo đơn ([CreateOrder.jsx](frontend/src/pages/admin/CreateOrder.jsx)):**
+   * Khi Admin đang mở 1 đơn để gọi điện tư vấn cho khách, có nút **"📅 Mở Thời khóa biểu tuần này"** (mở Drawer hoặc Modal lớn ngay trên màn hình) để vừa nhìn toàn bộ lịch rảnh/bận trong tuần vừa chốt ngày giờ với khách mà không cần thoát khỏi trang đơn hàng!
+
+### 3.2. Bố cục Thời Khóa Biểu Tuần (Timeline & Session Grid)
+* **Thanh công cụ phía trên:**
+  * Nút chuyển tuần: `◀ Tuần trước` | `Hôm nay` | `Tuần sau ▶` + Ô chọn ngày bất kỳ (`DatePicker`) để nhảy tới tuần mà khách đang hỏi.
+  * Bộ lọc nhanh: `Tất cả đơn` | `🏠 Chụp tại Studio` | `🚗 Chụp Ngoại cảnh` | `Ẩn/Hiện đơn chờ duyệt`.
+  * Thống kê nhanh trong tuần: *Tổng số ca chụp, Số ca Studio, Số ca Ngoại cảnh, Số đơn chờ chốt giờ*.
+* **Lưới 7 cột (Thứ 2 ➔ Chủ Nhật):**
+  * **Header mỗi cột ngày:**
+    * Thứ + Ngày dương lịch (VD: **Thứ Bảy, 15/11**).
+    * **Ngày Âm lịch** (VD: *06/10 ÂL* — tô vàng nếu là Mùng 1 / Rằm) để tiện tư vấn ngày cưới hỏi.
+    * Badge Ngày lễ / Ngày nghỉ Studio (nếu có).
+  * **Các thẻ đơn hàng (Schedule Cards) trong ngày:**
+    * Sắp xếp theo thứ tự thời gian bắt đầu (`start_time` từ sớm đến muộn).
+    * Hiển thị trực quan **Thanh thời gian thực tế**: Ví dụ `08:00 – 15:00 (7 giờ)`.
+    * Nếu đơn kéo dài lấn sang buổi chiều (như đơn sáng đi TP.HCM tới `15:00` mới về), thẻ đơn sẽ hiển thị cảnh báo **`⚠️ Lấn sang ca chiều (đến 15:00)`** và tự động đánh dấu cảnh báo nếu có đơn buổi chiều bắt đầu trước `15:00`!
+    * Màu sắc phân biệt rõ trạng thái:
+      * 🟧 **Chờ tư vấn / Mới gửi (`REQUESTED`):** Viền cam nét đứt (Admin nhìn vào biết ngay đơn này cần gọi điện chốt giờ).
+      * 🟨 **Chờ thanh toán cọc (`WAITING_PAYMENT` / `CONTRACT_SENT`):** Màu vàng ấm.
+      * 🟩 **Đã chốt cọc (`CONFIRMED`):** Màu xanh lá đậm (Lịch cứng).
+      * 🟦 **Đang thực hiện / Hoàn thành (`IN_PROGRESS` / `COMPLETED`):** Màu xanh dương / xám.
+    * **Thao tác 1-Click trên thẻ đơn:**
+      * 🕒 **Nút "Chỉnh giờ":** Mở ngay popup chỉnh giờ bắt đầu, giờ kết thúc dự kiến (cộng giờ đi lại), đổi ngày hoặc đổi buổi chụp ngay trên Thời khóa biểu.
+      * 📄 **Nút "Chi tiết / Hợp đồng":** Chuyển tới trang biên tập đơn & hợp đồng (`/admin/orders/:id`).
+  * **Nút `+ Thêm đơn vào ngày này`** ở cuối mỗi cột ngày: Bấm vào chuyển sang trang Tạo đơn với ngày chụp được điền sẵn.
 
 ---
 
-### 4.4. Bộ lọc nhanh trên Thời khóa biểu
-* **Lọc theo hình thức:** *Tất cả* | *Chỉ xem tại Studio* | *Chỉ xem Ngoại cảnh*.
-* **Điều hướng thời gian:**
-  * Nút `Hôm nay`, `Tuần trước`, `Tuần tới`.
-  * Bộ chọn ngày nhanh `DatePicker` để nhảy ngay tới tuần của ngày khách hỏi.
+## 4. Kiến Trúc Kỹ Thuật & Thay Đổi Mã Nguồn Dự Kiến
+
+### 4.1. Backend (`backend/`)
+1. **Model [Booking.js](backend/models/Booking.js):**
+   * Mở rộng `shooting_session` enum: `["MORNING", "AFTERNOON", "EVENING", "FULL_DAY", "CUSTOM"]`.
+   * Bổ sung các trường phục vụ Thời khóa biểu:
+     * `custom_Time_Display` / `use_custom_time_on_contract` (`Boolean`, mặc định `false`): Cho phép Admin chọn có in giờ tùy chỉnh (`start_time` – `end_time`) lên hợp đồng hay giữ nguyên giờ chuẩn của buổi chụp (khi chỉ cộng giờ di chuyển nội bộ).
+     * `schedule_note` (`String`, mặc định `""`): Ghi chú riêng trên thời khóa biểu (VD: *"Cộng 3 tiếng di chuyển Bến Tre - TP.HCM"*).
+2. **Controller [bookingController.js](backend/controllers/bookingController.js) & Routes [bookingRoutes.js](backend/routes/bookingRoutes.js):**
+   * **`GET /api/bookings/admin/timetable?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`**:
+     * Trả về danh sách các đơn hàng hiệu lực (không tính `CANCELED`) trong khoảng thời gian, kèm thông tin gói chụp, khách hàng, thợ chụp, khoảng cách di chuyển, và danh sách ngày lễ/nghỉ (`Holiday`).
+     * Tự động phát hiện xung đột thời gian (`conflicts`) nếu 2 đơn trùng khung giờ `[start_time, end_time]`.
+   * **`PUT /api/bookings/:id/schedule`**:
+     * API chuyên dụng để Admin cập nhật nhanh trên Thời khóa biểu: `shoot_date`, `shooting_session`, `start_time`, `end_time`, `schedule_note`, `use_custom_time_on_contract`.
+     * Nếu `use_custom_time_on_contract = true` và đơn đã phát hành hợp đồng, tự động đồng bộ lại file PDF hợp đồng.
+   * **`GET /api/bookings/public-schedule?month=YYYY-MM` (API Public an toàn cho trang Đặt lịch khách hàng):**
+     * **Bảo mật thông tin tuyệt đối:** Không trả về tên khách, SĐT hay giá tiền.
+     * Chỉ trả về danh sách các khung giờ bận theo từng ngày trong tháng (VD: `{ "2026-11-15": [{ start: "08:00", end: "15:00", shooting_type: "OUTDOOR", session: "MORNING" }] }`).
+
+### 4.2. Frontend (`frontend/src/`)
+1. **Component mới `frontend/src/components/admin/StudioTimetable.jsx`:**
+   * Giao diện Thời khóa biểu tuần 7 ngày (Chuẩn màu Studio Luxury: Gold `#BFA16A`, Kem `#FAF7F2`, Đen `#1F1F1F`, không dùng TailwindCSS).
+   * Tích hợp Modal **"Tùy chỉnh thời gian Thời khóa biểu"** (chỉnh giờ bắt đầu/kết thúc dự kiến, gợi ý cộng giờ di chuyển theo số km của đơn ngoại cảnh, ghi chú điều phối).
+   * Phát hiện và hiển thị cảnh báo nếu giờ kết thúc dự kiến của đơn sáng (VD: `15:00`) bị chồng lấn với giờ bắt đầu của đơn chiều (VD: `13:00`).
+2. **Tích hợp vào [AdminOrders.jsx](frontend/src/pages/admin/AdminOrders.jsx) và [AdminOrderDetail.jsx](frontend/src/pages/admin/AdminOrderDetail.jsx):**
+   * Tại `AdminOrders.jsx`: Chuyển đổi mượt mà giữa **Danh sách đơn** và **Thời khóa biểu**.
+   * Tại `AdminOrderDetail.jsx`: Có nút mở nhanh Thời khóa biểu trong Drawer để đối chiếu lịch rảnh ngay lúc đang sửa đơn / chốt hợp đồng với khách.
+3. **Đồng bộ sang trang Đặt lịch Khách hàng ([Booking.jsx](frontend/src/pages/customer/Booking.jsx)):**
+   * Gọi `GET /api/bookings/public-schedule?month=YYYY-MM` khi khách xem lịch tháng.
+   * Hiển thị chấm báo hiệu tinh tế trên các ngày đã có lịch.
+   * Khi khách chọn ngày đó, hiển thị khung **"Tình trạng lịch trong ngày"** liệt kê các khung giờ đã có ekip tác nghiệp (bao gồm cả giờ kết thúc dự kiến mà Admin đã điều chỉnh trên Thời khóa biểu), nhưng **vẫn cho phép khách bấm Tiếp tục đặt lịch** để Studio gọi điện tư vấn khung giờ trống hoặc sắp xếp ekip phụ trách.
 
 ---
 
-## 5. Kiến Trúc Kỹ Thuật & CSDL (Technical Implementation)
+## 5. Lộ Trình Thực Hiện (4 Bước Gọn Gàng)
 
-### 5.1. Cập nhật Mongoose Schema ([Booking.js](backend/models/Booking.js))
-```javascript
-// Mở rộng enum shooting_session:
-shooting_session: {
-  type: String,
-  enum: ["MORNING", "AFTERNOON", "EVENING", "FULL_DAY", "CUSTOM"],
-  default: null,
-},
-
-// Giờ bắt đầu và kết thúc cụ thể (chính xác đến phút):
-exact_start_time: { type: String, default: "" }, // VD: "06:30"
-exact_end_time:   { type: String, default: "" }, // VD: "10:30"
-```
-
-### 5.2. Backend API Endpoints Mới
-1. **Lấy dữ liệu thời khóa biểu theo tuần/tháng:**
-   * `GET /api/bookings/admin/timetable?startDate=2026-11-10&endDate=2026-11-16`
-   * Trả về danh sách đơn kèm theo thông tin ngày nghỉ studio ([Holiday.js](backend/models/Holiday.js)) trong cùng dải ngày để frontend vẽ bảng thời khóa biểu trong 1 request duy nhất.
-2. **Kiểm tra ca trống thông minh (Smart Availability Check):**
-   * `GET /api/bookings/admin/check-availability?date=2026-11-15&type=STUDIO&start=08:00&end=11:30`
-   * Trả về: `{ isAvailable: true/false, conflictingBookings: [...], message: "..." }`.
-
-### 5.3. Frontend Components Architecture
-1. **`StudioTimetable.jsx` (Thành phần Thời khóa biểu chính):**
-   * Đặt tại: `frontend/src/pages/admin/StudioTimetable.jsx`.
-   * Sử dụng CSS Grid / Flexbox kết hợp Ant Design Card & Tag.
-   * Kết hợp thư viện [lunarSolar.js](frontend/src/utils/lunarSolar.js) để tính ngày âm lịch tự động.
-2. **Tích hợp vào [AdminOrders.jsx](frontend/src/pages/admin/AdminOrders.jsx):**
-   * Thêm `Segmented` hoặc `Tabs`:
-     ```jsx
-     <Segmented
-       options={[
-         { label: 'Danh sách đơn hàng', value: 'table', icon: <UnorderedListOutlined /> },
-         { label: 'Thời khóa biểu lịch chụp', value: 'timetable', icon: <CalendarOutlined /> },
-       ]}
-       value={viewMode}
-       onChange={setViewMode}
-     />
-     ```
-3. **Nâng cấp Modal "Chỉnh sửa thông tin đơn":**
-   * Thêm `shooting_session` ("Tối" & "Linh hoạt").
-   * Thêm `TimePicker.RangePicker` chọn giờ cụ thể.
-   * Thêm badge cảnh báo lịch bận trực tiếp.
-
----
-
-## 6. Lộ Trình Triển Khai Chi Tiết (Roadmap)
-
-| Giai đoạn | Nội dung công việc | Đầu ra mong đợi |
-| :--- | :--- | :--- |
-| **Giai đoạn 1** | **Backend Schema & API**<br>• Bổ sung enum `EVENING`, `CUSTOM` và giờ cụ thể vào `Booking`.<br>• Viết API `GET /api/bookings/admin/timetable`.<br>• Cập nhật [contractTemplateService.js](backend/services/contractTemplateService.js) in giờ chi tiết. | API trả dữ liệu thời khóa biểu chuẩn xác, PDF in đúng giờ cụ thể. |
-| **Giai đoạn 2** | **Nâng cấp Modal Chỉnh sửa & Tạo đơn**<br>• Bổ sung ô chọn giờ cụ thể (`TimePicker.RangePicker`).<br>• Tích hợp Live Availability Badge báo tình trạng ngày. | Modal sửa đơn có đầy đủ thông tin khách, giờ cụ thể và cảnh báo lịch. |
-| **Giai đoạn 3** | **Xây dựng Thời khóa biểu Tuần (Weekly Timetable)**<br>• Xây dựng giao diện 7 cột x 3 ca chụp.<br>• Hiển thị song song ngày Âm lịch & Dương lịch.<br>• Thẻ đơn sang trọng, có nút tạo đơn nhanh tại ô trống. | Admin có giao diện thời khóa biểu trực quan để tư vấn cho khách. |
-| **Giai đoạn 4** | **Kiểm thử & Tích hợp hoàn thiện**<br>• Tích hợp vào Tabs của `AdminOrders.jsx`.<br>• Kiểm thử luồng tư vấn, chốt giờ và xuất hợp đồng thực tế. | Tính năng vận hành mượt mà, sẵn sàng demo nghiệm thu KLTN. |
-
----
-
-*Tài liệu được lập ngày 28/10/2026 bởi Hồ Vũ Anh dành riêng cho dự án Cao Hiển Studio.*
+1. **Bước 1 — Nâng cấp Schema & API Thời khóa biểu (Backend):** Cập nhật `Booking.js`, viết API lấy Thời khóa biểu Admin, API chỉnh nhanh khung giờ dự kiến `PUT /api/bookings/:id/schedule`, và API lấy khung giờ bận ẩn danh cho khách `GET /api/bookings/public-schedule`.
+2. **Bước 2 — Xây dựng Component Thời khóa biểu Tuần (`StudioTimetable.jsx`):** Thiết kế bảng lịch 7 ngày trong tuần kèm Âm lịch, thẻ đơn hàng trực quan, cảnh báo lấn ca/trùng giờ, và Modal chỉnh giờ kết thúc dự kiến (hỗ trợ gợi ý giờ di chuyển ngoại cảnh).
+3. **Bước 3 — Tích hợp vào trang Quản lý Đơn & Chi tiết Đơn:** Nhúng Thời khóa biểu vào `AdminOrders.jsx` và nút tra cứu nhanh trong `AdminOrderDetail.jsx`.
+4. **Bước 4 — Đồng bộ Cảnh báo Mềm lên Lịch Đặt Khách Hàng (`Booking.jsx`):** Hiển thị các khung giờ bận trong ngày khi khách chọn ngày chụp mà không chặn cứng thao tác đặt lịch của khách.

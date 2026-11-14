@@ -64,7 +64,7 @@ exports.getAdminOverview = async (req, res) => {
 
       Booking.countDocuments({ status: "REQUESTED" }),
       Booking.countDocuments({ status: "CONTRACT_SENT" }),
-      Booking.countDocuments({ status: "WAITING_PAYMENT" }),
+      Booking.countDocuments({ status: { $in: ["WAITING_PAYMENT", "CONTRACT_SENT"] } }),
       Booking.countDocuments({ status: "PENDING" }),
       Booking.countDocuments({ status: "DEPOSITED" }),
       Booking.countDocuments({ status: "CONFIRMED" }),
@@ -90,9 +90,9 @@ exports.getAdminOverview = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$total_amount" } } },
       ]),
 
-      // Doanh thu từ đơn đang chờ xác nhận (WAITING_PAYMENT, DEPOSITED legacy)
+      // Doanh thu từ đơn đang chờ cọc và legacy DEPOSITED.
       Booking.aggregate([
-        { $match: { status: { $in: ["WAITING_PAYMENT", "DEPOSITED"] } } },
+        { $match: { status: { $in: ["WAITING_PAYMENT", "CONTRACT_SENT", "DEPOSITED"] } } },
         { $group: { _id: null, total: { $sum: "$total_amount" } } },
       ]),
 
@@ -135,7 +135,6 @@ exports.getAdminOverview = async (req, res) => {
     // Map kết quả aggregate trạng thái vào object dễ dùng hơn
     const bookingStatus = {
       REQUESTED:      0,
-      CONTRACT_SENT:  0,
       WAITING_PAYMENT: 0,
       PENDING:        0,
       DEPOSITED:      0,
@@ -148,7 +147,11 @@ exports.getAdminOverview = async (req, res) => {
     };
 
     bookingStatusAgg.forEach((item) => {
-      bookingStatus[item._id] = item.count;
+      if (item._id === "CONTRACT_SENT") {
+        bookingStatus.WAITING_PAYMENT += item.count;
+      } else {
+        bookingStatus[item._id] = item.count;
+      }
     });
 
     res.status(200).json({

@@ -25,6 +25,7 @@ import {
   Tooltip,
   Spin,
   AutoComplete,
+  Segmented,
 } from "antd";
 import {
   EyeOutlined,
@@ -52,6 +53,7 @@ import {
   UserOutlined,
   PhoneOutlined,
   MailOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -128,7 +130,7 @@ const getAddonServicesForMain = (services, mainServiceIds = []) => {
 const statusOptions = [
   { value: "ALL", label: "Tất cả trạng thái" },
   { value: "REQUESTED", label: "Yêu cầu mới" },
-  { value: "CONTRACT_SENT", label: "Đã gửi HĐ / Chờ cọc" },
+  { value: "WAITING_PAYMENT", label: "Đã gửi HĐ / Chờ cọc" },
   { value: "CONFIRMED", label: "Đã xác nhận" },
   { value: "IN_PROGRESS", label: "Đang chụp" },
   { value: "COMPLETED", label: "Hoàn thành" },
@@ -151,6 +153,13 @@ const statusConfig = {
 export default function AdminOrders() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Tương thích link cũ: /admin/orders?view=timetable -> trang Thời khóa biểu riêng
+  useEffect(() => {
+    if (searchParams.get("view") === "timetable") {
+      navigate("/admin/timetable", { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -578,11 +587,21 @@ export default function AdminOrders() {
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 600 }}>{dayjs(record.start_time).format("DD/MM/YYYY")}</div>
-          <div style={{ fontSize: 12, color: "#888" }}>
+          <div style={{ fontSize: 12, color: "#555" }}>
             {record.shooting_session
               ? `${dayjs(record.start_time).format("HH:mm")} - ${dayjs(record.end_time).format("HH:mm")}`
-              : "Studio liên hệ để chốt buổi/giờ"}
+              : "Chờ tư vấn chốt buổi/giờ"}
+            {record.is_custom_schedule_time && (
+              <Tag color="cyan" style={{ marginLeft: 6, fontSize: 10, lineHeight: "15px", padding: "0 4px" }}>
+                Đã chỉnh giờ
+              </Tag>
+            )}
           </div>
+          {record.schedule_note && (
+            <div style={{ fontSize: 11, color: "#8c6d2f", fontStyle: "italic", marginTop: 2 }}>
+              📝 {record.schedule_note}
+            </div>
+          )}
         </div>
       ),
     },
@@ -650,7 +669,7 @@ export default function AdminOrders() {
         dayjs(b.start_time).isSameOrBefore(dateRange[1].endOf("day")));
     const matchStatus =
       statusFilter === "ALL" ||
-      (statusFilter === "CONTRACT_SENT" && ["CONTRACT_SENT", "WAITING_PAYMENT"].includes(b.status)) ||
+      (statusFilter === "WAITING_PAYMENT" && ["WAITING_PAYMENT", "CONTRACT_SENT"].includes(b.status)) ||
       b.status === statusFilter;
     return matchId && matchDate && matchStatus;
   });
@@ -660,11 +679,22 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
-        <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 16, flexWrap: "wrap" }}>
+        <Space wrap size={16} align="center">
           <Title level={3} style={{ marginBottom: 0, fontWeight: 700 }}>Quản Lý Đơn Đặt Lịch</Title>
-        </div>
-        <Space>
+          <Button icon={<CalendarOutlined />} onClick={() => navigate("/admin/timetable")}>
+            Xem Thời khóa biểu
+          </Button>
+        </Space>
+        <Space wrap>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate("/admin/orders/create")}
+            style={{ background: "#BFA16A", borderColor: "#BFA16A" }}
+          >
+            Tạo đơn đặt hộ
+          </Button>
           <Button icon={<QrcodeOutlined />} onClick={openStudioQrModal} style={{ borderColor: "#000", color: "#000", background: "#fff" }}>
             QR Thanh toán Studio
           </Button>
@@ -672,67 +702,71 @@ export default function AdminOrders() {
         </Space>
       </div>
 
-      {/* Filter Card */}
-      <Card
-        bordered={false}
-        style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
-        bodyStyle={{ padding: "18px 24px" }}
-      >
-        <Row gutter={[16, 12]} align="middle">
-          <Col xs={24} md={10}>
-            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
-              Tìm kiếm đơn đặt lịch
-            </span>
-            <Input
-              placeholder="Nhập mã đơn, tên hoặc số điện thoại..."
-              prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              allowClear
-              size="large"
-              style={{ borderRadius: 8 }}
-            />
-          </Col>
-          <Col xs={24} md={7}>
-            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo ngày chụp</span>
-            <DatePicker.RangePicker
-              style={{ width: "100%", borderRadius: 8 }}
-              value={dateRange}
-              onChange={setDateRange}
-              format="DD/MM/YYYY"
-              size="large"
-              allowClear
-            />
-          </Col>
-          <Col xs={24} md={7}>
-            <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo trạng thái</span>
-            <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} style={{ width: "100%" }} size="large" dropdownStyle={{ borderRadius: 8 }} />
-          </Col>
-        </Row>
-        {hasActiveFilter && (
-          <div style={{ marginTop: 12, color: "#8c8c8c", fontSize: 13 }}>
-            Đang hiển thị <strong>{filteredBookings.length}</strong> / {bookings.length} đơn hàng
-          </div>
-        )}
-      </Card>
+      {(
+        <>
+          {/* Filter Card */}
+          <Card
+            bordered={false}
+            style={{ marginBottom: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4" }}
+            bodyStyle={{ padding: "18px 24px" }}
+          >
+            <Row gutter={[16, 12]} align="middle">
+              <Col xs={24} md={10}>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>
+                  Tìm kiếm đơn đặt lịch
+                </span>
+                <Input
+                  placeholder="Nhập mã đơn, tên hoặc số điện thoại..."
+                  prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+                  value={searchId}
+                  onChange={(e) => setSearchId(e.target.value)}
+                  allowClear
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Col>
+              <Col xs={24} md={7}>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo ngày chụp</span>
+                <DatePicker.RangePicker
+                  style={{ width: "100%", borderRadius: 8 }}
+                  value={dateRange}
+                  onChange={setDateRange}
+                  format="DD/MM/YYYY"
+                  size="large"
+                  allowClear
+                />
+              </Col>
+              <Col xs={24} md={7}>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 6, color: "#595959" }}>Lọc theo trạng thái</span>
+                <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} style={{ width: "100%" }} size="large" dropdownStyle={{ borderRadius: 8 }} />
+              </Col>
+            </Row>
+            {hasActiveFilter && (
+              <div style={{ marginTop: 12, color: "#8c8c8c", fontSize: 13 }}>
+                Đang hiển thị <strong>{filteredBookings.length}</strong> / {bookings.length} đơn hàng
+              </div>
+            )}
+          </Card>
 
-      {/* Table Container */}
-      <Card
-        bordered={false}
-        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
-        bodyStyle={{ padding: 0 }}
-      >
-        <Table
-          columns={columns}
-          dataSource={filteredBookings}
-          rowKey="_id"
-          loading={loading}
-          pagination={{ pageSize: 10, showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} đơn` }}
-          scroll={{ x: 1100 }}
-          bordered={false}
-          style={{ borderRadius: 12 }}
-        />
-      </Card>
+          {/* Table Container */}
+          <Card
+            bordered={false}
+            style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid #efebe4", overflow: "hidden" }}
+            bodyStyle={{ padding: 0 }}
+          >
+            <Table
+              columns={columns}
+              dataSource={filteredBookings}
+              rowKey="_id"
+              loading={loading}
+              pagination={{ pageSize: 10, showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} của ${total} đơn` }}
+              scroll={{ x: 1100 }}
+              bordered={false}
+              style={{ borderRadius: 12 }}
+            />
+          </Card>
+        </>
+      )}
 
       {/* ===== MODAL CHI TIẾT ===== */}
       <Modal

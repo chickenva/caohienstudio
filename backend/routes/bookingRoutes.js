@@ -12,6 +12,9 @@ const { verifyToken, verifyAdmin, optionalAuth } = require("../middleware/authMi
 // Lấy danh sách khung giờ bận của studio (dùng cho booking mới)
 router.get("/studio-busy-slots", bookingController.getStudioBusySlots);
 
+// Public: Lấy lịch bận ẩn danh theo tháng (đồng bộ từ Thời khóa biểu Admin sang lịch đặt của khách)
+router.get("/public-schedule", bookingController.getPublicSchedule);
+
 // Tính phụ thu di chuyển một chiều theo khu vực/địa chỉ khách chọn.
 router.post("/travel-estimate", bookingController.getTravelEstimate);
 
@@ -31,7 +34,7 @@ router.post(
   bookingController.createBookingRequest,
 );
 
-// Khách xác nhận hợp đồng → chuyển sang WAITING_PAYMENT (không tạo link VNPay)
+// Giữ endpoint xác nhận hợp đồng cho client cũ; luồng hiện tại không cần bước này.
 // POST /api/bookings/:id/confirm-contract  { token: "..." }
 router.post("/:id/confirm-contract", bookingController.confirmContract);
 
@@ -45,7 +48,7 @@ router.get(
   bookingController.checkPaymentStatus,
 );
 
-// Khách hủy đơn nếu đơn còn REQUESTED hoặc CONTRACT_SENT
+// Khách hủy đơn nếu đơn còn REQUESTED hoặc đang chờ cọc (kể cả trạng thái legacy).
 router.post("/:id/cancel", verifyToken, bookingController.cancelMyBooking);
 
 // Admin xem lại QR/link hợp đồng của đơn đã có contract_token
@@ -66,6 +69,20 @@ router.get(
   bookingController.getAllBookingsForAdmin,
 );
 
+// Admin lấy dữ liệu Thời khóa biểu lịch chụp theo tuần/tháng
+router.get(
+  "/admin/timetable",
+  verifyAdmin,
+  bookingController.getAdminTimetable,
+);
+
+// Admin tùy chỉnh nhanh ngày/buổi/giờ bắt đầu & giờ kết thúc dự kiến trên Thời khóa biểu
+router.put(
+  "/:id/schedule",
+  verifyAdmin,
+  bookingController.updateBookingSchedule,
+);
+
 // Admin tạo đơn hộ khách hàng
 router.post(
   "/admin/create",
@@ -73,7 +90,7 @@ router.post(
   bookingController.createBookingForAdmin,
 );
 
-// Admin gửi hợp đồng cho khách (chuyển sang CONTRACT_SENT, tạo contract_token)
+// Admin gửi hợp đồng cho khách (chuyển sang WAITING_PAYMENT, tạo contract_token)
 router.post(
   "/:id/generate-contract-pdf",
   verifyAdmin,

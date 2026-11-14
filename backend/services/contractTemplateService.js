@@ -18,7 +18,44 @@ const DEFAULT_TEMPLATE_PATH = path.join(__dirname, "..", "templates", "contract-
 const DEFAULT_CONTRACT_TYPE = "hop-dong-chung";
 const ITEM_START_ROW = 17;
 const ITEM_ROW_COUNT = 5;
-const SESSION_LABELS = { MORNING: "Buổi sáng", AFTERNOON: "Buổi chiều", FULL_DAY: "Cả ngày" };
+const SESSION_LABELS = {
+  MORNING: "Buổi sáng (08:00 - 12:00)",
+  AFTERNOON: "Buổi chiều (13:00 - 17:00)",
+  EVENING: "Buổi tối (17:30 - 21:30)",
+  FULL_DAY: "Cả ngày (08:00 - 17:00)",
+  CUSTOM: "Khung giờ tùy chỉnh",
+};
+const SESSION_SHORT_NAMES = {
+  MORNING: "Buổi sáng",
+  AFTERNOON: "Buổi chiều",
+  EVENING: "Buổi tối",
+  FULL_DAY: "Cả ngày",
+  CUSTOM: "Khung giờ",
+};
+
+const formatShootingSessionForContract = (booking, sessionKeyOrLabel) => {
+  const rawSession = sessionKeyOrLabel || booking?.shooting_session;
+  const startMoment = booking?.start_time ? moment(booking.start_time).utcOffset(7) : null;
+  const endMoment = booking?.end_time ? moment(booking.end_time).utcOffset(7) : null;
+  const hasValidRange =
+    startMoment?.isValid() &&
+    endMoment?.isValid() &&
+    endMoment.valueOf() > startMoment.valueOf();
+
+  if (
+    hasValidRange &&
+    (booking?.use_custom_time_on_contract || rawSession === "CUSTOM" || booking?.shooting_session === "CUSTOM")
+  ) {
+    const timeRangeStr = `${startMoment.format("HH:mm")} - ${endMoment.format("HH:mm")}`;
+    const shortName = SESSION_SHORT_NAMES[rawSession] || SESSION_SHORT_NAMES[booking?.shooting_session];
+    if (shortName && rawSession !== "CUSTOM" && booking?.shooting_session !== "CUSTOM") {
+      return `${shortName} (${timeRangeStr})`;
+    }
+    return `Khung giờ: ${timeRangeStr}`;
+  }
+
+  return SESSION_LABELS[rawSession] || rawSession || "Studio sẽ liên hệ để tư vấn và chốt buổi/giờ";
+};
 const SUPPORTED_TEMPLATE_KEYS = new Set([
   "booking_code", "customer_name", "customer_email", "customer_phone", "location", "shoot_date",
   "shooting_session", "main_services", "addons", "travel_surcharge", "total_amount", "deposit_amount",
@@ -94,7 +131,7 @@ const buildContractData = (booking, overrides = {}) => {
     customer_phone: String(booking.customer_phone || customer.phone || "").trim(),
     location: String(booking.location || "").trim(),
     shoot_date: shootDate.format("DD/MM/YYYY"),
-    shooting_session: SESSION_LABELS[booking.shooting_session] || "Studio sẽ liên hệ để tư vấn và chốt buổi/giờ",
+    shooting_session: formatShootingSessionForContract(booking, booking.shooting_session),
     main_services: main.map((service) => service.name).join(", "),
     addons: addons.map((service) => service.name).join(", ") || "Không có",
     travel_surcharge: travel,
@@ -102,10 +139,18 @@ const buildContractData = (booking, overrides = {}) => {
     deposit_amount: deposit,
     remaining_amount: total - deposit,
     contract_note: String(booking.contract_note || ""),
-    contract_date: moment().utcOffset(7).format("DD/MM/YYYY"),
+    contract_date: moment(booking.contract_sent_at || undefined).utcOffset(7).format("DD/MM/YYYY"),
   };
 
-  Object.assign(data, overrides);
+  if (overrides && typeof overrides === "object") {
+    Object.entries(overrides).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        data[key] = key === "shooting_session" ? formatShootingSessionForContract(booking, value) : value;
+      } else if (key === "contract_note" && value !== undefined && value !== null) {
+        data[key] = String(value);
+      }
+    });
+  }
   if (!String(data.customer_name || "").trim()) throw makeError("Vui lòng bổ sung họ tên khách hàng trước khi tạo hợp đồng.");
   if (!String(data.customer_phone || "").trim()) throw makeError("Vui lòng bổ sung số điện thoại khách hàng trước khi tạo hợp đồng.");
   if (Number(data.deposit_amount) > Number(data.total_amount)) throw makeError("Tiền cọc đang lớn hơn tổng giá trị đơn.");
@@ -476,7 +521,7 @@ const uploadContractPdf = (buffer, bookingCode) => new Promise((resolve, reject)
   const stream = cloudinary.uploader.upload_stream({
     folder: "caohienstudio/contracts",
     resource_type: "raw",
-    public_id: `contract_${bookingCode}_${Date.now()}.pdf`,
+    public_id: `contract_${bookingCode}_${Date.now()}.dat`,
   }, (error, result) => error ? reject(error) : resolve(result));
   stream.end(buffer);
 });

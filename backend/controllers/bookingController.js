@@ -1,11 +1,12 @@
 /**
  * bookingController.js
  * Xử lý toàn bộ luồng đặt lịch chụp của studio:
- *  - Customer: tạo yêu cầu đặt lịch, xem đơn, xác nhận hợp đồng.
+ *  - Customer: tạo yêu cầu đặt lịch, xem đơn và hợp đồng.
  *  - Admin: tạo đơn hộ, gửi hợp đồng PDF, xác nhận đã nhận cọc (tiền mặt/CK), cập nhật trạng thái, phân công thợ.
  *
  * LUỒNG TRẠNG THÁI:
- *  REQUESTED → CONTRACT_SENT → WAITING_PAYMENT → CONFIRMED → IN_PROGRESS → COMPLETED
+ *  REQUESTED → WAITING_PAYMENT → CONFIRMED → IN_PROGRESS → COMPLETED
+ *  CONTRACT_SENT is a legacy alias for WAITING_PAYMENT and remains readable.
  *  Tại mọi bước đều có thể chuyển sang CANCELED (trừ COMPLETED).
  *
  * Thanh toán: Thủ công (tiền mặt hoặc chuyển khoản). Không dùng cổng thanh toán.
@@ -20,6 +21,7 @@ const Payment = require("../models/Payment");
 const User = require("../models/User");
 const OTP = require("../models/OTP");
 const WebsiteImage = require("../models/WebsiteImage");
+const Holiday = require("../models/Holiday");
 
 const crypto = require("crypto");
 const moment = require("moment");
@@ -49,8 +51,8 @@ const BOOKING_STATUSES = [
 
 // Quy tắc chuyển trạng thái hợp lệ (admin dùng updateBookingStatus)
 const VALID_TRANSITIONS = {
-  REQUESTED: ["CONTRACT_SENT", "CANCELED"],
-  CONTRACT_SENT: ["REQUESTED", "CANCELED"], // admin có thể thu hồi về REQUESTED để chỉnh lại
+  REQUESTED: ["WAITING_PAYMENT", "CANCELED"],
+  CONTRACT_SENT: ["REQUESTED", "WAITING_PAYMENT", "CANCELED"], // legacy; admin có thể chuẩn hóa đơn cũ
   WAITING_PAYMENT: ["CANCELED"],
   CONFIRMED: ["IN_PROGRESS", "CANCELED"],
   IN_PROGRESS: ["COMPLETED"],
@@ -86,6 +88,17 @@ const getBookingCustomer = (booking) => {
     email: booking?.customer_email || account?.email || "",
     phone: booking?.customer_phone || account?.phone || "",
   };
+};
+
+// Tạo URL API truy cập/tải PDF hợp đồng qua backend (tránh lỗi 401 ACL khi truy cập trực tiếp raw URL trên Cloudinary).
+const buildContractPdfApiUrl = (req, booking, { download = false } = {}) => {
+  if (!booking?._id || !booking?.contract_token) return null;
+  const configuredBackendUrl = process.env.BACKEND_URL
+    || (req ? `${req.protocol}://${req.get("host")}` : "http://localhost:5000");
+  const baseUrl = String(configuredBackendUrl).replace(/\/+$/, "");
+  const apiPrefix = baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
+  const versionTag = booking.updatedAt ? new Date(booking.updatedAt).getTime() : Date.now();
+  return `${apiPrefix}/bookings/contract/${booking._id}/pdf?token=${encodeURIComponent(booking.contract_token)}&v=${versionTag}${download ? "&download=1" : ""}`;
 };
 
 // Lấy tổng giá trị đơn, ưu tiên total_amount của booking, fallback sang giá service.
@@ -206,38 +219,87 @@ const markExpiredPendingBookings = async (customerId = null) => {
 };
 
 // ==========================================
-// SESSION-BASED SCHEDULING HELPERS
+// SESSION-BASED & TIMETABLE SCHEDULING HELPERS
 // ==========================================
 
 const STUDIO_LOCATION = "Cao Hiển Studio";
 
-// Map buổi chụp sang giờ bắt đầu/kết thúc (giờ địa phương VN, UTC+7)
+const VALID_SHOOTING_SESSIONS = ["MORNING", "AFTERNOON", "EVENING", "FULL_DAY", "CUSTOM"];
+
+// Map buổi chụp sang giờ bắt đầu/kết thúc mặc định (giờ địa phương VN, UTC+7)
 const SESSION_TIME_MAP = {
   MORNING: { startHour: 8, startMin: 0, endHour: 12, endMin: 0 },
   AFTERNOON: { startHour: 13, startMin: 0, endHour: 17, endMin: 0 },
+  EVENING: { startHour: 17, startMin: 30, endHour: 21, endMin: 30 },
   FULL_DAY: { startHour: 8, startMin: 0, endHour: 17, endMin: 0 },
+  CUSTOM: { startHour: 8, startMin: 0, endHour: 12, endMin: 0 },
 };
 
-// Các buổi bị trùng nhau theo logic conflict
+// Các buổi bị trùng nhau theo logic conflict truyền thống
 const SESSION_CONFLICT_MAP = {
   MORNING: ["MORNING", "FULL_DAY"],
   AFTERNOON: ["AFTERNOON", "FULL_DAY"],
+  EVENING: ["EVENING"],
   FULL_DAY: ["MORNING", "AFTERNOON", "FULL_DAY"],
+  CUSTOM: [],
 };
 
-// Tính start_time và end_time cố định từ ngày chụp + buổi chụp (UTC)
-const getSessionTimes = (shootDateStr, session) => {
-  const times = SESSION_TIME_MAP[session];
+// Parse chuỗi giờ "HH:mm" thành { hour, minute }
+const parseTimeHHmm = (timeStr) => {
+  if (!timeStr || typeof timeStr !== "string") return null;
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+};
+
+// Tính start_time và end_time từ ngày chụp + buổi chụp + giờ tùy chỉnh (nếu có)
+const getSessionTimes = (shootDateStr, session, customStartStr = null, customEndStr = null) => {
+  const effectiveSession = session || "MORNING";
+  const times = SESSION_TIME_MAP[effectiveSession];
   if (!times) throw new Error(`Buổi chụp không hợp lệ: ${session}`);
-  // shootDateStr dạng YYYY-MM-DD (local VN), convert sang UTC (trừ 7 tiếng)
-  // Dùng moment để parse đúng
+
+  const parsedStart = parseTimeHHmm(customStartStr);
+  const parsedEnd = parseTimeHHmm(customEndStr);
+
+  const startHour = parsedStart ? parsedStart.hour : times.startHour;
+  const startMin = parsedStart ? parsedStart.minute : times.startMin;
+  const endHour = parsedEnd ? parsedEnd.hour : times.endHour;
+  const endMin = parsedEnd ? parsedEnd.minute : times.endMin;
+
   const startDate = moment.utc(shootDateStr).utcOffset(7, true)
-    .hour(times.startHour).minute(times.startMin).second(0).millisecond(0)
+    .hour(startHour).minute(startMin).second(0).millisecond(0)
     .utc().toDate();
-  const endDate = moment.utc(shootDateStr).utcOffset(7, true)
-    .hour(times.endHour).minute(times.endMin).second(0).millisecond(0)
+  let endDate = moment.utc(shootDateStr).utcOffset(7, true)
+    .hour(endHour).minute(endMin).second(0).millisecond(0)
     .utc().toDate();
-  return { startDate, endDate };
+
+  if (endDate <= startDate) {
+    throw new Error("Giờ kết thúc phải lớn hơn giờ bắt đầu.");
+  }
+
+  const isCustom =
+    effectiveSession === "CUSTOM" ||
+    startHour !== times.startHour ||
+    startMin !== times.startMin ||
+    endHour !== times.endHour ||
+    endMin !== times.endMin;
+
+  return { startDate, endDate, isCustom };
+};
+
+// Gợi ý thời gian cộng thêm (phút) cho việc di chuyển của đơn ngoại cảnh dựa trên cự ly OSRM
+const getSuggestedTravelBufferMinutes = (distanceKm, shootingType) => {
+  if (shootingType !== "OUTDOOR") return 0;
+  const km = Number(distanceKm || 0);
+  if (!Number.isFinite(km) || km <= 15) return 0;
+  if (km <= 40) return 60;   // +1h
+  if (km <= 80) return 120;  // +2h
+  if (km <= 130) return 180; // +3h (VD: TP.HCM, Cần Thơ...)
+  if (km <= 200) return 240; // +4h
+  return 300;                // +5h
 };
 
 // Trạng thái booking còn hiệu lực (chiếm lịch)
@@ -254,11 +316,27 @@ const activeStatusQuery = {
   $or: ACTIVE_STATUSES_FOR_CONFLICT.map(s => ({ status: s }))
 };
 
+// Kiểm tra xung đột khung giờ thực tế [startDate, endDate] trong cùng ngày
+const findTimeOverlapConflicts = async ({ shootDateStr, startDate, endDate, shootingType, excludeBookingId }) => {
+  const query = {
+    ...buildDateQuery(shootDateStr),
+    ...activeStatusQuery,
+    start_time: { $lt: endDate },
+    end_time: { $gt: startDate },
+  };
+  if (shootingType) query.shooting_type = shootingType;
+  if (excludeBookingId) query._id = { $ne: excludeBookingId };
+  return Booking.find(query)
+    .populate("service_id", "name")
+    .populate("customer_id", "full_name phone")
+    .sort({ start_time: 1 });
+};
+
 // Kiểm tra trùng lịch STUDIO theo buổi
 // Chỉ check đơn STUDIO cùng ngày có session conflict
 const findStudioSessionConflict = async ({ shootDateStr, session, excludeBookingId }) => {
   const conflictSessions = SESSION_CONFLICT_MAP[session];
-  if (!conflictSessions) return null;
+  if (!conflictSessions || conflictSessions.length === 0) return null;
 
   const query = {
     shooting_type: "STUDIO",
@@ -271,10 +349,9 @@ const findStudioSessionConflict = async ({ shootDateStr, session, excludeBooking
 };
 
 // Kiểm tra trùng lịch OUTDOOR theo buổi
-// Tạm thời: chỉ 1 ekip ngoại cảnh, cùng buổi cùng ngày là trùng
 const findOutdoorSessionConflict = async ({ shootDateStr, session, excludeBookingId }) => {
   const conflictSessions = SESSION_CONFLICT_MAP[session];
-  if (!conflictSessions) return null;
+  if (!conflictSessions || conflictSessions.length === 0) return null;
 
   const query = {
     shooting_type: "OUTDOOR",
@@ -360,7 +437,7 @@ exports.createBookingRequest = async (req, res) => {
     if (!shooting_type || !["STUDIO", "OUTDOOR"].includes(shooting_type)) {
       return res.status(400).json({ message: "Hình thức chụp không hợp lệ. Chọn STUDIO hoặc OUTDOOR." });
     }
-    if (shooting_session && !["MORNING", "AFTERNOON", "FULL_DAY"].includes(shooting_session)) {
+    if (shooting_session && !VALID_SHOOTING_SESSIONS.includes(shooting_session)) {
       return res.status(400).json({ message: "Buổi chụp không hợp lệ." });
     }
     const customerId = getCurrentUserId(req);
@@ -476,8 +553,9 @@ exports.createBookingRequest = async (req, res) => {
         startDate = times.startDate;
         endDate = times.endDate;
       } else {
-        startDate = requestedDay.clone().hour(12).minute(0).second(0).millisecond(0).utc().toDate();
-        endDate = startDate;
+        // Mặc định xếp tạm vào khung giờ sáng 08:00 - 12:00 trên Thời khóa biểu để Admin nhìn thấy ngay và gọi tư vấn chốt giờ
+        startDate = requestedDay.clone().hour(8).minute(0).second(0).millisecond(0).utc().toDate();
+        endDate = requestedDay.clone().hour(12).minute(0).second(0).millisecond(0).utc().toDate();
       }
     } catch (e) {
       return res.status(400).json({ message: e.message });
@@ -726,7 +804,7 @@ exports.checkPaymentStatus = async (req, res) => {
   }
 };
 
-// Customer hủy đơn nếu đơn còn REQUESTED hoặc CONTRACT_SENT (trước khi xác nhận hợp đồng).
+// Customer hủy đơn khi còn REQUESTED hoặc đang chờ cọc (bao gồm trạng thái legacy).
 exports.cancelMyBooking = async (req, res) => {
   try {
     if (req.user?.role === "ADMIN") {
@@ -751,7 +829,7 @@ exports.cancelMyBooking = async (req, res) => {
       });
     }
 
-    const cancelableStatuses = ["REQUESTED", "CONTRACT_SENT", "PENDING"];
+    const cancelableStatuses = ["REQUESTED", "WAITING_PAYMENT", "CONTRACT_SENT", "PENDING"];
 
     if (!cancelableStatuses.includes(booking.status)) {
       return res.status(400).json({
@@ -827,8 +905,8 @@ exports.getContractByToken = async (req, res) => {
     const qrImage = await WebsiteImage.findOne({ page: "SETTINGS", key: "payment_qr" });
     const paymentQrUrl = qrImage?.imageUrl || process.env.PAYMENT_QR_URL || "";
 
-    // PDF hợp đồng do Admin upload
-    const pdfUrl = booking.contract_file_url || null;
+    // PDF hợp đồng phân phối qua endpoint backend
+    const pdfUrl = buildContractPdfApiUrl(req, booking);
 
     return res.status(200).json({
       booking: bookingObj,
@@ -857,34 +935,64 @@ exports.getContractPdfByToken = async (req, res) => {
     }
 
     const booking = await Booking.findOne({ _id: bookingId, contract_token: token })
-      .select("status contract_file_url contract_original_name")
-      .lean();
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name base_price")
+      .populate("extra_service_ids", "name base_price");
     if (!booking) return res.status(404).json({ message: "Hợp đồng không tồn tại hoặc link đã hết hạn." });
     if (booking.status === "CANCELED") return res.status(400).json({ message: "Đơn đặt lịch này đã bị hủy." });
-    if (!booking.contract_file_url) return res.status(404).json({ message: "Đơn chưa có file PDF hợp đồng." });
 
-    if (!String(booking.contract_file_url).startsWith("http")) {
-      return res.status(503).json({ message: "Địa chỉ file hợp đồng không hợp lệ." });
+    let pdfBuffer = null;
+
+    if (booking.contract_file_url && String(booking.contract_file_url).startsWith("http")) {
+      try {
+        const fileUrl = new URL(booking.contract_file_url);
+        if (fileUrl.hostname === "res.cloudinary.com" && !fileUrl.pathname.toLowerCase().endsWith(".pdf")) {
+          const fileResponse = await fetch(fileUrl, { signal: AbortSignal.timeout(30000) });
+          if (fileResponse.ok) {
+            const candidate = Buffer.from(await fileResponse.arrayBuffer());
+            if (candidate.length > 4 && candidate.subarray(0, 5).toString("ascii") === "%PDF-") {
+              pdfBuffer = candidate;
+            }
+          }
+        }
+      } catch (fetchErr) {
+        console.warn("[getContractPdfByToken] Không tải được từ Cloudinary, chuyển sang sinh trực tiếp từ template:", fetchErr.message);
+      }
     }
 
-    const fileUrl = new URL(booking.contract_file_url);
-    if (fileUrl.hostname !== "res.cloudinary.com") {
-      return res.status(503).json({ message: "Địa chỉ file hợp đồng không hợp lệ." });
+    if (!pdfBuffer) {
+      const generated = await generateBookingContractPdf(booking);
+      pdfBuffer = generated.buffer;
+      const bookingCode = String(booking._id).slice(-8).toUpperCase();
+      const generatedFileName = booking.contract_original_name || `Hop-dong-${bookingCode}.pdf`;
+      uploadBookingContractPdf(pdfBuffer, bookingCode)
+        .then(async (uploaded) => {
+          if (uploaded?.secure_url) {
+            await Booking.updateOne(
+              { _id: booking._id },
+              {
+                $set: {
+                  contract_file_url: uploaded.secure_url,
+                  contract_original_name: generatedFileName,
+                },
+              },
+            );
+          }
+        })
+        .catch((err) => console.error("[getContractPdfByToken] Lỗi cập nhật lại file hợp đồng lên Cloudinary:", err.message));
     }
 
-    const fileResponse = await fetch(fileUrl, { signal: AbortSignal.timeout(30000) });
-    if (!fileResponse.ok) return res.status(503).json({ message: "Không tải được file PDF hợp đồng." });
-
-    const fileName = String(booking.contract_original_name || "CaoHienStudio-hop-dong.pdf")
+    const fileName = String(booking.contract_original_name || `Hop-dong-${String(booking._id).slice(-8).toUpperCase()}.pdf`)
       .replace(/[\r\n"]+/g, "_");
     res.set("Content-Type", "application/pdf");
     res.set("Content-Disposition", `${download === "1" ? "attachment" : "inline"}; filename="${fileName}"`);
     res.set("Cache-Control", "private, no-store");
     res.set("X-Content-Type-Options", "nosniff");
-    return res.send(Buffer.from(await fileResponse.arrayBuffer()));
+    return res.send(pdfBuffer);
   } catch (error) {
     console.error("Get contract PDF by token error:", error);
-    return res.status(500).json({ message: "Không thể tải file PDF hợp đồng." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Không thể tải file PDF hợp đồng." });
   }
 };
 
@@ -963,8 +1071,8 @@ exports.confirmContract = async (req, res) => {
     // Hạn giữ tạm 24h kể từ khi khách xác nhận hợp đồng
     const holdExpiresAt = moment().add(24, "hours").toDate();
 
-    // Giữ trạng thái CONTRACT_SENT — chờ admin xác nhận đã nhận cọc
-    booking.status = "CONTRACT_SENT";
+    // Chuẩn hóa cả đơn legacy khi khách mở và xác nhận hợp đồng.
+    booking.status = "WAITING_PAYMENT";
     booking.contract_confirmed_at = booking.contract_confirmed_at || new Date();
     booking.deposit_amount = depositAmount;
     booking.hold_expires_at = holdExpiresAt;
@@ -1004,10 +1112,14 @@ exports.createBookingForAdmin = async (req, res) => {
       extra_service_ids,
       assigned_staff_ids,
       external_staff,
-      // Session-based fields (mới)
+      // Session-based & Timetable fields
       shoot_date,
       shooting_type,
       shooting_session,
+      custom_start_time,
+      custom_end_time,
+      schedule_note,
+      use_custom_time_on_contract,
       location,
       note,
       total_amount,
@@ -1038,7 +1150,7 @@ exports.createBookingForAdmin = async (req, res) => {
     if (!["STUDIO", "OUTDOOR"].includes(effectiveShootingType)) {
       return res.status(400).json({ message: "Hình thức chụp không hợp lệ" });
     }
-    if (!["MORNING", "AFTERNOON", "FULL_DAY"].includes(effectiveShootingSession)) {
+    if (!VALID_SHOOTING_SESSIONS.includes(effectiveShootingSession)) {
       return res.status(400).json({ message: "Buổi chụp không hợp lệ" });
     }
     if (effectiveShootingType === "OUTDOOR" && !location) {
@@ -1050,29 +1162,23 @@ exports.createBookingForAdmin = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy gói dịch vụ" });
     }
 
-    // Tính start/end từ ngày + buổi
+    // Tính start/end từ ngày + buổi + giờ tùy chỉnh (nếu có)
+    let startDate, endDate, isCustomScheduleTime = false;
     try {
-      const times = getSessionTimes(shoot_date, shooting_session);
+      const times = getSessionTimes(
+        effectiveShootDate,
+        effectiveShootingSession,
+        custom_start_time,
+        custom_end_time,
+      );
       startDate = times.startDate;
       endDate = times.endDate;
+      isCustomScheduleTime = Boolean(times.isCustom);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
     await markExpiredPendingBookings();
-
-    // Kiểm tra trùng lịch theo type
-    if (shooting_type === "STUDIO") {
-      const conflict = await findStudioSessionConflict({ shootDateStr: shoot_date, session: shooting_session });
-      if (conflict) {
-        return sendConflictResponse(res, conflict, "Studio đã có lịch buổi này.");
-      }
-    } else {
-      const conflict = await findOutdoorSessionConflict({ shootDateStr: shoot_date, session: shooting_session });
-      if (conflict) {
-        return sendConflictResponse(res, conflict, "Ekip ngoại cảnh đã có lịch buổi này.");
-      }
-    }
 
 
 
@@ -1179,6 +1285,9 @@ exports.createBookingForAdmin = async (req, res) => {
 
     const bookingPayload = {
       customer_id: customer._id,
+      customer_full_name: String(customer_full_name || customer.full_name || "").trim(),
+      customer_email: String(customer_email || customer.email || "").trim().toLowerCase(),
+      customer_phone: String(customer_phone || customer.phone || "").trim(),
       service_id: service._id,
       original_service_ids: adminMainIds,
       assigned_staff_ids: assigned_staff_ids || [],
@@ -1188,6 +1297,9 @@ exports.createBookingForAdmin = async (req, res) => {
       shooting_session: effectiveShootingSession,
       start_time: startDate,
       end_time: endDate,
+      is_custom_schedule_time: isCustomScheduleTime,
+      schedule_note: String(schedule_note || "").trim(),
+      use_custom_time_on_contract: Boolean(use_custom_time_on_contract || effectiveShootingSession === "CUSTOM"),
       location: finalLocation,
       note,
       total_amount: finalTotalAmount,
@@ -1265,10 +1377,14 @@ exports.updateBookingInfo = async (req, res) => {
       extra_service_ids,
       assigned_staff_ids,
       external_staff,
-      // Session-based fields (mới)
+      // Session-based & Timetable fields
       shoot_date,
       shooting_type,
       shooting_session,
+      custom_start_time,
+      custom_end_time,
+      schedule_note,
+      use_custom_time_on_contract,
       location,
       note,
       total_amount,
@@ -1346,20 +1462,49 @@ exports.updateBookingInfo = async (req, res) => {
       autoRecalcTotal = true;
     }
 
-    // Cập nhật ngày + buổi chụp (session-based)
-    const newShootDate = shoot_date || null;
-    const newShootingType = shooting_type || booking.shooting_type;
+    // Cập nhật ngày + buổi chụp + giờ tùy chỉnh trên Thời khóa biểu
+    const oldShootDateStr = booking.start_time
+      ? moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD")
+      : null;
+    const newShootDate = shoot_date || oldShootDateStr;
     const newShootingSession = shooting_session || booking.shooting_session;
+    const sessionChanged = Boolean(shooting_session && shooting_session !== booking.shooting_session);
+    const hasExplicitCustomTimes = Boolean(custom_start_time && custom_end_time);
 
     if (newShootDate && newShootingSession) {
+      if (!VALID_SHOOTING_SESSIONS.includes(newShootingSession)) {
+        return res.status(400).json({ message: "Buổi chụp không hợp lệ." });
+      }
       try {
-        const times = getSessionTimes(newShootDate, newShootingSession);
-        booking.start_time = times.startDate;
-        booking.end_time = times.endDate;
+        if (hasExplicitCustomTimes) {
+          const times = getSessionTimes(newShootDate, newShootingSession, custom_start_time, custom_end_time);
+          booking.start_time = times.startDate;
+          booking.end_time = times.endDate;
+          booking.is_custom_schedule_time = Boolean(times.isCustom);
+        } else if (booking.is_custom_schedule_time && !sessionChanged && booking.start_time && booking.end_time) {
+          // Giữ nguyên khung giờ tùy chỉnh trên Thời khóa biểu (VD: đơn ngoại cảnh TPHCM đã cộng giờ đi lại)
+          const prevStartStr = moment(booking.start_time).utcOffset(7).format("HH:mm");
+          const prevEndStr = moment(booking.end_time).utcOffset(7).format("HH:mm");
+          const times = getSessionTimes(newShootDate, newShootingSession, prevStartStr, prevEndStr);
+          booking.start_time = times.startDate;
+          booking.end_time = times.endDate;
+        } else {
+          const times = getSessionTimes(newShootDate, newShootingSession);
+          booking.start_time = times.startDate;
+          booking.end_time = times.endDate;
+          booking.is_custom_schedule_time = false;
+        }
       } catch (e) {
         return res.status(400).json({ message: e.message });
       }
       booking.shooting_session = newShootingSession;
+    }
+
+    if (schedule_note !== undefined) {
+      booking.schedule_note = String(schedule_note || "").trim();
+    }
+    if (use_custom_time_on_contract !== undefined) {
+      booking.use_custom_time_on_contract = Boolean(use_custom_time_on_contract);
     }
 
     if (shooting_type) {
@@ -1474,13 +1619,13 @@ exports.updateBookingInfo = async (req, res) => {
       booking.deposit_amount = amt;
     }
 
-    // Kiểm tra trùng lịch lại sau khi cập nhật
+    // Chỉ chặn cứng nếu client truyền cờ strict_conflict_check, còn mặc định cho phép Admin lưu và quản lý trên Thời khóa biểu
     const effectiveShootDate = newShootDate || (
       booking.start_time
         ? moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD")
         : null
     );
-    if (effectiveShootDate && booking.shooting_type && booking.shooting_session) {
+    if (req.body?.strict_conflict_check && effectiveShootDate && booking.shooting_type && booking.shooting_session) {
       if (booking.shooting_type === "STUDIO") {
         const conflict = await findStudioSessionConflict({
           shootDateStr: effectiveShootDate,
@@ -1506,11 +1651,33 @@ exports.updateBookingInfo = async (req, res) => {
 
     await booking.save();
 
-    const populatedBooking = await Booking.findById(booking._id)
+    let populatedBooking = await Booking.findById(booking._id)
       .populate("customer_id", "full_name email phone")
       .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
       .populate("extra_service_ids", "name base_price")
       .populate("assigned_staff_ids", "full_name email phone");
+
+    if (
+      !req.body?.skip_contract_sync &&
+      (booking.contract_token || booking.contract_file_url || ["WAITING_PAYMENT", "CONTRACT_SENT", "CONFIRMED"].includes(booking.status))
+    ) {
+      try {
+        const generated = await generateBookingContractPdf(populatedBooking);
+        const bookingCode = String(booking._id).slice(-8).toUpperCase();
+        const uploaded = await uploadBookingContractPdf(generated.buffer, bookingCode);
+        const fileName = `Hop-dong-${bookingCode}.pdf`;
+        booking.contract_file_url = uploaded.secure_url;
+        booking.contract_original_name = fileName;
+        await booking.save();
+        populatedBooking = await Booking.findById(booking._id)
+          .populate("customer_id", "full_name email phone")
+          .populate("original_service_ids", "name base_price").populate("service_id", "name thumbnail base_price")
+          .populate("extra_service_ids", "name base_price")
+          .populate("assigned_staff_ids", "full_name email phone");
+      } catch (syncErr) {
+        console.warn("[updateBookingInfo] Không thể tự động đồng bộ lại PDF hợp đồng:", syncErr.message);
+      }
+    }
 
     return res.status(200).json({
       message: "Cập nhật thông tin đơn thành công",
@@ -1534,7 +1701,9 @@ exports.getAllBookingsForAdmin = async (req, res) => {
     const query = {};
 
     if (status && status !== "ALL") {
-      query.status = status;
+      query.status = status === "WAITING_PAYMENT"
+        ? { $in: ["WAITING_PAYMENT", "CONTRACT_SENT"] }
+        : status;
     }
 
     const bookings = await Booking.find(query)
@@ -1610,7 +1779,7 @@ exports.updateBookingStatus = async (req, res) => {
         const contractLink = booking.contract_token
           ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
           : null;
-        const pdfUrl = booking.contract_file_url || null;
+        const pdfUrl = buildContractPdfApiUrl(req, booking, { download: true });
         await mailService.sendDepositConfirmedEmail(booking, getBookingCustomer(booking), {
           contractLink,
           pdfUrl,
@@ -1669,11 +1838,10 @@ exports.getStudioBusySlots = async (req, res) => {
       return res.status(400).json({ message: "Thiếu tham số date" });
     }
 
-    const normalizedType = type === "OUTDOOR" ? "OUTDOOR" : "STUDIO";
+    const normalizedType = type === "OUTDOOR" ? "OUTDOOR" : type === "ALL" ? null : "STUDIO";
 
     const baseQuery = {
-      shooting_type: normalizedType,
-      shooting_session: { $in: ["MORNING", "AFTERNOON", "FULL_DAY"] },
+      ...(normalizedType ? { shooting_type: normalizedType } : {}),
       ...buildDateQuery(date),
       ...activeStatusQuery,
     };
@@ -1684,7 +1852,8 @@ exports.getStudioBusySlots = async (req, res) => {
     }
 
     const bookings = await Booking.find(baseQuery)
-      .select("start_time end_time service_id shooting_type shooting_session status");
+      .populate("service_id", "name")
+      .select("start_time end_time service_id shooting_type shooting_session status is_custom_schedule_time schedule_note customer_full_name");
 
     return res.status(200).json(bookings);
   } catch (error) {
@@ -1846,7 +2015,7 @@ exports.adminConfirmDeposit = async (req, res) => {
     const contractLink = booking.contract_token
       ? `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`
       : null;
-    const pdfUrl = booking.contract_file_url || null;
+    const pdfUrl = buildContractPdfApiUrl(req, booking, { download: true });
 
     await mailService.sendDepositConfirmedEmail(booking, getBookingCustomer(booking), {
       contractLink,
@@ -1919,18 +2088,20 @@ exports.rescheduleBooking = async (req, res) => {
     // Dùng ngày/buổi mới nếu có, không thì giữ nguyên
     const effectiveShootDate = shoot_date || moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD");
     const effectiveSession = shooting_session || booking.shooting_session;
+    const { custom_start_time, custom_end_time, schedule_note, use_custom_time_on_contract } = req.body;
 
     // Validate buổi chụp
-    if (!["MORNING", "AFTERNOON", "FULL_DAY"].includes(effectiveSession)) {
-      return res.status(400).json({ message: "Buổi chụp không hợp lệ. Chọn MORNING, AFTERNOON hoặc FULL_DAY." });
+    if (!VALID_SHOOTING_SESSIONS.includes(effectiveSession)) {
+      return res.status(400).json({ message: "Buổi chụp không hợp lệ." });
     }
 
     // Tính lại start_time/end_time
-    let startDate, endDate;
+    let startDate, endDate, isCustomScheduleTime = false;
     try {
-      const times = getSessionTimes(effectiveShootDate, effectiveSession);
+      const times = getSessionTimes(effectiveShootDate, effectiveSession, custom_start_time, custom_end_time);
       startDate = times.startDate;
       endDate = times.endDate;
+      isCustomScheduleTime = Boolean(times.isCustom);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -1943,30 +2114,6 @@ exports.rescheduleBooking = async (req, res) => {
       });
     }
 
-
-    // Kiểm tra trùng lịch, exclude chính đơn này
-    if (booking.shooting_type === "STUDIO") {
-      const conflict = await findStudioSessionConflict({
-        shootDateStr: effectiveShootDate,
-        session: effectiveSession,
-        excludeBookingId: booking._id,
-      });
-      if (conflict) {
-        return sendConflictResponse(res, conflict,
-          `Studio đã có lịch buổi ${effectiveSession === "MORNING" ? "sáng" : effectiveSession === "AFTERNOON" ? "chiều" : "cả ngày"} trong ngày này.`);
-      }
-    } else if (booking.shooting_type === "OUTDOOR") {
-      const conflict = await findOutdoorSessionConflict({
-        shootDateStr: effectiveShootDate,
-        session: effectiveSession,
-        excludeBookingId: booking._id,
-      });
-      if (conflict) {
-        return sendConflictResponse(res, conflict,
-          `Ekip ngoại cảnh đã có lịch buổi ${effectiveSession === "MORNING" ? "sáng" : effectiveSession === "AFTERNOON" ? "chiều" : "cả ngày"} trong ngày này.`);
-      }
-    }
-
     // Lưu thông tin lịch cũ trước khi cập nhật (dùng cho email thông báo)
     const oldStartTime = booking.start_time;
     const oldEndTime = booking.end_time;
@@ -1976,6 +2123,9 @@ exports.rescheduleBooking = async (req, res) => {
     booking.start_time = startDate;
     booking.end_time = endDate;
     booking.shooting_session = effectiveSession;
+    booking.is_custom_schedule_time = isCustomScheduleTime;
+    if (schedule_note !== undefined) booking.schedule_note = String(schedule_note || "").trim();
+    if (use_custom_time_on_contract !== undefined) booking.use_custom_time_on_contract = Boolean(use_custom_time_on_contract);
 
     // Cập nhật địa điểm — cho phép sửa cho cả STUDIO và OUTDOOR khi dời lịch
     if (location !== undefined) {
@@ -2004,7 +2154,6 @@ exports.rescheduleBooking = async (req, res) => {
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
 
     // Sinh lại PDF từ template hiện hành để đồng nhất nội dung hợp đồng.
-    let pdfUrl = null;
     try {
       const contractBooking = await Booking.findById(booking._id)
         .populate("customer_id", "full_name email phone")
@@ -2013,13 +2162,15 @@ exports.rescheduleBooking = async (req, res) => {
         .populate("extra_service_ids", "name base_price");
       const generated = await generateBookingContractPdf(contractBooking);
       const uploaded = await uploadBookingContractPdf(generated.buffer, String(booking._id).slice(-8).toUpperCase());
-      pdfUrl = uploaded.secure_url;
-      booking.contract_file_url = pdfUrl;
+      booking.contract_file_url = uploaded.secure_url;
       booking.contract_original_name = `Hop-dong-${String(booking._id).slice(-8).toUpperCase()}.pdf`;
       await booking.save();
     } catch (pdfErr) {
       console.error("[rescheduleBooking] Lỗi sinh PDF:", pdfErr.message);
     }
+
+    const pdfUrl = buildContractPdfApiUrl(req, booking);
+    const pdfDownloadUrl = buildContractPdfApiUrl(req, booking, { download: true });
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate("assigned_staff_ids", "full_name email");
@@ -2030,7 +2181,7 @@ exports.rescheduleBooking = async (req, res) => {
       oldEndTime,
       oldLocation,
       contractLink,
-      pdfUrl,
+      pdfUrl: pdfDownloadUrl,
     }).catch(err => console.error("[rescheduleBooking] Lỗi gửi email dời lịch:", err.message));
 
     return res.status(200).json({
@@ -2055,7 +2206,7 @@ exports.rescheduleBooking = async (req, res) => {
 
 /**
  * Admin tạo PDF từ template DOCX/XLSX đã điền bằng thông tin của booking.
- * Chỉ lưu file vào booking; chưa đổi trạng thái đơn sang CONTRACT_SENT.
+ * Chỉ lưu file vào booking; chưa đổi trạng thái đơn sang WAITING_PAYMENT.
  */
 exports.generateContractPdfFromTemplate = async (req, res) => {
   try {
@@ -2069,9 +2220,9 @@ exports.generateContractPdfFromTemplate = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
     }
-    if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
+    if (!["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
       return res.status(400).json({
-        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT. Đơn hiện tại: "${booking.status}".`,
+        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED, WAITING_PAYMENT hoặc CONFIRMED. Đơn hiện tại: "${booking.status}".`,
       });
     }
 
@@ -2085,7 +2236,8 @@ exports.generateContractPdfFromTemplate = async (req, res) => {
 
     return res.status(200).json({
       message: "Đã tạo PDF hợp đồng từ dữ liệu đơn đặt lịch.",
-      pdf_url: uploaded.secure_url,
+      pdf_url: booking.contract_token ? buildContractPdfApiUrl(req, booking) : uploaded.secure_url,
+      contract_file_url: uploaded.secure_url,
       contract_original_name: fileName,
       booking_id: booking._id,
     });
@@ -2105,10 +2257,32 @@ exports.previewContractPdfFromTemplate = async (req, res) => {
       .populate("service_id", "name base_price")
       .populate("extra_service_ids", "name base_price");
     if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
-    if (!["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
+    if (!["REQUESTED", "CONTRACT_SENT", "WAITING_PAYMENT", "CONFIRMED", "IN_PROGRESS"].includes(booking.status)) {
       return res.status(400).json({ message: "Đơn không ở trạng thái có thể xem trước hợp đồng." });
     }
     const generated = await generateBookingContractPdf(booking, req.body || {});
+
+    // Đồng bộ ngầm file PDF hợp đồng nếu đơn đã có hợp đồng hoặc đã gửi hợp đồng
+    if (booking.contract_token || booking.contract_file_url || ["WAITING_PAYMENT", "CONTRACT_SENT", "CONFIRMED"].includes(booking.status)) {
+      const bookingCode = String(booking._id).slice(-8).toUpperCase();
+      const fileName = booking.contract_original_name || `Hop-dong-${bookingCode}.pdf`;
+      uploadBookingContractPdf(generated.buffer, bookingCode)
+        .then(async (uploaded) => {
+          if (uploaded?.secure_url) {
+            await Booking.updateOne(
+              { _id: booking._id },
+              {
+                $set: {
+                  contract_file_url: uploaded.secure_url,
+                  contract_original_name: fileName,
+                },
+              },
+            );
+          }
+        })
+        .catch((err) => console.warn("[previewContractPdfFromTemplate] Lỗi đồng bộ file hợp đồng lên Cloudinary:", err.message));
+    }
+
     res.set("Content-Type", "application/pdf");
     res.set("Content-Disposition", "inline; filename=contract-preview.pdf");
     return res.send(generated.buffer);
@@ -2126,6 +2300,9 @@ exports.getBookingForContractEditor = async (req, res) => {
       .populate("service_id", "name base_price")
       .populate("extra_service_ids", "name base_price");
     if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch" });
+    if (!["REQUESTED", "WAITING_PAYMENT", "CONTRACT_SENT", "CONFIRMED"].includes(booking.status)) {
+      return res.status(400).json({ message: "Đơn không ở trạng thái có thể chỉnh sửa hợp đồng." });
+    }
     return res.json(booking);
   } catch (error) {
     return res.status(500).json({ message: "Không thể tải dữ liệu hợp đồng", error: error.message });
@@ -2133,7 +2310,7 @@ exports.getBookingForContractEditor = async (req, res) => {
 };
 
 /**
- * Admin tạo đơn / gửi hợp đồng cho khách (REQUESTED / CONTRACT_SENT -> CONTRACT_SENT).
+ * Admin tạo đơn / gửi hợp đồng cho khách (REQUESTED / WAITING_PAYMENT -> WAITING_PAYMENT).
  * Nhận PDF vừa sinh từ template, sau đó tạo token và link/QR.
  * KHÔNG GỬI MAIL ở bước này! (Chỉ tạo token & link/QR hợp đồng trả về cho Admin).
  */
@@ -2157,9 +2334,9 @@ exports.sendContract = async (req, res) => {
       });
     }
 
-    if (!["REQUESTED", "CONTRACT_SENT"].includes(booking.status)) {
+    if (!["REQUESTED", "WAITING_PAYMENT", "CONTRACT_SENT", "CONFIRMED"].includes(booking.status)) {
       return res.status(400).json({
-        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED hoặc CONTRACT_SENT. Đơn hiện tại: "${booking.status}".`
+        message: `Chỉ có thể tạo hợp đồng cho đơn ở trạng thái REQUESTED, WAITING_PAYMENT hoặc CONFIRMED. Đơn hiện tại: "${booking.status}".`
       });
     }
 
@@ -2174,20 +2351,23 @@ exports.sendContract = async (req, res) => {
       booking.contract_token = crypto.randomBytes(24).toString("hex");
     }
 
-    booking.status = "CONTRACT_SENT";
-    booking.contract_sent_at = new Date();
-    booking.hold_expires_at = moment().add(24, "hours").toDate();
+    if (booking.status !== "CONFIRMED") {
+      booking.status = "WAITING_PAYMENT";
+      booking.hold_expires_at = moment().add(24, "hours").toDate();
+    }
+    booking.contract_sent_at = booking.contract_sent_at || new Date();
     await booking.save();
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
+    const pdfUrl = buildContractPdfApiUrl(req, booking);
 
     return res.status(200).json({
       message: "Tạo hợp đồng thành công!",
       contract_link: contractLink,
       qr_code: qrCodeDataUrl,
-      pdf_url: booking.contract_file_url || null,
+      pdf_url: pdfUrl,
       booking,
     });
   } catch (error) {
@@ -2227,7 +2407,7 @@ exports.getContractInfo = async (req, res) => {
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const contractLink = `${frontendUrl}/contract-review/${booking._id}?token=${booking.contract_token}`;
-    const pdfUrl = booking.contract_file_url || null;
+    const pdfUrl = buildContractPdfApiUrl(req, booking);
 
     const qrCodeDataUrl = await generateQrDataUrl(contractLink);
 
@@ -2248,5 +2428,343 @@ exports.getContractInfo = async (req, res) => {
     });
   }
 };
+
+// ==========================================
+// THỜI KHÓA BIỂU ADMIN & ĐỒNG BỘ LỊCH KHÁCH HÀNG
+// ==========================================
+
+/**
+ * GET /api/bookings/admin/timetable?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&shooting_type=ALL
+ * Trả về danh sách các đơn đặt lịch trong tuần/tháng kèm gợi ý thời gian di chuyển,
+ * phát hiện xung đột khung giờ và danh sách ngày nghỉ/lễ của Studio.
+ */
+exports.getAdminTimetable = async (req, res) => {
+  try {
+    await markExpiredPendingBookings();
+
+    const { startDate, endDate, shooting_type = "ALL", include_canceled = "false" } = req.query;
+
+    const startMoment = startDate
+      ? moment.utc(startDate, "YYYY-MM-DD").utcOffset(7, true).startOf("day")
+      : moment().utcOffset(7).startOf("isoWeek");
+    const endMoment = endDate
+      ? moment.utc(endDate, "YYYY-MM-DD").utcOffset(7, true).endOf("day")
+      : startMoment.clone().add(6, "days").endOf("day");
+
+    if (!startMoment.isValid() || !endMoment.isValid()) {
+      return res.status(400).json({ message: "Khoảng thời gian truy vấn không hợp lệ." });
+    }
+
+    const query = {
+      start_time: {
+        $gte: startMoment.clone().utc().toDate(),
+        $lte: endMoment.clone().utc().toDate(),
+      },
+    };
+
+    if (include_canceled !== "true") {
+      query.status = { $ne: "CANCELED" };
+    }
+    if (shooting_type && ["STUDIO", "OUTDOOR"].includes(shooting_type)) {
+      query.shooting_type = shooting_type;
+    }
+
+    const [bookings, holidays] = await Promise.all([
+      Booking.find(query)
+        .populate("customer_id", "full_name email phone")
+        .populate("original_service_ids", "name base_price")
+        .populate("service_id", "name thumbnail base_price")
+        .populate("extra_service_ids", "name base_price category allow_addon")
+        .populate("assigned_staff_ids", "full_name email phone")
+        .sort({ start_time: 1 }),
+      Holiday.find({ is_active: true }).lean(),
+    ]);
+
+    const enrichedBookings = bookings.map((b) => {
+      const obj = typeof b.toObject === "function" ? b.toObject() : b;
+      const startLocal = moment(obj.start_time).utcOffset(7);
+      const endLocalRaw = moment(obj.end_time).utcOffset(7);
+      // Nếu đơn cũ có end_time <= start_time (do chưa chọn buổi), hiển thị tạm 4 giờ để dễ quản lý trên thời khóa biểu
+      const endLocal = endLocalRaw.valueOf() > startLocal.valueOf()
+        ? endLocalRaw
+        : startLocal.clone().add(4, "hours");
+
+      const dateStr = startLocal.format("YYYY-MM-DD");
+      const startTimeStr = startLocal.format("HH:mm");
+      const endTimeStr = endLocal.format("HH:mm");
+      const durationMinutes = Math.max(30, Math.round((endLocal.valueOf() - startLocal.valueOf()) / 60000));
+
+      const suggestedTravelBufferMinutes = getSuggestedTravelBufferMinutes(obj.travel_distance_km, obj.shooting_type);
+      const baseSessionEndHour = SESSION_TIME_MAP[obj.shooting_session || "MORNING"]?.endHour || 12;
+      const baseSessionEndMin = SESSION_TIME_MAP[obj.shooting_session || "MORNING"]?.endMin || 0;
+      const suggestedEndMoment = startLocal.clone()
+        .hour(baseSessionEndHour)
+        .minute(baseSessionEndMin)
+        .add(suggestedTravelBufferMinutes, "minutes");
+
+      // Kiểm tra xem giờ kết thúc có lấn sang ca sau không (VD: đơn buổi sáng nhưng kết thúc sau 13:00)
+      const spansIntoAfternoon =
+        obj.shooting_session === "MORNING" &&
+        (endLocal.hour() > 13 || (endLocal.hour() === 13 && endLocal.minute() > 0));
+      const spansIntoEvening =
+        (obj.shooting_session === "MORNING" || obj.shooting_session === "AFTERNOON") &&
+        (endLocal.hour() > 17 || (endLocal.hour() === 17 && endLocal.minute() > 30));
+
+      return {
+        ...obj,
+        shoot_date_str: dateStr,
+        start_time_str: startTimeStr,
+        end_time_str: endTimeStr,
+        duration_minutes: durationMinutes,
+        suggested_travel_buffer_minutes: suggestedTravelBufferMinutes,
+        suggested_end_time_str: suggestedTravelBufferMinutes > 0 ? suggestedEndMoment.format("HH:mm") : null,
+        spans_into_afternoon: spansIntoAfternoon,
+        spans_into_evening: spansIntoEvening,
+        _start_ms: startLocal.valueOf(),
+        _end_ms: endLocal.valueOf(),
+      };
+    });
+
+    // Phát hiện xung đột khung giờ giữa các đơn chưa hủy trong cùng một ngày
+    for (let i = 0; i < enrichedBookings.length; i++) {
+      const a = enrichedBookings[i];
+      a.overlapping_bookings = [];
+      if (a.status === "CANCELED") continue;
+      for (let j = 0; j < enrichedBookings.length; j++) {
+        if (i === j) continue;
+        const b = enrichedBookings[j];
+        if (b.status === "CANCELED" || a.shoot_date_str !== b.shoot_date_str) continue;
+        if (a._start_ms < b._end_ms && a._end_ms > b._start_ms) {
+          a.overlapping_bookings.push({
+            _id: b._id,
+            booking_code: String(b._id).slice(-6).toUpperCase(),
+            customer_name: b.customer_full_name || b.customer_id?.full_name || "Khách hàng",
+            shooting_type: b.shooting_type,
+            start_time_str: b.start_time_str,
+            end_time_str: b.end_time_str,
+            same_shooting_type: a.shooting_type === b.shooting_type,
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      startDate: startMoment.format("YYYY-MM-DD"),
+      endDate: endMoment.format("YYYY-MM-DD"),
+      bookings: enrichedBookings,
+      holidays,
+    });
+  } catch (error) {
+    console.error("Get admin timetable error:", error);
+    return res.status(500).json({
+      message: "Không thể tải dữ liệu thời khóa biểu",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * PUT /api/bookings/:id/schedule
+ * Admin tùy chỉnh nhanh ngày chụp, buổi chụp, giờ bắt đầu và giờ kết thúc dự kiến
+ * của đơn hàng ngay trên Thời khóa biểu (VD: cộng thêm thời gian đi lại ngoại cảnh TP.HCM).
+ */
+exports.updateBookingSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      shoot_date,
+      shooting_session,
+      custom_start_time,
+      custom_end_time,
+      schedule_note,
+      use_custom_time_on_contract,
+      shooting_type,
+      location,
+    } = req.body || {};
+
+    const booking = await Booking.findById(id)
+      .populate("customer_id", "full_name email phone")
+      .populate("original_service_ids", "name base_price")
+      .populate("service_id", "name thumbnail base_price")
+      .populate("extra_service_ids", "name base_price")
+      .populate("assigned_staff_ids", "full_name email phone");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn đặt lịch." });
+    }
+    if (booking.status === "CANCELED") {
+      return res.status(400).json({ message: "Không thể chỉnh lịch cho đơn đã hủy." });
+    }
+
+    const effectiveShootDate = shoot_date || moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD");
+    const effectiveSession = shooting_session || booking.shooting_session || "MORNING";
+
+    if (!VALID_SHOOTING_SESSIONS.includes(effectiveSession)) {
+      return res.status(400).json({ message: "Buổi chụp không hợp lệ." });
+    }
+
+    let times;
+    try {
+      times = getSessionTimes(effectiveShootDate, effectiveSession, custom_start_time, custom_end_time);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    const oldDateStr = moment(booking.start_time).utcOffset(7).format("YYYY-MM-DD");
+    const oldSession = booking.shooting_session;
+    const oldUseCustomContract = Boolean(booking.use_custom_time_on_contract);
+
+    booking.start_time = times.startDate;
+    booking.end_time = times.endDate;
+    booking.shooting_session = effectiveSession;
+    booking.is_custom_schedule_time = Boolean(times.isCustom);
+
+    if (schedule_note !== undefined) {
+      booking.schedule_note = String(schedule_note || "").trim();
+    }
+    if (use_custom_time_on_contract !== undefined) {
+      booking.use_custom_time_on_contract = Boolean(use_custom_time_on_contract);
+    }
+    if (shooting_type && ["STUDIO", "OUTDOOR"].includes(shooting_type)) {
+      booking.shooting_type = shooting_type;
+      if (shooting_type === "STUDIO") {
+        booking.location = STUDIO_LOCATION;
+      }
+    }
+    if (location !== undefined && booking.shooting_type === "OUTDOOR") {
+      booking.location = String(location || "").trim();
+    }
+
+    await booking.save();
+
+    // Nếu thay đổi có ảnh hưởng tới nội dung Hợp đồng (ngày chụp, buổi chụp, hoặc bật/tắt hiển thị giờ cụ thể trên HĐ)
+    // và đơn đã phát hành hợp đồng thì tự động đồng bộ lại file PDF hợp đồng
+    const contractAffected =
+      oldDateStr !== effectiveShootDate ||
+      oldSession !== effectiveSession ||
+      oldUseCustomContract !== Boolean(booking.use_custom_time_on_contract) ||
+      Boolean(booking.use_custom_time_on_contract);
+
+    if (
+      contractAffected &&
+      (booking.contract_token || booking.contract_file_url || ["WAITING_PAYMENT", "CONTRACT_SENT", "CONFIRMED"].includes(booking.status))
+    ) {
+      try {
+        const generated = await generateBookingContractPdf(booking);
+        const bookingCode = String(booking._id).slice(-8).toUpperCase();
+        const uploaded = await uploadBookingContractPdf(generated.buffer, bookingCode);
+        booking.contract_file_url = uploaded.secure_url;
+        booking.contract_original_name = `Hop-dong-${bookingCode}.pdf`;
+        await booking.save();
+      } catch (syncErr) {
+        console.warn("[updateBookingSchedule] Không thể đồng bộ PDF hợp đồng:", syncErr.message);
+      }
+    }
+
+    const overlaps = await findTimeOverlapConflicts({
+      shootDateStr: effectiveShootDate,
+      startDate: booking.start_time,
+      endDate: booking.end_time,
+      excludeBookingId: booking._id,
+    });
+
+    return res.status(200).json({
+      message: "Đã cập nhật thời gian trên Thời khóa biểu thành công.",
+      booking,
+      overlaps: overlaps.map((item) => ({
+        _id: item._id,
+        booking_code: String(item._id).slice(-6).toUpperCase(),
+        customer_name: item.customer_full_name || item.customer_id?.full_name || "Khách hàng",
+        shooting_type: item.shooting_type,
+        start_time_str: moment(item.start_time).utcOffset(7).format("HH:mm"),
+        end_time_str: moment(item.end_time).utcOffset(7).format("HH:mm"),
+      })),
+    });
+  } catch (error) {
+    console.error("Update booking schedule error:", error);
+    return res.status(500).json({
+      message: "Lỗi cập nhật thời khóa biểu",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/bookings/public-schedule?month=YYYY-MM
+ * API Public an toàn cho trang Đặt lịch khách hàng:
+ * Trả về các khung giờ đã có lịch theo từng ngày trong tháng (đã đồng bộ với giờ kết thúc dự kiến trên Thời khóa biểu Admin),
+ * không lộ thông tin cá nhân của khách hàng.
+ */
+exports.getPublicSchedule = async (req, res) => {
+  try {
+    const { month, startDate, endDate } = req.query;
+
+    let startMoment, endMoment;
+    if (month && /^\d{4}-\d{2}$/.test(String(month).trim())) {
+      startMoment = moment.utc(`${month}-01`, "YYYY-MM-DD").utcOffset(7, true).startOf("month").subtract(7, "days");
+      endMoment = moment.utc(`${month}-01`, "YYYY-MM-DD").utcOffset(7, true).endOf("month").add(7, "days");
+    } else if (startDate && endDate) {
+      startMoment = moment.utc(startDate, "YYYY-MM-DD").utcOffset(7, true).startOf("day");
+      endMoment = moment.utc(endDate, "YYYY-MM-DD").utcOffset(7, true).endOf("day");
+    } else {
+      startMoment = moment().utcOffset(7).startOf("month").subtract(7, "days");
+      endMoment = moment().utcOffset(7).endOf("month").add(7, "days");
+    }
+
+    const bookings = await Booking.find({
+      start_time: {
+        $gte: startMoment.clone().utc().toDate(),
+        $lte: endMoment.clone().utc().toDate(),
+      },
+      ...activeStatusQuery,
+    })
+      .select("start_time end_time shooting_type shooting_session status is_custom_schedule_time")
+      .sort({ start_time: 1 })
+      .lean();
+
+    const days = {};
+    bookings.forEach((b) => {
+      const startLocal = moment(b.start_time).utcOffset(7);
+      const endLocalRaw = moment(b.end_time).utcOffset(7);
+      const endLocal = endLocalRaw.valueOf() > startLocal.valueOf()
+        ? endLocalRaw
+        : startLocal.clone().add(4, "hours");
+
+      const dateKey = startLocal.format("YYYY-MM-DD");
+      if (!days[dateKey]) {
+        days[dateKey] = {
+          date: dateKey,
+          totalSlots: 0,
+          studioSlots: 0,
+          outdoorSlots: 0,
+          slots: [],
+        };
+      }
+
+      days[dateKey].totalSlots += 1;
+      if (b.shooting_type === "STUDIO") days[dateKey].studioSlots += 1;
+      if (b.shooting_type === "OUTDOOR") days[dateKey].outdoorSlots += 1;
+
+      days[dateKey].slots.push({
+        start_time_label: startLocal.format("HH:mm"),
+        end_time_label: endLocal.format("HH:mm"),
+        shooting_type: b.shooting_type || "STUDIO",
+        shooting_session: b.shooting_session || "MORNING",
+        status: b.status,
+        is_confirmed: ["CONFIRMED", "IN_PROGRESS"].includes(b.status),
+        is_extended: Boolean(b.is_custom_schedule_time),
+      });
+    });
+
+    return res.status(200).json({ days });
+  } catch (error) {
+    console.error("Get public schedule error:", error);
+    return res.status(500).json({
+      message: "Không thể tải thông tin lịch chụp",
+      error: error.message,
+    });
+  }
+};
+
 
 

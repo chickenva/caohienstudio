@@ -17,8 +17,7 @@ const FONT_SERIF = '"Playfair Display", "Times New Roman", serif';
 const STATUS_OPTIONS = [
   { label: "Tất cả", value: "ALL" },
   { label: "Đã gửi yêu cầu", value: "REQUESTED" },
-  { label: "Đã gửi hợp đồng", value: "CONTRACT_SENT" },
-  { label: "Chờ thanh toán", value: "WAITING_PAYMENT" },
+  { label: "Đã gửi HĐ / Chờ cọc", value: "WAITING_PAYMENT" },
   { label: "Đã xác nhận", value: "CONFIRMED" },
   { label: "Đang thực hiện", value: "IN_PROGRESS" },
   { label: "Hoàn thành", value: "COMPLETED" },
@@ -36,8 +35,8 @@ const renderOrderStatus = (status) => {
   const map = {
     // Luồng mới
     REQUESTED: { color: "orange", text: "Đã gửi yêu cầu" },
-    CONTRACT_SENT: { color: "purple", text: "Hợp đồng đã gửi" },
-    WAITING_PAYMENT: { color: "gold", text: "Chờ thanh toán" },
+    CONTRACT_SENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
+    WAITING_PAYMENT: { color: "gold", text: "Đã gửi HĐ / Chờ cọc" },
     CONFIRMED: { color: "blue", text: "Đã xác nhận" },
     IN_PROGRESS: { color: "geekblue", text: "Đang thực hiện" },
     COMPLETED: { color: "green", text: "Hoàn thành" },
@@ -108,7 +107,9 @@ const MyBookings = () => {
   // Lọc đơn theo trạng thái đang chọn trên giao diện.
   const filteredBookings = useMemo(() => {
     if (statusFilter === "ALL") return bookings;
-    return bookings.filter((booking) => booking.status === statusFilter);
+    return bookings.filter((booking) => statusFilter === "WAITING_PAYMENT"
+      ? ["WAITING_PAYMENT", "CONTRACT_SENT"].includes(booking.status)
+      : booking.status === statusFilter);
   }, [bookings, statusFilter]);
 
   const columns = [
@@ -150,14 +151,9 @@ const MyBookings = () => {
       render: (_, record) => (
         <div>
           {renderOrderStatus(record.status)}
-          {record.status === "CONTRACT_SENT" && (
-            <div style={{ fontSize: 11, color: "#722ed1", marginTop: 4 }}>
-              📄 Hợp đồng đã được gửi đến email
-            </div>
-          )}
-          {record.status === "WAITING_PAYMENT" && (
+          {["CONTRACT_SENT", "WAITING_PAYMENT"].includes(record.status) && (
             <div style={{ fontSize: 11, color: "#d46b08", marginTop: 4 }}>
-              ⏳ Vui lòng thanh toán để giữ lịch
+              ⏳ Vui lòng thanh toán cọc để giữ lịch
             </div>
           )}
         </div>
@@ -200,7 +196,7 @@ const MyBookings = () => {
 
   const total = bookings.length;
   const requested = bookings.filter((item) => item.status === "REQUESTED").length;
-  const contractSent = bookings.filter((item) => item.status === "CONTRACT_SENT").length;
+  const waitingPayment = bookings.filter((item) => ["WAITING_PAYMENT", "CONTRACT_SENT"].includes(item.status)).length;
   const confirmed = bookings.filter((item) => item.status === "CONFIRMED").length;
   const completed = bookings.filter((item) => item.status === "COMPLETED").length;
 
@@ -234,14 +230,14 @@ const MyBookings = () => {
         </p>
       </div>
 
-      {/* Alert hướng dẫn nếu có đơn CONTRACT_SENT */}
-      {contractSent > 0 && (
+      {/* Hướng dẫn thanh toán cho các đơn đã gửi hợp đồng, kể cả dữ liệu legacy. */}
+      {waitingPayment > 0 && (
         <Alert
           type="info"
           showIcon
           icon={<FileTextOutlined />}
-          message="Bạn có hợp đồng chờ xác nhận"
-          description="Studio đã gửi hợp đồng xác nhận đến email của bạn. Vui lòng mở email, đọc kỹ hợp đồng và bấm xác nhận để tiến hành đặt cọc giữ lịch."
+          message="Bạn có hợp đồng đang chờ thanh toán cọc"
+          description="Mở hợp đồng để xem thông tin và thanh toán cọc bằng tiền mặt tại studio hoặc chuyển khoản qua mã QR. Studio sẽ đối soát và xác nhận lịch sau khi nhận cọc."
           style={{ marginBottom: 24, borderRadius: 8 }}
         />
       )}
